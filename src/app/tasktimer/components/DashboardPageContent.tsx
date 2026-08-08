@@ -1,37 +1,226 @@
 "use client";
 
-import { resolveTaskTimerRouteHref } from "../lib/routeHref";
-
 type DashboardPageContentProps = {
   active: boolean;
 };
 
 export default function DashboardPageContent({ active }: DashboardPageContentProps) {
-  const brainDumpHref = resolveTaskTimerRouteHref("/brain-dump");
-
   return (
     <section className={`appPage${active ? " appPageOn" : ""}`} id="appPageDashboard" aria-label="Dashboard page">
       <div className="dashboardNeonLayout">
         <div className="dashboardMain">
           <div className="dashboardShell">
             <div className="dashboardShellBody">
-              <div className="dashboardBrainDumpEntryRow">
-                <a
-                  className="btn btn-ghost small taskLaunchSurfaceBrainDumpEntry dashboardBrainDumpEntry"
-                  href={brainDumpHref}
-                  aria-label="Brain Dump"
-                  title="Brain Dump"
-                  data-brain-dump-entry="dashboard"
-                >
-                  Brain Dump
-                </a>
-              </div>
             <div className="dashboardShellScene" id="dashboardShellScene">
               <div
                 className="dashboardShellContent dashboardShellFace dashboardShellFaceFront"
                 id="dashboardShellContent"
               >
                 <div className="dashboardGrid dashboardIntegratedPanel">
+                  <section className="dashboardCard dashboardDailyCapacityCard" id="dashboardDailyCapacityCard" aria-label="Today's capacity" data-daily-capacity-state="loading">
+                    <div className="dashboardPanelLabelRow">
+                      <h2 className="dashboardCardTitle dashboardPanelTitle">
+                        <span className="dashboardPanelTitleDot dashboardPanelTitleDotTask" aria-hidden="true" />
+                        <span>Today&apos;s capacity</span>
+                      </h2>
+                      <div className="dashboardDailyCapacityActions">
+                        <button className="btn btn-ghost" type="button" id="dashboardDailyCapacityRefresh" data-daily-capacity="refresh">Refresh</button>
+                        <button className="btn btn-ghost" type="button" id="dashboardDailyCapacityAdjust" data-daily-capacity="adjust">Adjust today</button>
+                      </div>
+                    </div>
+                    <div className="dashboardDailyCapacityStatus" id="dashboardDailyCapacityStatus" role="status" aria-live="polite">Loading today&apos;s capacity...</div>
+                    <div className="dashboardDailyCapacityContent" id="dashboardDailyCapacityContent">
+                      <strong className="dashboardDailyCapacityRange" id="dashboardDailyCapacityRange">30-60 min remaining</strong>
+                      <span className="dashboardDailyCapacityState" id="dashboardDailyCapacityState">Standard</span>
+                      <span className="dashboardDailyCapacityConfidence" id="dashboardDailyCapacityConfidence">Confidence: low</span>
+                      <p className="dashboardDailyCapacityExplanation" id="dashboardDailyCapacityExplanation">TaskLaunch will personalise this estimate as more session history becomes available.</p>
+                    </div>
+                    <button className="btn btn-ghost dashboardDailyCapacityRetry" id="dashboardDailyCapacityRetry" type="button" data-daily-capacity="refresh" hidden>Try again</button>
+                  </section>
+                  <div className="overlay" id="dashboardDailyCapacityAdjustOverlay" style={{ display: "none" }} aria-hidden="true">
+                    <div className="modal" role="dialog" aria-modal="true" aria-label="Adjust today&apos;s capacity" aria-describedby="dashboardDailyCapacityAdjustDescription">
+                      <h2 className="modalTitle">Adjust today&apos;s capacity</h2>
+                      <p className="modalSubtext" id="dashboardDailyCapacityAdjustDescription">How much can you realistically take on today?</p>
+                      <div className="dashboardDailyCapacityAdjustStates" role="group" aria-label="Capacity state">
+                        <button className="btn btn-ghost" type="button" aria-pressed="false" data-daily-capacity-state-option="REDUCED">Reduced</button>
+                        <button className="btn btn-ghost" type="button" aria-pressed="false" data-daily-capacity-state-option="LIGHT">Light</button>
+                        <button className="btn btn-ghost" type="button" aria-pressed="false" data-daily-capacity-state-option="STANDARD">Standard</button>
+                        <button className="btn btn-ghost" type="button" aria-pressed="false" data-daily-capacity-state-option="STRONG">Strong</button>
+                      </div>
+                      <label className="dashboardDailyCapacityCustomMinutes" htmlFor="dashboardDailyCapacityCustomMinutesInput">
+                        Custom time
+                        <input id="dashboardDailyCapacityCustomMinutesInput" type="number" min="1" max="1440" step="1" inputMode="numeric" placeholder="45" />
+                        <span>minutes</span>
+                      </label>
+                      <p className="modalDropdownHelp">This changes today&apos;s planning only and will not affect your history.</p>
+                      <p className="dashboardDailyCapacityAdjustError" id="dashboardDailyCapacityAdjustError" role="alert" hidden />
+                      <div className="confirmBtns">
+                        <button className="btn btn-ghost" type="button" data-daily-capacity="close">Cancel</button>
+                        <button className="btn btn-ghost" type="button" data-daily-capacity="clear">Use estimate</button>
+                        <button className="btn btn-accent" type="button" data-daily-capacity="apply">Apply</button>
+                      </div>
+                    </div>
+                  </div>
+                  <section className="dashboardCard dashboardDailyExecutiveBriefCard" id="dashboardDailyExecutiveBriefCard" aria-label="Daily Executive Brief" data-daily-executive-brief-state="loading">
+                    <div className="dashboardPanelLabelRow">
+                      <h2 className="dashboardCardTitle dashboardPanelTitle">
+                        <span className="dashboardPanelTitleDot dashboardPanelTitleDotTask" aria-hidden="true" />
+                        <span>Daily Executive Brief</span>
+                      </h2>
+                      <div className="dashboardDailyExecutiveBriefHeaderActions">
+                        <label className="dashboardDailyExecutiveBriefTimeLabel" htmlFor="dashboardDailyExecutiveBriefTimeSelect">Available time
+                          <select id="dashboardDailyExecutiveBriefTimeSelect" defaultValue="any" aria-label="Available time for daily brief">
+                            <option value="15">15m</option>
+                            <option value="30">30m</option>
+                            <option value="60">60m</option>
+                            <option value="90">90m</option>
+                            <option value="any">Any</option>
+                          </select>
+                        </label>
+                        <button className="btn btn-ghost" type="button" id="dashboardDailyExecutiveBriefRefresh" data-daily-executive-brief="refresh">Refresh</button>
+                        <button className="btn btn-ghost" type="button" id="dashboardDailyExecutiveBriefToggle" data-daily-executive-brief="toggle" aria-expanded="true" aria-controls="dashboardDailyExecutiveBriefContent">Collapse</button>
+                      </div>
+                    </div>
+                    <div className="dashboardDailyExecutiveBriefStatus" id="dashboardDailyExecutiveBriefStatus" role="status" aria-live="polite">Loading your daily brief...</div>
+                    <div className="dashboardDailyExecutiveBriefContent" id="dashboardDailyExecutiveBriefContent">
+                      <div className="dashboardDailyExecutiveBriefHealth" id="dashboardDailyExecutiveBriefHealth" data-plan-health="INSUFFICIENT_DATA" />
+                      <p className="dashboardDailyExecutiveBriefSummary" id="dashboardDailyExecutiveBriefSummary" />
+                      <div className="dashboardDailyExecutiveBriefFacts" aria-label="Daily plan facts">
+                        <span id="dashboardDailyExecutiveBriefWorkload" />
+                        <span id="dashboardDailyExecutiveBriefRange" />
+                        <span id="dashboardDailyExecutiveBriefDeadline" />
+                      </div>
+                      <div className="dashboardDailyExecutiveBriefAction" id="dashboardDailyExecutiveBriefAction" hidden aria-hidden="true">
+                        <strong>Start with</strong>
+                        <span id="dashboardDailyExecutiveBriefActionTitle" />
+                        <span id="dashboardDailyExecutiveBriefActionFirstStep" />
+                        <button className="btn btn-accent" type="button" data-daily-executive-brief="start" disabled>Start now</button>
+                      </div>
+                      <div className="dashboardDailyExecutiveBriefAdjustments" id="dashboardDailyExecutiveBriefAdjustments" hidden aria-hidden="true" />
+                    </div>
+                    <button className="btn btn-ghost dashboardDailyExecutiveBriefRetry" id="dashboardDailyExecutiveBriefRetry" type="button" data-daily-executive-brief="refresh" hidden>Try again</button>
+                  </section>
+                  <section className="dashboardCard dashboardNextBestActionCard" id="dashboardNextBestActionCard" aria-label="Next Best Action" data-next-best-action-state="loading">
+                    <div className="dashboardPanelLabelRow">
+                      <div className="dashboardCardTitle dashboardPanelTitle">
+                        <span className="dashboardPanelTitleDot dashboardPanelTitleDotTask" aria-hidden="true" />
+                        <span>Next Best Action</span>
+                      </div>
+                      <label className="dashboardNextBestActionTimeLabel" htmlFor="dashboardNextBestActionTimeSelect">
+                        Available time
+                        <select id="dashboardNextBestActionTimeSelect" defaultValue="any" aria-label="Available time for next best action">
+                          <option value="10">10m</option>
+                          <option value="20">20m</option>
+                          <option value="30">30m</option>
+                          <option value="60">60m</option>
+                          <option value="any">Any</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div className="dashboardNextBestActionStatus" id="dashboardNextBestActionStatus" role="status" aria-live="polite">Loading your next best action...</div>
+                    <div className="dashboardNextBestActionContent" id="dashboardNextBestActionContent" hidden aria-hidden="true">
+                      <h3 className="dashboardNextBestActionTitle" id="dashboardNextBestActionTitle" />
+                      <p className="dashboardNextBestActionFirstAction" id="dashboardNextBestActionFirstAction" />
+                      <div className="dashboardNextBestActionMeta" aria-label="Recommendation details">
+                        <span id="dashboardNextBestActionDuration" />
+                        <span id="dashboardNextBestActionConfidence" />
+                      </div>
+                      <p className="dashboardNextBestActionExplanation" id="dashboardNextBestActionExplanation" />
+                      <div className="dashboardNextBestActionWhy" id="dashboardNextBestActionWhy" hidden aria-hidden="true" />
+                      <div className="dashboardNextBestActionActions" aria-label="Next Best Action actions">
+                        <button className="btn btn-accent" type="button" data-next-best-action="start" data-next-best-action-action="start" disabled>Start now</button>
+                        <button className="btn btn-ghost" type="button" data-next-best-action="alternative" data-next-best-action-action="alternative" disabled>Alternative</button>
+                        <button className="btn btn-ghost" type="button" data-next-best-action="dismiss" data-next-best-action-action="dismiss" disabled>Not now</button>
+                        <button className="btn btn-ghost" type="button" data-next-best-action="why" data-next-best-action-action="why" aria-expanded="false" disabled>Why this?</button>
+                      </div>
+                    </div>
+                    <div className="dashboardNextBestActionEmpty" id="dashboardNextBestActionEmpty" hidden aria-hidden="true">No eligible task is ready right now.</div>
+                    <div className="dashboardNextBestActionError" id="dashboardNextBestActionError" hidden aria-hidden="true">Please try again.</div>
+                    <button className="btn btn-ghost dashboardNextBestActionRetry" id="dashboardNextBestActionRetry" type="button" hidden>Retry</button>
+                  </section>
+                  <section className="dashboardCard dashboardScheduleRepairCard" id="dashboardScheduleRepairCard" aria-label="Schedule repair" data-schedule-repair-state="loading">
+                    <div className="dashboardPanelLabelRow">
+                      <h2 className="dashboardCardTitle dashboardPanelTitle">
+                        <span className="dashboardPanelTitleDot dashboardPanelTitleDotTask" aria-hidden="true" />
+                        <span>Schedule repair</span>
+                      </h2>
+                      <div className="dashboardScheduleRepairActions">
+                        <button className="btn btn-ghost" type="button" data-schedule-repair="refresh">Refresh</button>
+                        <button className="btn btn-accent" type="button" data-schedule-repair="review" hidden>Review repair</button>
+                      </div>
+                    </div>
+                    <div className="dashboardScheduleRepairStatus" id="dashboardScheduleRepairStatus" role="status" aria-live="polite">Checking today&apos;s schedule...</div>
+                    <div className="dashboardScheduleRepairSummary" id="dashboardScheduleRepairSummary" hidden aria-hidden="true">
+                      <strong id="dashboardScheduleRepairSummaryTitle" />
+                      <span id="dashboardScheduleRepairSummaryDetails" />
+                    </div>
+                    <button className="btn btn-ghost dashboardScheduleRepairRetry" type="button" data-schedule-repair="refresh" hidden>Try again</button>
+                  </section>
+                  <div className="overlay" id="dashboardScheduleRepairOverlay" style={{ display: "none" }} aria-hidden="true">
+                    <div className="modal dashboardScheduleRepairModal" role="dialog" aria-modal="true" aria-label="Review schedule repair" aria-describedby="dashboardScheduleRepairDescription">
+                      <h2 className="modalTitle">Review schedule repair</h2>
+                      <p className="modalSubtext" id="dashboardScheduleRepairDescription">Select the suggestions that should be considered. Nothing changes until you explicitly apply a repair.</p>
+                      <div className="dashboardScheduleRepairModalStatus" id="dashboardScheduleRepairModalStatus" role="status" aria-live="polite" />
+                      <div className="dashboardScheduleRepairActionList" id="dashboardScheduleRepairActionList" aria-label="Proposed schedule repair actions" />
+                      <div className="confirmBtns">
+                        <button className="btn btn-ghost modalPreviewSecondaryAction" type="button" data-schedule-repair="close">Close</button>
+                        <button className="btn btn-ghost modalPreviewSecondaryAction" type="button" data-schedule-repair="dismiss">Dismiss proposal</button>
+                        <button className="btn btn-ghost modalPreviewSecondaryAction" type="button" data-schedule-repair="refresh">Refresh proposal</button>
+                        <button className="btn btn-accent modalPreviewPrimaryAction" type="button" data-schedule-repair="apply">Apply selected</button>
+                        <button className="btn btn-warn modalPreviewSecondaryAction" type="button" data-schedule-repair="undo" hidden>Undo applied repair</button>
+                      </div>
+                    </div>
+                  </div>
+                  <section className="dashboardCard dashboardRecoveryCard" id="dashboardRecoveryCard" aria-label="Recovery Mode" data-recovery-state="idle">
+                    <div className="dashboardPanelLabelRow">
+                      <h2 className="dashboardCardTitle dashboardPanelTitle">
+                        <span className="dashboardPanelTitleDot dashboardPanelTitleDotTask" aria-hidden="true" />
+                        <span>Recovery Mode</span>
+                      </h2>
+                      <div className="dashboardRecoveryActions">
+                        <button className="btn btn-accent" type="button" data-recovery="open">Open Recovery Mode</button>
+                        <button className="btn btn-ghost" type="button" data-recovery="refresh">Refresh</button>
+                      </div>
+                    </div>
+                    <div className="dashboardRecoveryStatus" id="dashboardRecoveryStatus" role="status" aria-live="polite">Recovery Mode is available whenever your plan needs a reset.</div>
+                    <div className="dashboardRecoverySummary" id="dashboardRecoverySummary" hidden aria-hidden="true">
+                      <strong id="dashboardRecoverySummaryTitle" />
+                      <span id="dashboardRecoverySummaryDetails" />
+                    </div>
+                    <button className="btn btn-ghost dashboardRecoveryRetry" type="button" data-recovery="refresh" hidden>Try again</button>
+                  </section>
+                  <div className="overlay" id="dashboardRecoveryOverlay" style={{ display: "none" }} aria-hidden="true">
+                    <div className="modal dashboardRecoveryModal" role="dialog" aria-modal="true" aria-label="Recovery Mode" aria-describedby="dashboardRecoveryDescription">
+                      <h2 className="modalTitle">Let&apos;s reset the plan</h2>
+                      <p className="modalSubtext" id="dashboardRecoveryDescription">Start from where you are. Nothing changes until you explicitly confirm it.</p>
+                      <div className="dashboardRecoveryStages" aria-label="Recovery stages">
+                        <span className="dashboardRecoveryStage is-active">1. What matters now</span>
+                        <span className="dashboardRecoveryStage">2. What can wait</span>
+                        <span className="dashboardRecoveryStage">3. Restart</span>
+                      </div>
+                      <div className="dashboardRecoveryModalStatus" id="dashboardRecoveryModalStatus" role="status" aria-live="polite" />
+                      <section className="dashboardRecoverySection" aria-labelledby="dashboardRecoveryRestartHeading">
+                        <h3 id="dashboardRecoveryRestartHeading">Start here</h3>
+                        <div className="dashboardRecoveryRestart" id="dashboardRecoveryRestart" />
+                      </section>
+                      <section className="dashboardRecoverySection" aria-labelledby="dashboardRecoveryAttentionHeading">
+                        <h3 id="dashboardRecoveryAttentionHeading">Needs attention</h3>
+                        <div className="dashboardRecoveryActionList" id="dashboardRecoveryAttentionList" />
+                      </section>
+                      <section className="dashboardRecoverySection" aria-labelledby="dashboardRecoveryFlexibleHeading">
+                        <h3 id="dashboardRecoveryFlexibleHeading">Can wait</h3>
+                        <div className="dashboardRecoveryActionList" id="dashboardRecoveryFlexibleList" />
+                      </section>
+                      <div className="confirmBtns">
+                        <button className="btn btn-ghost modalPreviewSecondaryAction" type="button" data-recovery="close">Keep current plan</button>
+                        <button className="btn btn-ghost modalPreviewSecondaryAction" type="button" data-recovery="dismiss">Dismiss</button>
+                        <button className="btn btn-ghost modalPreviewSecondaryAction" type="button" data-recovery="refresh">Refresh</button>
+                        <button className="btn btn-accent modalPreviewPrimaryAction" type="button" data-recovery="apply">Apply selected changes</button>
+                        <button className="btn btn-warn modalPreviewSecondaryAction" type="button" data-recovery="undo" hidden>Undo applied changes</button>
+                        <button className="btn btn-ghost modalPreviewSecondaryAction" type="button" data-recovery="complete">Finish recovery</button>
+                      </div>
+                    </div>
+                  </div>
                   <section className="dashboardCard dashboardActivityOverviewCard" data-dashboard-id="activity-overview" data-dashboard-label="Activity Overview" aria-label="Activity overview">
                     <div className="dashboardPanelLabelRow dashboardActivityOverviewTitleRow">
                       <div className="dashboardCardTitle dashboardPanelTitle">

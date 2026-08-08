@@ -90,12 +90,17 @@ describe("task card view model", () => {
     const editIndex = rendered.html.indexOf(
       '<button class="taskMenuItem" data-action="edit" title="Edit" type="button">'
     );
+    const clarificationIndex = rendered.html.indexOf('data-action="clarify"');
     const manualEntryIndex = rendered.html.indexOf('data-action="manualEntry"');
 
     expect(editIndex).toBeGreaterThan(-1);
+    expect(clarificationIndex).toBeGreaterThan(-1);
     expect(manualEntryIndex).toBeGreaterThan(-1);
+    expect(editIndex).toBeLessThan(clarificationIndex);
+    expect(clarificationIndex).toBeLessThan(manualEntryIndex);
     expect(editIndex).toBeLessThan(manualEntryIndex);
     expectTaskMenuLabel(rendered.html, "Edit");
+    expectTaskMenuLabel(rendered.html, "Make easier to start");
     expectTaskMenuLabel(rendered.html, "Add Entry");
     expectTaskMenuLabel(rendered.html, "Share");
     expectTaskMenuLabel(rendered.html, "Reset");
@@ -121,6 +126,14 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('src="/icons/icons_default/archive.webp"');
     expect(rendered.html).not.toContain('data-action="delete" title="Delete"');
     expect(rendered.html).not.toContain('<span class="taskMenuTileLabel">Delete</span>');
+  });
+
+  it("does not offer clarification for an imported shared task", () => {
+    const rendered = renderCard({
+      task: baseTask({ sharedSourceOwnerUid: "owner-1" }),
+    });
+
+    expect(rendered.html).not.toContain('data-action="clarify"');
   });
 
   it("disables Archive for a running task with history entries", () => {

@@ -28,6 +28,573 @@
   text-decoration:none;
 }
 
+.dashboardDailyCapacityCard{
+  grid-column:span 12;
+  min-height:140px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.dashboardScheduleRepairCard{
+  grid-column:span 12;
+  min-height:120px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.dashboardRecoveryCard{
+  grid-column:span 12;
+  min-height:120px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.dashboardRecoveryStatus,
+.dashboardRecoverySummary,
+.dashboardRecoveryModalStatus{
+  color:rgba(225,231,244,.78);
+  font:13px var(--font-readable);
+}
+
+.dashboardRecoveryActions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.dashboardRecoverySummary{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 18px;
+  align-items:baseline;
+}
+
+.dashboardRecoverySummary strong{ color:#edf2ff; }
+.dashboardRecoverySummary span{ color:rgba(225,231,244,.62); }
+.dashboardRecoveryRetry{ align-self:flex-start; }
+
+.dashboardRecoveryStages{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin:12px 0 4px;
+}
+
+.dashboardRecoveryStage{
+  padding:6px 8px;
+  border:1px solid rgba(154,168,199,.2);
+  color:rgba(225,231,244,.62);
+  font:11px var(--font-readable);
+}
+
+.dashboardRecoveryStage.is-active{
+  border-color:rgba(169,214,95,.62);
+  color:#dff0b0;
+}
+
+.dashboardRecoverySection{ margin-top:14px; }
+.dashboardRecoverySection h3{
+  margin:0 0 7px;
+  color:#edf2ff;
+  font:13px var(--font-readable);
+}
+
+.dashboardRecoveryActionList{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  max-height:25svh;
+  overflow:auto;
+}
+
+.dashboardRecoveryAction{
+  align-items:flex-start;
+  padding:7px 0;
+  border-bottom:1px solid rgba(154,168,199,.2);
+}
+
+.dashboardRecoveryActionCopy{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  min-width:0;
+}
+
+.dashboardRecoveryActionCopy strong{
+  color:#fff;
+  font:13px var(--font-readable);
+  overflow-wrap:anywhere;
+}
+
+.dashboardRecoveryRestartRow{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px;
+  border:1px solid rgba(169,214,95,.35);
+  background:rgba(169,214,95,.06);
+}
+
+.dashboardRecoveryRestartRow strong{
+  color:#fff;
+  font:13px var(--font-readable);
+}
+
+@media (prefers-reduced-motion: reduce){
+  #dashboardRecoveryOverlay,
+  #dashboardRecoveryOverlay *{
+    animation-duration:.01ms !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
+  }
+}
+
+@media (max-width:640px){
+  .dashboardRecoveryActions .btn{ flex:1 1 auto; }
+  .dashboardRecoveryRestartRow{ align-items:stretch; }
+  .dashboardRecoveryRestartRow .btn{ width:100%; }
+}
+
+.dashboardScheduleRepairStatus,
+.dashboardScheduleRepairSummary,
+.dashboardScheduleRepairModalStatus{
+  color:rgba(225,231,244,.78);
+  font:13px var(--font-readable);
+}
+
+.dashboardScheduleRepairActions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.dashboardScheduleRepairSummary{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 18px;
+  align-items:baseline;
+}
+
+.dashboardScheduleRepairSummary strong{
+  color:#edf2ff;
+}
+
+.dashboardScheduleRepairSummary span{
+  color:rgba(225,231,244,.62);
+}
+
+.dashboardScheduleRepairRetry{
+  align-self:flex-start;
+}
+
+.dashboardScheduleRepairActionList{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  max-height:48svh;
+  overflow:auto;
+  margin:12px 0;
+}
+
+.dashboardScheduleRepairAction{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(130px,180px);
+  gap:8px 12px;
+  align-items:center;
+  padding:8px 0;
+  border-bottom:1px solid rgba(154,168,199,.2);
+}
+
+.dashboardScheduleRepairAction .chkRow{
+  min-width:0;
+}
+
+.dashboardScheduleRepairAction .chkRow strong{
+  display:block;
+  color:#fff;
+  font:13px var(--font-readable);
+}
+
+.dashboardScheduleRepairAction > .btn{
+  justify-self:start;
+}
+
+.dashboardScheduleRepairEditField{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  color:#fff;
+  font:11px var(--font-readable);
+}
+
+.dashboardScheduleRepairEditField input{
+  min-height:34px;
+  width:100%;
+  box-sizing:border-box;
+  padding:7px 8px;
+  border:1px solid #1a1b20;
+  border-radius:0;
+  background:rgba(26,27,32,.58);
+  color:#edf2ff;
+  font:13px var(--font-readable);
+}
+
+@media (max-width:640px){
+  .dashboardScheduleRepairAction{
+    grid-template-columns:1fr;
+  }
+}
+
+.dashboardDailyCapacityStatus,
+.dashboardDailyCapacityExplanation{
+  color:rgba(225,231,244,.78);
+  font:13px var(--font-readable);
+}
+
+.dashboardDailyCapacityActions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.dashboardDailyCapacityRetry{
+  align-self:flex-start;
+}
+
+.dashboardDailyCapacityContent{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  gap:8px 18px;
+}
+
+.dashboardDailyCapacityRange{
+  color:#edf2ff;
+  font:18px var(--font-readable);
+  font-weight:700;
+}
+
+.dashboardDailyCapacityState{
+  color:#d7ee85;
+  font:12px var(--font-readable);
+  font-weight:700;
+  letter-spacing:.05em;
+  text-transform:capitalize;
+}
+
+.dashboardDailyCapacityConfidence{
+  color:rgba(225,231,244,.62);
+  font:11px var(--font-readable);
+}
+
+.dashboardDailyCapacityExplanation{
+  flex-basis:100%;
+  margin:0;
+  color:rgba(225,231,244,.6);
+}
+
+.dashboardDailyCapacityCard[data-daily-capacity-state="error"] .dashboardDailyCapacityStatus{
+  color:#ffb4a8;
+}
+
+.dashboardDailyCapacityAdjustStates{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin:12px 0;
+}
+
+.dashboardDailyCapacityAdjustStates .btn[aria-pressed="true"]{
+  border-color:#d7ee85;
+  color:#d7ee85;
+}
+
+.dashboardDailyCapacityCustomMinutes{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:6px 10px;
+  color:rgba(225,231,244,.78);
+  font:13px var(--font-readable);
+}
+
+.dashboardDailyCapacityCustomMinutes input{
+  grid-column:1;
+  min-height:36px;
+  padding:6px 8px;
+  border:1px solid rgba(154,168,199,.38);
+  border-radius:0;
+  background:#1a1b20;
+  color:#edf2ff;
+  font:13px var(--font-readable);
+}
+
+.dashboardDailyCapacityCustomMinutes span{
+  grid-column:2;
+  grid-row:2;
+  align-self:center;
+  color:rgba(225,231,244,.62);
+}
+
+.dashboardDailyCapacityAdjustError{
+  color:#ffb4a8;
+  font:13px var(--font-readable);
+}
+
+@media (max-width:640px){
+  .dashboardDailyCapacityAdjustStates{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+.dashboardDailyExecutiveBriefCard{
+  grid-column:span 12;
+  min-height:190px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.dashboardDailyExecutiveBriefHeaderActions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.dashboardDailyExecutiveBriefTimeLabel{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:rgba(225,231,244,.7);
+  font:11px var(--font-readable);
+}
+
+.dashboardDailyExecutiveBriefTimeLabel select{
+  min-height:32px;
+  padding:4px 28px 4px 8px;
+  border:1px solid rgba(154,168,199,.38);
+  border-radius:0;
+  background:#1a1b20;
+  color:#edf2ff;
+  font:11px var(--font-readable);
+}
+
+.dashboardDailyExecutiveBriefStatus,
+.dashboardDailyExecutiveBriefSummary,
+.dashboardDailyExecutiveBriefFacts,
+.dashboardDailyExecutiveBriefAdjustments,
+.dashboardDailyExecutiveBriefAction{
+  color:rgba(225,231,244,.78);
+  font:13px var(--font-readable);
+}
+
+.dashboardDailyExecutiveBriefContent{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.dashboardDailyExecutiveBriefHealth{
+  width:max-content;
+  padding:5px 9px;
+  border:1px solid rgba(154,168,199,.38);
+  color:#dce6ff;
+  font:11px var(--font-readable);
+  font-weight:650;
+  letter-spacing:.04em;
+  text-transform:capitalize;
+}
+
+.dashboardDailyExecutiveBriefHealth[data-plan-health="SIGNIFICANTLY_OVERLOADED"]{
+  border-color:#ffb4a8;
+  color:#ffb4a8;
+}
+
+.dashboardDailyExecutiveBriefHealth[data-plan-health="SLIGHTLY_OVERLOADED"]{
+  border-color:#f5cf79;
+  color:#f5cf79;
+}
+
+.dashboardDailyExecutiveBriefSummary{
+  margin:0;
+}
+
+.dashboardDailyExecutiveBriefFacts{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 18px;
+  color:rgba(225,231,244,.6);
+  font-size:11px;
+}
+
+.dashboardDailyExecutiveBriefAction{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:5px 10px;
+  align-items:center;
+  padding:10px;
+  border:1px solid rgba(154,168,199,.25);
+  background:rgba(10,12,18,.3);
+}
+
+.dashboardDailyExecutiveBriefAction span:last-of-type{
+  grid-column:1 / -1;
+  color:rgba(225,231,244,.6);
+}
+
+.dashboardDailyExecutiveBriefAction .btn{
+  grid-column:1 / -1;
+  justify-self:start;
+}
+
+.dashboardDailyExecutiveBriefRetry{
+  align-self:flex-start;
+}
+
+@media (max-width:640px){
+  .dashboardDailyExecutiveBriefHeaderActions{
+    width:100%;
+  }
+
+  .dashboardDailyExecutiveBriefHeaderActions .btn{
+    min-height:40px;
+    flex:1;
+  }
+
+  .dashboardDailyExecutiveBriefTimeLabel{
+    width:100%;
+    justify-content:space-between;
+  }
+
+  .dashboardDailyExecutiveBriefTimeLabel select{
+    flex:1;
+    max-width:160px;
+  }
+
+  .dashboardDailyExecutiveBriefAction{
+    grid-template-columns:1fr;
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .dashboardDailyCapacityCard,
+  .dashboardDailyCapacityCard *{
+    transition:none !important;
+    animation:none !important;
+  }
+  .dashboardDailyExecutiveBriefContent,
+  .dashboardDailyExecutiveBriefCard{
+    transition:none;
+  }
+}
+
+.dashboardNextBestActionCard{
+  grid-column:span 12;
+  min-height:190px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.dashboardNextBestActionCard[data-next-best-action-state="loading"] .dashboardNextBestActionStatus{
+  color:rgba(225,231,244,.72);
+}
+
+.dashboardNextBestActionCard[data-next-best-action-state="error"] .dashboardNextBestActionStatus,
+.dashboardNextBestActionCard[data-next-best-action-state="stale"] .dashboardNextBestActionStatus{
+  color:#ffb4a8;
+}
+
+.dashboardNextBestActionTimeLabel{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:rgba(225,231,244,.7);
+  font:11px var(--font-readable);
+}
+
+.dashboardNextBestActionTimeLabel select{
+  min-height:32px;
+  padding:4px 28px 4px 8px;
+  border:1px solid rgba(154,168,199,.38);
+  border-radius:0;
+  background:#1a1b20;
+  color:#edf2ff;
+  font:11px var(--font-readable);
+}
+
+.dashboardNextBestActionStatus,
+.dashboardNextBestActionEmpty,
+.dashboardNextBestActionError{
+  color:rgba(225,231,244,.78);
+  font:13px var(--font-readable);
+}
+
+.dashboardNextBestActionContent{
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+}
+
+.dashboardNextBestActionTitle{
+  margin:0;
+  color:#f2f5ff;
+  font:18px var(--font-readable);
+  font-weight:650;
+}
+
+.dashboardNextBestActionFirstAction,
+.dashboardNextBestActionExplanation{
+  margin:0;
+  color:rgba(225,231,244,.78);
+  font:13px var(--font-readable);
+}
+
+.dashboardNextBestActionMeta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 16px;
+  color:rgba(225,231,244,.58);
+  font:11px var(--font-readable);
+  text-transform:capitalize;
+}
+
+.dashboardNextBestActionActions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:2px;
+}
+
+.dashboardNextBestActionRetry{
+  align-self:flex-start;
+}
+
+@media (max-width:640px){
+  .dashboardNextBestActionCard{
+    min-height:210px;
+  }
+
+  .dashboardNextBestActionTimeLabel{
+    width:100%;
+    justify-content:space-between;
+  }
+
+  .dashboardNextBestActionTimeLabel select{
+    flex:1;
+    max-width:160px;
+  }
+
+  .dashboardNextBestActionActions .btn{
+    min-height:40px;
+    flex:1 1 calc(50% - 8px);
+  }
+}
+
 .dashboardShellScene{
   position:relative;
   min-width:0;
@@ -9405,7 +9972,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   min-width:0 !important;
 }
 
-/* Desktop dashboard panel order: Activity Overview, Momentum, Task Overview, Focus Heatmap. */
+/* Desktop dashboard panel order: Activity Overview, Momentum, Task Overview + Focus Heatmap. */
 @media (min-width: 1601px){
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel{
     grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
@@ -9469,7 +10036,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardHeatCard{
-    grid-column:2 !important;
+    grid-column:3 !important;
     grid-row:2 !important;
     align-self:stretch !important;
     min-height:340px !important;

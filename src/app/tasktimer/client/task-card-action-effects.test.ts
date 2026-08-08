@@ -36,6 +36,7 @@ function createHarness(overrides: Partial<{ advanced: boolean; social: boolean; 
     archiveTask: (index) => calls.push(`archive:${index}`),
     deleteTask: (index) => calls.push(`delete:${index}`),
     openEdit: (index) => calls.push(`edit:${index}`),
+    openTaskClarification: (index) => calls.push(`clarify:${index}`),
     openHistory: (index) => calls.push(`history:${index}`),
     getPinnedHistoryTaskIds: () => pinnedHistoryTaskIds,
     openFocusMode: (index, opts) => calls.push(`focus:${index}:${opts?.sourceElement ? "source" : "none"}`),
@@ -85,6 +86,13 @@ describe("task card action effects", () => {
     expect(harness.effects.handleAction({ action: "fastForwardCheckpoint", taskIndex: 2, taskId: "task-1" })).toBe(true);
 
     expect(harness.calls).toEqual(["start:2", "history:2", "collapse:2", "archive:2", "rewind:2", "forward:2"]);
+  });
+
+  it("routes clarification to the selected task", () => {
+    const harness = createHarness();
+
+    expect(harness.effects.handleAction({ action: "clarify", taskIndex: 4, taskId: "task-1" })).toBe(true);
+    expect(harness.calls).toEqual(["clarify:4"]);
   });
 
   it("gates locked actions before side effects run", () => {

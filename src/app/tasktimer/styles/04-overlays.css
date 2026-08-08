@@ -8974,6 +8974,266 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   margin: 0 !important;
 }
 
+#taskClarificationOverlay.taskClarificationPrimitiveOverlay{
+  padding: max(18px, var(--safe-top)) 14px max(18px, var(--safe-bottom)) !important;
+  background:
+    radial-gradient(circle at 12% 72%, rgba(0, 229, 255, .18), transparent 28%),
+    radial-gradient(circle at 86% 22%, rgba(188, 255, 80, .12), transparent 30%),
+    rgba(3, 5, 8, .72) !important;
+}
+
+#taskClarificationOverlay .taskClarificationPrimitiveModal{
+  position: relative !important;
+  display: grid !important;
+  width: min(820px, calc(100vw - 28px)) !important;
+  max-width: min(820px, calc(100vw - 28px)) !important;
+  max-height: calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom)) !important;
+  overflow: hidden !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  padding: 0 !important;
+  border-top: 1px solid rgba(255, 255, 255, .2) !important;
+  border-right: 1px solid rgba(255, 255, 255, .08) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, .82) !important;
+  border-left: 1px solid rgba(255, 255, 255, .08) !important;
+  border-radius: 14px !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .05), transparent 22%, rgba(0, 255, 255, .025) 68%, rgba(188, 255, 80, .07)),
+    #232a31 !important;
+  box-shadow:
+    0 24px 38px rgba(0, 0, 0, .7),
+    inset 0 0 0 2px rgba(8, 15, 20, .94),
+    inset 0 0 0 2px rgba(255, 255, 255, .08),
+    inset 0 1px 10px rgba(255, 255, 255, .08) !important;
+  clip-path: none !important;
+}
+
+#taskClarificationOverlay .taskClarificationPrimitiveHeader{
+  min-height: 64px;
+  margin: 0 !important;
+  padding: 10px 36px 8px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, .82);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .18) 0%, rgba(255, 255, 255, .075) 34%, rgba(0, 0, 0, .18) 100%),
+    rgba(22, 29, 37, .96);
+}
+
+#taskClarificationOverlay .taskClarificationPrimitiveHeader h2{
+  margin: 0 !important;
+  color: #f7f8fb !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+}
+
+#taskClarificationOverlay .taskClarificationPrimitiveHeader .modalSubtext{
+  margin: 6px 0 0 !important;
+  color: rgba(247, 249, 252, .78) !important;
+  font-family: var(--font-readable) !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+
+#taskClarificationOverlay .taskClarificationPrimitiveBody{
+  min-height: 0;
+  overflow: auto;
+  margin: 0 !important;
+  padding: 28px 36px !important;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .38), transparent 28%, rgba(255, 255, 255, .025) 78%, rgba(0, 0, 0, .2)),
+    rgba(8, 14, 19, .74) !important;
+}
+
+#taskClarificationOverlay .taskClarificationPrimitiveFooter{
+  display: flex !important;
+  min-height: 96px !important;
+  align-items: center;
+  justify-content: center !important;
+  gap: 16px !important;
+  margin: 0 !important;
+  padding: 22px 36px 24px !important;
+  border-top: 1px solid rgba(190, 207, 218, .3);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(0, 0, 0, .24)),
+    rgba(12, 18, 24, .92);
+}
+
+#taskClarificationOverlay .taskClarificationPrimitiveAction{
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0 !important;
+}
+
+@media (max-width: 640px){
+  #taskClarificationOverlay .taskClarificationPrimitiveModal{
+    width: min(100%, calc(100vw - 20px)) !important;
+    max-width: min(100%, calc(100vw - 20px)) !important;
+    max-height: calc(100dvh - 28px - var(--safe-top) - var(--safe-bottom)) !important;
+    border-radius: 12px !important;
+  }
+
+  #taskClarificationOverlay .taskClarificationPrimitiveHeader{
+    padding: 9px 20px 10px !important;
+  }
+
+  #taskClarificationOverlay .taskClarificationPrimitiveBody{
+    padding: 22px 20px !important;
+  }
+
+  #taskClarificationOverlay .taskClarificationPrimitiveFooter{
+    min-height: 0 !important;
+    gap: 10px !important;
+    padding: 16px 20px 18px !important;
+  }
+}
+
+#taskClarificationOverlay .taskClarificationOriginal,
+#taskClarificationOverlay .taskClarificationSuggestions section{
+  border: 1px solid var(--modal-border);
+  background: rgba(26, 27, 32, .42);
+  padding: 10px;
+}
+
+#taskClarificationOverlay .taskClarificationOriginal{
+  margin: 14px 0 10px;
+}
+
+#taskClarificationOverlay .taskClarificationOriginal h3,
+#taskClarificationOverlay .taskClarificationSuggestions h3{
+  margin: 0 0 5px;
+  color: #fff;
+  font-size: 12px;
+}
+
+#taskClarificationOverlay .taskClarificationOriginal p,
+#taskClarificationOverlay .taskClarificationSuggestions p,
+#taskClarificationOverlay .taskClarificationSuggestions li{
+  margin: 0;
+  color: #d5d8dd;
+  font-family: var(--font-readable);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+#taskClarificationOverlay .taskClarificationSuggestions{
+  display: grid;
+  gap: 8px;
+  max-height: min(48vh, 420px);
+  overflow-y: auto;
+  padding-right: 3px;
+}
+
+#taskClarificationOverlay .taskClarificationSuggestions ul{
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+#taskClarificationOverlay .taskClarificationSuggestions li + li{
+  margin-top: 4px;
+}
+
+#taskClarificationOverlay .taskClarificationStatus{
+  margin: 12px 0;
+  color: #a8a7a7;
+  font-family: var(--font-readable);
+  font-size: 13px;
+}
+
+#taskClarificationOverlay .taskClarificationStatusError{
+  color: #ffb7b7;
+}
+
+#taskClarificationOverlay .taskClarificationEditableField label{
+  display: block;
+  margin-bottom: 4px;
+  color: #fff;
+  font-size: 12px;
+}
+
+#taskClarificationOverlay .taskClarificationEditableRow{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#taskClarificationOverlay .taskClarificationEditableRow input[type="text"]{
+  min-width: 0;
+  flex: 1;
+}
+
+#taskClarificationOverlay .taskClarificationFieldChoice{
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  margin: 0 !important;
+  white-space: nowrap;
+}
+
+#taskClarificationOverlay .taskClarificationFieldChoice input[type="checkbox"]{
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+#taskClarificationOverlay .taskClarificationSubtaskChoice{
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: #d5d8dd;
+}
+
+#taskClarificationOverlay .taskClarificationSubtaskChoice input[type="checkbox"]{
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+#taskClarificationOverlay .taskClarificationSubtaskChoice input[type="text"]{
+  min-width: 0;
+}
+
+#taskClarificationOverlay .taskClarificationSubtaskChoice span{
+  color: #a8a7a7;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+#taskClarificationOverlay .taskClarificationCreatedTasks{
+  margin-top: 12px;
+}
+
+#taskClarificationOverlay .taskClarificationCreatedTasks h3{
+  margin: 0 0 6px;
+  color: #fff;
+  font-size: 12px;
+}
+
+#taskClarificationOverlay .taskClarificationCreatedTasks ul{
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#taskClarificationOverlay .taskClarificationCreatedTasks li{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+#taskClarificationOverlay .taskClarificationUndoButton{
+  align-self: center;
+  margin-top: 8px;
+}
+
 #confirmOverlay .modal{
   background: var(--modal-bg) !important;
   border: 1px solid var(--modal-border) !important;
@@ -14258,7 +14518,9 @@ body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntry
   position: relative !important;
   margin: -14px -14px 0 !important;
   padding: 12px 12px 22px !important;
+  border-radius: 16px 16px 0 0 !important;
   background: #252422 !important;
+  overflow: visible !important;
 }
 
 #nativePlusUpsellOverlay .nativePlusUpsellOfferViewport{

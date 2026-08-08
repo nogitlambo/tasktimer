@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type Stripe from "stripe";
 import { getAppBaseUrl, getStripeServer } from "@/lib/stripeServer";
 import { createStripeApiErrorResponse, isStripeApiError } from "@/lib/stripeApiErrors";
 import { loadStripeCustomerIdForUser } from "@/lib/subscriptionStore";
@@ -26,6 +27,16 @@ function resolveSafeReturnPath(value: unknown, fallbackPath: string) {
   const pathOnly = normalized.split("#")[0]?.split("?")[0] || fallbackPath;
   const allowedPaths = new Set(["/account", "/settings", "/dashboard", "/tasklaunch", "/login"]);
   return allowedPaths.has(pathOnly.replace(/\/+$/, "") || "/") ? normalized : fallbackPath;
+}
+
+function isMissingStripeCustomerError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const stripeError = error as { type?: unknown; code?: unknown; param?: unknown };
+  return (
+    stripeError.type === "StripeInvalidRequestError" &&
+    stripeError.code === "resource_missing" &&
+    stripeError.param === "customer"
+  );
 }
 
 function encodeQueryValue(value: string) {
@@ -97,7 +108,7 @@ export async function POST(req: Request) {
     const successReturnPath = resolveSafeReturnPath(body.successReturnPath, returnTarget === "native" ? "/account" : "/dashboard");
     const cancelReturnPath = resolveSafeReturnPath(body.cancelReturnPath, returnTarget === "native" ? successReturnPath : "/login");
 
-    const session = await stripe.checkout.sessions.create({
+    const checkoutSessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: offer === "plus_lifetime" ? "payment" : "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: buildReturnUrl(successReturnPath, returnTarget, appBaseUrl, {
@@ -119,7 +130,23 @@ export async function POST(req: Request) {
           }
         : {}),
       metadata: { uid, offer },
-    });
+    };
+
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(checkoutSessionParams);
+    } catch (error) {
+      if (!existingCustomerId || !isMissingStripeCustomerError(error)) throw error;
+      console.warn("[api/stripe/create-checkout-session] Stored Stripe customer was missing; retrying checkout without customer", {
+        uid,
+        offer,
+      });
+      session = await stripe.checkout.sessions.create({
+        ...checkoutSessionParams,
+        customer: undefined,
+        customer_email: email || undefined,
+      });
+    }
 
     return withAuthenticatedApiCors(req, NextResponse.json({ url: session.url }));
   } catch (error) {

@@ -1,6 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { extractClientIp } from "./rateLimit";
+const mocks = vi.hoisted(() => ({ getFirebaseAdminDb: vi.fn() }));
+
+vi.mock("@/lib/firebaseAdmin", () => ({ getFirebaseAdminDb: mocks.getFirebaseAdminDb }));
+
+import { enforceUidRateLimit, extractClientIp } from "./rateLimit";
 
 describe("extractClientIp", () => {
   it("ignores spoofable forwarding headers without trusted proxy secret", () => {
@@ -24,5 +28,35 @@ describe("extractClientIp", () => {
       },
     });
     expect(extractClientIp(req)).toBe("1.2.3.4");
+  });
+});
+
+describe("enforceUidRateLimit", () => {
+  it("encodes slash-containing namespaces before using them as Firestore document IDs", async () => {
+    const documentIds: string[] = [];
+    const set = vi.fn();
+    mocks.getFirebaseAdminDb.mockReturnValue({
+      collection: () => ({
+        doc: (documentId: string) => {
+          documentIds.push(documentId);
+          return { path: `api_rate_limits/${documentId}` };
+        },
+      }),
+      runTransaction: async (callback: (transaction: { get: () => Promise<{ get: () => undefined }>; set: typeof set }) => Promise<void>) =>
+        callback({ get: async () => ({ get: () => undefined }), set }),
+    });
+
+    await enforceUidRateLimit({
+      namespace: "next-best-action/explanation",
+      uid: "uid-1",
+      windowMs: 60_000,
+      maxEvents: 10,
+      code: "rate-limited",
+      message: "Slow down.",
+    });
+
+    expect(documentIds).toHaveLength(1);
+    expect(documentIds[0]).toContain("next-best-action%2Fexplanation");
+    expect(documentIds[0]).not.toContain("next-best-action/explanation");
   });
 });

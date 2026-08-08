@@ -44,7 +44,7 @@ service cloud.firestore {
     }
 
     function isValidUserPlanValue(value) {
-      return value in ["free", "pro"];
+      return value in ["free", "plus", "plus_lifetime", "pro"];
     }
 
     function userPlanIsClientSafe() {
@@ -1235,6 +1235,33 @@ service cloud.firestore {
       allow read: if isOwner(userId);
       allow create, update: if isActiveOwner(userId) && isHistoryDoc() && request.resource.data.taskId is string;
       allow delete: if isOwner(userId);
+    }
+
+    // Adaptive capacity snapshots and aggregates are server-maintained. Clients may read only their own data.
+    match /users/{userId}/dailyCapacity/{dateId} {
+      allow read: if isOwner(userId);
+      allow create, update, delete: if false;
+    }
+
+    match /users/{userId}/behaviourFeatures/{featureId} {
+      allow read: if isOwner(userId);
+      allow create, update, delete: if false;
+    }
+
+    match /users/{userId}/scheduleRepairs/{repairId} {
+      allow read: if isOwner(userId);
+      allow create, update, delete: if false;
+    }
+
+    // Recovery Mode sessions and eligibility suppression state are server-maintained.
+    match /users/{userId}/recoverySessions/{recoveryId} {
+      allow read: if isOwner(userId);
+      allow create, update, delete: if false;
+    }
+
+    match /users/{userId}/recoveryState/{stateId} {
+      allow read: if isOwner(userId);
+      allow create, update, delete: if false;
     }
 
     match /users/{userId}/deletedTasks/{taskId} {

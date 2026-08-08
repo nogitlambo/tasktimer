@@ -125,6 +125,11 @@ import {
 } from "./client/runtime-coordinator";
 import { createTaskTimerRuntimeFacade } from "./client/runtime-facade";
 import { createTaskTimerRuntimeComposition } from "./client/runtime-composition";
+import { createDashboardNextBestAction } from "./client/dashboard-next-best-action";
+import { createDashboardDailyExecutiveBrief } from "./client/dashboard-daily-executive-brief";
+import { createDashboardDailyCapacity } from "./client/dashboard-daily-capacity";
+import { createDashboardScheduleRepair } from "./client/dashboard-schedule-repair";
+import { createDashboardRecovery } from "./client/dashboard-recovery";
 import { getRichNoteEditorValue, setRichNoteEditorValue } from "./client/rich-session-notes";
 import { normalizeInteractionHapticsIntensity } from "./lib/interactionHapticsIntensity";
 import { Capacitor } from "@capacitor/core";
@@ -282,6 +287,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   let actionConfirmationTimer: number | null = null;
   let openFriendProfileFromLeaderboardListener: EventListener | null = null;
+  let dashboardNextBestActionApi: ReturnType<typeof createDashboardNextBestAction> | null = null;
+  let dashboardDailyExecutiveBriefApi: ReturnType<typeof createDashboardDailyExecutiveBrief> | null = null;
+  let dashboardDailyCapacityApi: ReturnType<typeof createDashboardDailyCapacity> | null = null;
+  let dashboardScheduleRepairApi: ReturnType<typeof createDashboardScheduleRepair> | null = null;
+  let dashboardRecoveryApi: ReturnType<typeof createDashboardRecovery> | null = null;
 
   const destroy = () => {
     delete document.body.dataset.tasktimerNativeRuntime;
@@ -298,6 +308,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       unsubscribeCheckpointAlertMuteSignals = null;
     }
     sessionApi?.destroySessionRuntime();
+    dashboardNextBestActionApi?.destroy();
+    dashboardDailyExecutiveBriefApi?.destroy();
+    dashboardDailyCapacityApi?.destroy();
+    dashboardScheduleRepairApi?.destroy();
+    dashboardRecoveryApi?.destroy();
     finishInitialAuthHydration();
     dashboardBusyApi.destroy();
     destroyTaskTimerRuntime({
@@ -794,6 +809,33 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       jumpToTaskById: (taskId) => runtimeActions.jumpToTaskById(taskId),
     },
   });
+  dashboardNextBestActionApi = createDashboardNextBestAction({
+    documentRef: document,
+    windowRef: window,
+    getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
+  });
+  dashboardDailyExecutiveBriefApi = createDashboardDailyExecutiveBrief({
+    documentRef: document,
+    windowRef: window,
+    getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
+  });
+  dashboardDailyCapacityApi = createDashboardDailyCapacity({
+    documentRef: document,
+    windowRef: window,
+    getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
+  });
+  dashboardScheduleRepairApi = createDashboardScheduleRepair({
+    documentRef: document,
+    windowRef: window,
+    getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
+  });
+  dashboardRecoveryApi = createDashboardRecovery({
+    documentRef: document,
+    windowRef: window,
+    getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
+    getTasks: () => taskCollectionBindings.getTasks(),
+    jumpToTaskById: (taskId) => runtimeActions.jumpToTaskById(taskId),
+  });
   const {
     dashboardBusyApi,
     setDashboardRefreshPending,
@@ -944,8 +986,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       openFocusMode: (index, opts) => sessionApi?.openFocusMode(index, opts),
       closeFocusMode: () => sessionApi?.closeFocusMode(),
       canLogSession: (task) => rewardSessionBridge.canLogSession(task),
-      appendCompletedSessionHistory: (task, completedAtMs, elapsedMs, noteOverride, completionDifficulty) =>
-        rewardSessionBridge.appendCompletedSessionHistory(task, completedAtMs, elapsedMs, noteOverride, completionDifficulty),
+      appendCompletedSessionHistory: (task, completedAtMs, elapsedMs, noteOverride, completionDifficulty) => {
+        const result = rewardSessionBridge.appendCompletedSessionHistory(task, completedAtMs, elapsedMs, noteOverride, completionDifficulty);
+        window.dispatchEvent(new Event("tasklaunch:capacity-source-changed"));
+        return result;
+      },
       resetCheckpointAlertTracking: (taskId) => sessionApi?.resetCheckpointAlertTracking(taskId),
       clearFocusSessionDraft: (taskId) => sessionApi?.clearFocusSessionDraft(taskId),
       syncFocusSessionNotesInput: (taskId) => sessionApi?.syncFocusSessionNotesInput(taskId),
@@ -1834,6 +1879,11 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       closeDashboardHeatSummaryCard: (opts) => closeDashboardHeatSummaryCard(opts),
       registerConfirmOverlayEvents,
     });
+    dashboardNextBestActionApi?.register();
+    dashboardDailyExecutiveBriefApi?.register();
+    dashboardDailyCapacityApi?.register();
+    dashboardScheduleRepairApi?.register();
+    dashboardRecoveryApi?.register();
   }
 
   function hydrateUiStateFromCaches(opts?: { skipDashboardWidgetsRender?: boolean }) {

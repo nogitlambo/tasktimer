@@ -72,6 +72,7 @@ const PENDING_FINALIZED_SESSION_SYNC_KEY = `${STORAGE_KEY}:pendingFinalizedSessi
 const PENDING_LIVE_SESSION_SYNC_KEY = `${STORAGE_KEY}:pendingLiveSessionSync`;
 const PENDING_PREFERENCES_SYNC_KEY = `${STORAGE_KEY}:pendingPreferencesSync`;
 const ACTIVE_UID_KEY = `${STORAGE_KEY}:activeUid`;
+const FULL_COLOR_TASK_CARDS_KEY = `${STORAGE_KEY}:fullColorTaskCardsEnabled`;
 export const HISTORY_SAVE_WORKING_EVENT = "tasktimer:history-save-working";
 export type LeaderboardProfileSyncReason = "task-complete-xp-claim";
 export type SaveCloudPreferencesOptions = {
@@ -615,6 +616,17 @@ function saveShadowPreferences(uid: string, prefs: CachedPreferences): void {
         preferences: normalizePreferenceSnapshot(prefs),
       })
     );
+  } catch {
+    // ignore localStorage failures
+  }
+}
+
+function preserveSignedOutPreferenceFallbacks(prefs: CachedPreferences): void {
+  if (typeof window === "undefined" || !prefs) return;
+  try {
+    if (typeof prefs.fullColorTaskCardsEnabled === "boolean") {
+      window.localStorage.setItem(FULL_COLOR_TASK_CARDS_KEY, prefs.fullColorTaskCardsEnabled ? "true" : "false");
+    }
   } catch {
     // ignore localStorage failures
   }
@@ -1309,6 +1321,7 @@ export async function hydrateTimerStateFromCloud(opts?: { force?: boolean }): Pr
 }
 
 export function clearScopedStorageState(): void {
+  preserveSignedOutPreferenceFallbacks(cachedPreferences);
   hydratedUid = "";
   resetPreferenceSyncQueueState();
   inFlightTaskQueueSync = null;

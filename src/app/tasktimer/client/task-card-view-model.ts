@@ -545,6 +545,9 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
   const destructiveTitle = hasTaskHistory && task.running ? "Stop task to archive" : destructiveLabel;
   const destructiveDisabled = hasTaskHistory && task.running;
   const destructiveIconSrc = hasTaskHistory ? "/icons/icons_default/archive.webp" : "/icons/icons_default/trash.webp";
+  const clarificationActionHtml = task.sharedSourceOwnerUid
+    ? ""
+    : `<button class="taskMenuItem" data-action="clarify" title="Make this easier to start" type="button">${renderTaskBackActionTile("Make easier to start", escapeHtml)}</button>`;
   return {
     className,
     html: `
@@ -580,6 +583,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
               </div>
               <div class="taskBackActions">
                 <button class="taskMenuItem" data-action="edit" title="Edit" type="button">${renderTaskBackActionTile("Edit", escapeHtml, "/icons/icons_default/settings.webp")}</button>
+                ${clarificationActionHtml}
                 <button class="taskMenuItem" data-action="manualEntry" title="${manualEntryTitle}" type="button" ${canUseAdvancedHistory ? "" : 'data-plan-locked="advancedHistory"'}>${renderTaskBackActionTile(manualEntryLabel, escapeHtml, "/icons/icons_default/notes.webp")}</button>
                 <button class="taskMenuItem" data-action="${shareAction}" title="${shareTitle}" type="button" ${shareDisabled ? "disabled" : ""} ${canUseSocialFeatures ? "" : 'data-plan-locked="socialFeatures"'}>${renderTaskBackActionTile(shareLabel, escapeHtml, "/icons/icons_default/share.webp")}</button>
                 <button class="taskMenuItem" data-action="reset" title="${resetLabel}" aria-label="${resetLabel}" type="button" ${task.running || !hasResettableTime ? "disabled" : ""}>${renderTaskBackActionTile("Reset", escapeHtml, "/icons/icons_default/history.webp")}</button>

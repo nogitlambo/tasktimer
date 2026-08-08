@@ -32,6 +32,12 @@ function functionBlock(rules: string, functionName: string) {
 }
 
 describe("firestore user root rules", () => {
+  it("allows every mirrored TaskTimer plan value", () => {
+    const block = functionBlock(readRules(), "isValidUserPlanValue");
+
+    expect(block).toContain('["free", "plus", "plus_lifetime", "pro"]');
+  });
+
   it("allows completed task count as an optional integer mirror", () => {
     const block = functionBlock(readRules(), "isUserDoc");
 
@@ -188,5 +194,19 @@ describe("firestore device rules", () => {
     expect(block).toContain('optionalNullableStringMax("lastPushErrorMessage", 240)');
     expect(block).toContain('request.resource.data.lastPushErrorAtMs == null || request.resource.data.lastPushErrorAtMs is int');
     expect(block).toContain('optionalNullableStringMax("lastPushErrorTokenHash", 40)');
+  });
+});
+
+describe("firestore adaptive capacity rules", () => {
+  it("keeps capacity snapshots and aggregates owner-readable and server-maintained", () => {
+    const rules = readRules();
+
+    expect(rules).toContain("match /users/{userId}/dailyCapacity/{dateId}");
+    expect(rules).toContain("match /users/{userId}/behaviourFeatures/{featureId}");
+    expect(rules).toContain("match /users/{userId}/scheduleRepairs/{repairId}");
+    expect(rules).toContain("match /users/{userId}/recoverySessions/{recoveryId}");
+    expect(rules).toContain("match /users/{userId}/recoveryState/{stateId}");
+    expect(rules).toContain("allow read: if isOwner(userId);");
+    expect(rules).toContain("allow create, update, delete: if false;");
   });
 });

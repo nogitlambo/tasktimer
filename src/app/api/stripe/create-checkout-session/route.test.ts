@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const checkoutSessionsCreate = vi.fn();
+const loadStripeCustomerIdForUser = vi.fn(async () => "");
+const isStripeApiError = vi.fn<(error: unknown) => boolean>(() => false);
+const createStripeApiErrorResponse = vi.fn<(error: unknown, fallbackMessage: string, logLabel: string) => Response>();
 
 vi.mock("@/lib/stripeServer", () => ({
   getAppBaseUrl: () => "https://tasklaunch.app",
@@ -14,7 +17,7 @@ vi.mock("@/lib/stripeServer", () => ({
 }));
 
 vi.mock("@/lib/subscriptionStore", () => ({
-  loadStripeCustomerIdForUser: vi.fn(async () => ""),
+  loadStripeCustomerIdForUser: () => loadStripeCustomerIdForUser(),
 }));
 
 vi.mock("../../shared/auth", () => ({
@@ -29,8 +32,9 @@ vi.mock("../../shared/rateLimit", () => ({
 }));
 
 vi.mock("@/lib/stripeApiErrors", () => ({
-  createStripeApiErrorResponse: vi.fn(),
-  isStripeApiError: vi.fn(() => false),
+  createStripeApiErrorResponse: (error: unknown, fallbackMessage: string, logLabel: string) =>
+    createStripeApiErrorResponse(error, fallbackMessage, logLabel),
+  isStripeApiError: (error: unknown) => isStripeApiError(error),
 }));
 
 import { OPTIONS, POST } from "./route";
@@ -47,6 +51,9 @@ describe("POST /api/stripe/create-checkout-session", () => {
     vi.clearAllMocks();
     process.env.STRIPE_PRICE_ID_PRO_MONTHLY = "price_live_no_trial";
     process.env.STRIPE_PRICE_ID_PLUS_LIFETIME = "price_live_plus_lifetime";
+    loadStripeCustomerIdForUser.mockResolvedValue("");
+    isStripeApiError.mockReturnValue(false);
+    createStripeApiErrorResponse.mockReturnValue(new Response("stripe error", { status: 500 }));
     checkoutSessionsCreate.mockResolvedValue({ url: "https://checkout.stripe.com/session" });
   });
 
@@ -141,5 +148,56 @@ describe("POST /api/stripe/create-checkout-session", () => {
 
     expect(response.headers.get("access-control-allow-origin")).toBe("capacitor://localhost");
     expect(response.headers.get("vary")).toBe("Origin");
+  });
+
+  it("retries checkout without a stored customer when Stripe says that customer is missing", async () => {
+    loadStripeCustomerIdForUser.mockResolvedValue("cus_stale");
+    checkoutSessionsCreate
+      .mockRejectedValueOnce({
+        type: "StripeInvalidRequestError",
+        code: "resource_missing",
+        param: "customer",
+      })
+      .mockResolvedValueOnce({ url: "https://checkout.stripe.com/session" });
+
+    const response = await POST(checkoutRequest());
+
+    expect(response.status).toBe(200);
+    expect(checkoutSessionsCreate).toHaveBeenCalledTimes(2);
+    expect(checkoutSessionsCreate).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        customer: "cus_stale",
+        customer_email: undefined,
+      })
+    );
+    expect(checkoutSessionsCreate).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        customer: undefined,
+        customer_email: "user@example.com",
+      })
+    );
+  });
+
+  it("does not retry when Stripe says the configured price is missing", async () => {
+    isStripeApiError.mockReturnValue(true);
+    checkoutSessionsCreate.mockRejectedValueOnce({
+      type: "StripeInvalidRequestError",
+      code: "resource_missing",
+      param: "line_items[0][price]",
+    });
+
+    const response = await POST(checkoutRequest());
+
+    expect(checkoutSessionsCreate).toHaveBeenCalledTimes(1);
+    expect(createStripeApiErrorResponse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        param: "line_items[0][price]",
+      }),
+      "Could not create checkout session.",
+      "[api/stripe/create-checkout-session] Stripe request failed"
+    );
+    expect(response.status).toBe(500);
   });
 });

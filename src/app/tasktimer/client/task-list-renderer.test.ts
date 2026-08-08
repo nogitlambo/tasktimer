@@ -187,15 +187,15 @@ describe("task list renderer", () => {
     expect(buildDisplayedTasks(tasks, "dateAddedDesc").map((entry) => entry.id)).toEqual(["late", "early", "first"]);
   });
 
-  it("renders the empty task state with Add Task and Brain Dump entries when no tasks exist", () => {
+  it("renders the empty task state with Add Task only when no tasks exist", () => {
     const harness = createHarness({ tasks: [], appPage: "dashboard" });
 
     harness.renderer.renderTasksPage();
 
     expect(harness.taskListEl.innerHTML).toContain("taskListEmptyState");
     expect(harness.taskListEl.innerHTML).toContain('data-action="openAddTask"');
-    expect(harness.taskListEl.innerHTML).toContain('href="/brain-dump"');
-    expect(harness.taskListEl.innerHTML).toContain('data-brain-dump-entry="empty-task-state"');
+    expect(harness.taskListEl.innerHTML).not.toContain('href="/brain-dump"');
+    expect(harness.taskListEl.innerHTML).not.toContain('data-brain-dump-entry="empty-task-state"');
     expect(harness.calls).toEqual(["tile-count:1", "sync-flips:", "dashboard", "sync-goal", "restore-goal-flow"]);
   });
 

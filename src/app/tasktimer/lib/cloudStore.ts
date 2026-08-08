@@ -580,6 +580,16 @@ function getUnsupportedUserRootKeys(data: Record<string, unknown> | null): strin
   return Object.keys(data).filter((key) => !USER_ROOT_ALLOWED_KEYS.has(key));
 }
 
+function getInvalidClientOwnedUserRootKeys(data: Record<string, unknown> | null): string[] {
+  if (!data) return [];
+  const sanitized = sanitizeUserRootFieldsForClientWrite(data);
+  return Object.keys(data).filter((key) => {
+    if (!USER_ROOT_ALLOWED_KEYS.has(key)) return false;
+    if (key === "plan" || key === "planUpdatedAt") return false;
+    return !(key in sanitized);
+  });
+}
+
 function buildUnsupportedUserRootFieldDeletes(keys: string[]): Record<string, unknown> {
   const deletes: Record<string, unknown> = {};
   keys.forEach((key) => {
@@ -765,6 +775,8 @@ async function writeUserRootDocument(uid: string, options?: UserRootWriteOptions
   const prevEmail = normalizeEmail(existingData?.email);
   const existingCreatedAt = existingData?.createdAt;
   const unsupportedKeys = getUnsupportedUserRootKeys(existingData);
+  const invalidClientOwnedKeys = getInvalidClientOwnedUserRootKeys(existingData);
+  const rootCleanupKeys = [...unsupportedKeys, ...invalidClientOwnedKeys];
   const sanitizedPatch = normalizeUserRootPatchForClientWrite(options?.patch);
   const nextEmail =
     typeof sanitizedPatch.email === "string"
@@ -794,16 +806,17 @@ async function writeUserRootDocument(uid: string, options?: UserRootWriteOptions
   };
 
   try {
-    if (unsupportedKeys.length && process.env.NODE_ENV !== "production") {
+    if (rootCleanupKeys.length && process.env.NODE_ENV !== "production") {
       console.warn("[tasktimer-cloud] Sanitizing legacy user root fields before write", {
         uid,
         unsupportedKeys,
+        invalidClientOwnedKeys,
       });
     }
-    if (unsupportedKeys.length && canRewriteUserRootWithoutMerge(existingData)) {
+    if (rootCleanupKeys.length && canRewriteUserRootWithoutMerge(existingData)) {
       await setDoc(root, payload);
     } else {
-      await setDoc(root, { ...payload, ...buildUnsupportedUserRootFieldDeletes(unsupportedKeys) }, { merge: true });
+      await setDoc(root, { ...payload, ...buildUnsupportedUserRootFieldDeletes(rootCleanupKeys) }, { merge: true });
     }
     if (shouldSyncIdentity && !options?.skipIdentitySync) {
       await syncUserIdentityIndex(uid, {

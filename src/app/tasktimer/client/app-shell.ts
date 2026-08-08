@@ -456,6 +456,9 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       if (nextPage === "dashboard") ctx.els.commandCenterDashboardBtn.setAttribute("aria-current", "page");
       else ctx.els.commandCenterDashboardBtn.removeAttribute("aria-current");
     }
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("tasklaunch:app-page-changed", { detail: { page: nextPage, previousPage } }));
+    }
     if (ctx.els.signedInHeaderBadge) {
       ctx.els.signedInHeaderBadge.style.display = "inline-flex";
     }

@@ -20,7 +20,6 @@ import AppImg from "@/components/AppImg";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { trackEvent, trackScreen } from "@/lib/firebaseTelemetry";
-import { resolveTaskTimerRouteHref } from "./lib/routeHref";
 import AddTaskOverlay from "./components/AddTaskOverlay";
 import EditTaskOverlay from "./components/EditTaskOverlay";
 import ElapsedPadOverlay from "./components/ElapsedPadOverlay";
@@ -39,6 +38,7 @@ import RankPromotionOverlay from "./components/RankPromotionOverlay";
 import RankThumbnail from "./components/RankThumbnail";
 import SchedulePageContent from "./components/SchedulePageContent";
 import TaskManualEntryOverlay from "./components/TaskManualEntryOverlay";
+import TaskClarificationOverlay from "./components/TaskClarificationOverlay";
 import TaskLaunchOnboarding from "./components/TaskLaunchOnboarding";
 import TaskTimerAppFrame, { type DesktopInsigniaUpgradePayload } from "./components/TaskTimerAppFrame";
 import {
@@ -259,11 +259,6 @@ function formatLeaderboardMemberSince(memberSinceMs: number | null | undefined):
 
 function getLeaderboardLabel(profile: LeaderboardProfile): string {
   return String(profile.username || profile.displayLabel || "User").trim() || "User";
-}
-
-function getLeaderboardUsernameLabel(profile: LeaderboardProfile): string {
-  const rawLabel = String(profile.username || profile.displayLabel || "username").trim() || "username";
-  return rawLabel.startsWith("@") ? rawLabel : `@${rawLabel}`;
 }
 
 function labelFromUser(user: User | null) {
@@ -923,7 +918,6 @@ function closeDailyRewardOverlay(documentRef: Document): void {
 }
 
 export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainAppClientProps) {
-  const brainDumpHref = resolveTaskTimerRouteHref("/brain-dump");
   const searchParams = useSearchParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [dailyRewardOnboardingGate, setDailyRewardOnboardingGate] = useState<DailyRewardOnboardingGateState>({
@@ -2421,30 +2415,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           setActiveRankPromotion(promotion);
         }}
         xpAwardFx={xpAwardFx}
-        mobileToolbar={
-          <div className="taskLaunchMobileToolbarInner taskLaunchMobileBrainDumpQuickActions">
-            <a
-              className="taskLaunchMobileBrainDumpQuickAction"
-              href={brainDumpHref}
-              aria-label="Brain Dump"
-              title="Brain Dump"
-              data-brain-dump-entry="mobile-quick-action"
-            >
-              Brain Dump
-            </a>
-          </div>
-        }
       >
         <div className="appPages">
-          <a
-            className="taskLaunchBrainDumpFloatingAction"
-            href={brainDumpHref}
-            aria-label="Brain Dump"
-            title="Brain Dump"
-            data-brain-dump-entry="floating-action"
-          >
-            Brain Dump
-          </a>
           <section className={`appPage appPageTasks${initialPage === "tasks" || initialPage === "schedule" ? " appPageOn" : ""}`} id="appPageTasks" aria-label="Tasks page">
             <div className="tasksTopRow">
               <div className="taskPageHeaderActions">
@@ -2482,15 +2454,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 >
                   <span className="taskScreenHeaderBtnText pageHeaderAccentBtnLabel">Add Task</span>
                 </button>
-                <a
-                  className="btn btn-ghost small taskLaunchSurfaceBrainDumpEntry taskPageBrainDumpEntry"
-                  href={brainDumpHref}
-                  aria-label="Brain Dump"
-                  title="Brain Dump"
-                  data-brain-dump-entry="tasks-header"
-                >
-                  <span className="taskScreenHeaderBtnText">Brain Dump</span>
-                </a>
                 <div className="tasksModeControlGroup" aria-label="Task ordering controls">
                   <details className="tasksModeMenu" id="taskOrderByMenu">
                     <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn" title="Order tasks">
@@ -2816,6 +2779,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       ) : null}
 
       <TaskManualEntryOverlay />
+      <TaskClarificationOverlay />
       <InfoOverlays />
       <ElapsedPadOverlay />
       <ExportTaskOverlay />

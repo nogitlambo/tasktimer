@@ -5979,8 +5979,6 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 @media (min-width: 981px){
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill,
   #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill,
-  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill-free,
-  #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill-free,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill-pro,
   #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill-pro,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill-plus,
@@ -5991,6 +5989,22 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
     background: transparent;
     color: #c9ff24;
     font-weight: 800;
+  }
+
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill-free,
+  #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill-free{
+    min-width: 48px;
+    padding: 4px 9px;
+    border: 1px solid rgba(214,219,225,.36) !important;
+    background: transparent !important;
+    color: rgba(214,219,225,.9) !important;
+    font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 1;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: .08em;
   }
 }
 

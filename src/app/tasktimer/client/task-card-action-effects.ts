@@ -16,6 +16,7 @@ type TaskCardActionEffectsOptions = {
   archiveTask: (index: number) => void;
   deleteTask: (index: number) => void;
   openEdit: (index: number, sourceEl?: HTMLElement | null) => void;
+  openTaskClarification: (index: number) => void;
   openHistory: (index: number) => void;
   getPinnedHistoryTaskIds: () => Set<string>;
   openFocusMode: (index: number, opts?: FocusModeTransitionOptions) => void;
@@ -110,6 +111,7 @@ export function createTaskCardActionEffects(options: TaskCardActionEffectsOption
         archive: () => options.archiveTask(taskIndex),
         delete: () => options.deleteTask(taskIndex),
         edit: () => options.openEdit(taskIndex, sourceElement || null),
+        clarify: () => options.openTaskClarification(taskIndex),
         history: () => handleHistoryAction(taskIndex, taskId, sourceElement),
         editName: () => options.openFocusMode(taskIndex, { sourceElement: sourceElement?.closest?.(".task") as HTMLElement | null }),
         focus: () => options.openFocusMode(taskIndex, { sourceElement: sourceElement?.closest?.(".task") as HTMLElement | null }),

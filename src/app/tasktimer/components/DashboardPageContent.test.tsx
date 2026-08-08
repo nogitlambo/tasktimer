@@ -13,13 +13,24 @@ function formatSvgNumber(value: number) {
 }
 
 describe("DashboardPageContent momentum dial markers", () => {
-  it("renders a Dashboard Brain Dump entry that routes to the shared typed flow", () => {
+  it("does not render a duplicate Dashboard Brain Dump entry", () => {
     const html = renderDashboardMarkup();
 
-    expect(html).toContain('href="/brain-dump"');
-    expect(html).toContain('aria-label="Brain Dump"');
-    expect(html).toContain('data-brain-dump-entry="dashboard"');
-    expect(html).toContain(">Brain Dump<");
+    expect(html).not.toContain('href="/brain-dump"');
+    expect(html).not.toContain('aria-label="Brain Dump"');
+    expect(html).not.toContain('data-brain-dump-entry="dashboard"');
+    expect(html).not.toContain(">Brain Dump<");
+  });
+
+  it("renders the manual Recovery Mode entry and compact review stages", () => {
+    const html = renderDashboardMarkup();
+
+    expect(html).toContain('id="dashboardRecoveryCard"');
+    expect(html).toContain('data-recovery="open"');
+    expect(html).toContain('id="dashboardRecoveryOverlay"');
+    expect(html).toContain("What matters now");
+    expect(html).toContain("What can wait");
+    expect(html).toContain("Finish recovery");
   });
 
   it("renders multiplier threshold markers at 40, 70, and 90", () => {

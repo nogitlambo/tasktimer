@@ -3,6 +3,11 @@ import { nowMs } from "../lib/time";
 import type { TaskTimerTasksContext } from "./context";
 import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
 import { createTaskCardActionEffects } from "./task-card-action-effects";
+import {
+  dispatchTaskClarificationOpenEvent,
+  TASKTIMER_START_TASK_BY_ID_EVENT,
+  type TaskClarificationStartTaskDetail,
+} from "./task-clarification-events";
 import { createTaskDestructiveActionEffects } from "./task-destructive-action-effects";
 import { createTaskListRenderer } from "./task-list-renderer";
 import { createTaskManualEntryInteraction } from "./task-manual-entry-interaction";
@@ -295,6 +300,16 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     archiveTask,
     deleteTask: ctx.deleteTask,
     openEdit: ctx.openEdit,
+    openTaskClarification: (index) => {
+      const task = ctx.getTasks()[index];
+      if (!task || task.sharedSourceOwnerUid) return;
+      dispatchTaskClarificationOpenEvent({
+        taskId: String(task.id || ""),
+        title: String(task.name || ""),
+        taskType: task.taskType,
+        dueDate: task.onceOffTargetDate,
+      });
+    },
     openHistory,
     getPinnedHistoryTaskIds: ctx.getPinnedHistoryTaskIds,
     openFocusMode: ctx.openFocusMode,
@@ -493,6 +508,13 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   }
 
   function registerTaskEvents() {
+    ctx.on(window, TASKTIMER_START_TASK_BY_ID_EVENT, (event: Event) => {
+      const taskId = String((event as CustomEvent<TaskClarificationStartTaskDetail>).detail?.taskId || "").trim();
+      if (!taskId) return;
+      const taskIndex = ctx.getTasks().findIndex((task) => String(task.id || "") === taskId);
+      if (taskIndex < 0) return;
+      taskCardActionEffects.handleAction({ action: "start", taskIndex, taskId });
+    });
     ctx.on(els.taskList, "pointerdown", handleTaskPrimaryActionPressStart);
     ctx.on(els.taskList, "pointerup", handleTaskPrimaryActionPressEnd);
     ctx.on(els.taskList, "pointercancel", handleTaskPrimaryActionPressEnd);

@@ -52,6 +52,9 @@ describe("NativePlusUpsellModal", () => {
     expect(css).toContain("#nativePlusUpsellOverlay .nativePlusUpsellHeader{");
     expect(css).toContain("#nativePlusUpsellOverlay .nativePlusUpsellTitleAccent{");
     expect(css).toContain("#nativePlusUpsellOverlay .nativePlusUpsellTopSection{");
+    const topSectionRule = css.match(/#nativePlusUpsellOverlay \.nativePlusUpsellTopSection\{[\s\S]*?\n\}/)?.[0] || "";
+    expect(topSectionRule).toContain("border-radius: 16px 16px 0 0 !important;");
+    expect(topSectionRule).toContain("overflow: visible !important;");
     expect(css).toContain("#nativePlusUpsellOverlay .nativePlusUpsellOfferViewport{");
     expect(css).toContain("#nativePlusUpsellOverlay .nativePlusUpsellOfferTrack{");
     expect(css).toContain("#nativePlusUpsellOverlay .nativePlusUpsellOfferCard{");

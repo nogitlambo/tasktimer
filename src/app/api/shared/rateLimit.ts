@@ -29,7 +29,8 @@ function hashActorKey(actorType: RateLimitActorType, actorKey: string) {
 }
 
 function rateLimitDocKey(namespace: string, actorType: RateLimitActorType, actorKeyHash: string) {
-  return `${asString(namespace, 80)}__${actorType}__${asString(actorKeyHash, 128)}`;
+  const safeNamespace = encodeURIComponent(asString(namespace, 80));
+  return `${safeNamespace}__${actorType}__${asString(actorKeyHash, 128)}`;
 }
 
 function normalizeEventTimes(value: unknown, nowMs: number, windowMs: number) {

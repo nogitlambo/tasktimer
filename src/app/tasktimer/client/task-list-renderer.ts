@@ -1,7 +1,6 @@
 import type { HistoryByTaskId, Task } from "../lib/types";
 import { getTaskScheduledDayEntries } from "../lib/schedule-placement";
 import type { DashboardWeekStart } from "../lib/historyChart";
-import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import { hasRecordedTaskGoalCompletion, isTaskTimeGoalStartLockedForPeriod } from "../lib/timeGoalCompletion";
 import { renderTaskCardHtml } from "./task-card-view-model";
 import { applyXpAwardButtonLabelOverride, getXpAwardButtonLabelOverride } from "./xp-award-button-label-override";
@@ -124,14 +123,12 @@ export function buildDisplayedTasks(tasks: Task[], taskOrderBy: "custom" | "alph
 }
 
 function renderEmptyTaskStateHtml() {
-  const brainDumpHref = resolveTaskTimerRouteHref("/brain-dump");
   return `
     <div class="taskListEmptyState" role="status" aria-live="polite">
       <div class="taskListEmptyContent">
         <p class="taskListEmptyMessage">No tasks yet</p>
         <div class="taskListEmptyActions">
           <button class="btn btn-accent small taskListEmptyAddBtn" type="button" data-action="openAddTask">Add Task</button>
-          <a class="btn btn-ghost small taskLaunchSurfaceBrainDumpEntry taskListEmptyBrainDumpBtn" href="${brainDumpHref}" aria-label="Brain Dump" title="Brain Dump" data-brain-dump-entry="empty-task-state">Brain Dump</a>
         </div>
       </div>
     </div>

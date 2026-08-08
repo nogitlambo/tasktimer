@@ -371,4 +371,45 @@ describe("saveUserRootPatch plan-safe writes", () => {
     expect(rootWrite).not.toHaveProperty("plan");
     expect(rootWrite).not.toHaveProperty("planUpdatedAt");
   });
+
+  it("deletes invalid client-owned root fields during merge saves", async () => {
+    firestoreMocks.getDoc.mockImplementation(async (ref?: { path?: string }) => ({
+      exists: () => ref?.path === "users/user-1",
+      data: () => {
+        if (ref?.path !== "users/user-1") return undefined;
+        const data: Record<string, unknown> = {
+          avatarId: null,
+          plan: "plus",
+          planUpdatedAt: { toMillis: () => 123 },
+          schemaVersion: 1,
+        };
+        return data;
+      },
+      get: (key?: string) => {
+        if (ref?.path !== "users/user-1" || !key) return undefined;
+        const data: Record<string, unknown> = {
+          avatarId: null,
+          plan: "plus",
+          planUpdatedAt: { toMillis: () => 123 },
+          schemaVersion: 1,
+        };
+        return data[key];
+      },
+    }));
+
+    await saveUserRootPatch("user-1", { rankThumbnailSrc: "rank.png" });
+
+    expect(firestoreMocks.setDoc).toHaveBeenCalledWith(
+      { path: "users/user-1" },
+      expect.objectContaining({
+        avatarId: { __deleteField: true },
+        rankThumbnailSrc: "rank.png",
+        schemaVersion: 1,
+      }),
+      { merge: true }
+    );
+    const rootWrite = findSetDocWrite("users/user-1");
+    expect(rootWrite).not.toHaveProperty("plan");
+    expect(rootWrite).not.toHaveProperty("planUpdatedAt");
+  });
 });

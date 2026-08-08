@@ -181,6 +181,19 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     vi.clearAllMocks();
   });
 
+  it("preserves full color task cards as a signed-out fallback when clearing scoped state", () => {
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      fullColorTaskCardsEnabled: true,
+      updatedAtMs: Date.now(),
+    });
+
+    clearScopedStorageState();
+
+    expect(localStorage.getItem("taskticker_tasks_v1:fullColorTaskCardsEnabled")).toBe("true");
+    expect(loadCachedPreferences()).toBeNull();
+  });
+
   it("preserves earned XP when a deleted task's history is gone during hydration", async () => {
     const currentRewards = rebuildRewardProgressFromHistory({
       historyByTaskId: {

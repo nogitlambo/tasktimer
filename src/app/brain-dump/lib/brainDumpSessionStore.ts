@@ -7,6 +7,16 @@ function asString(value: unknown, maxLength = 0) {
   return maxLength > 0 ? normalized.slice(0, maxLength) : normalized;
 }
 
+function stripUndefinedValues<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(stripUndefinedValues) as T;
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([, entryValue]) => typeof entryValue !== "undefined")
+      .map(([key, entryValue]) => [key, stripUndefinedValues(entryValue)])
+  ) as T;
+}
+
 export function createFirestoreBrainDumpSessionStore(): BrainDumpSessionStore {
   const db = getFirebaseAdminDb();
 
@@ -17,11 +27,11 @@ export function createFirestoreBrainDumpSessionStore(): BrainDumpSessionStore {
   return {
     async saveSession(session: BrainDumpReviewSession) {
       await sessionDoc(session.ownerUid, session.id).set(
-        {
+        stripUndefinedValues({
           ...session,
           schemaVersion: 1,
           ttlExpiresAt: session.state === "review" ? new Date(session.expiresAtMs) : null,
-        },
+        }),
         { merge: false }
       );
     },

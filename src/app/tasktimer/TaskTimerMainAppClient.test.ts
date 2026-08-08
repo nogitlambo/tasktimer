@@ -39,23 +39,21 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain("Add Task");
   });
 
-  it("renders a Tasks header Brain Dump entry without replacing Add Task", () => {
+  it("does not render duplicate Brain Dump entries on the Tasks page", () => {
     const taskHeaderStart = source.indexOf('className="taskPageHeaderActions"');
     const taskHeaderEnd = source.indexOf('className="tasksModeControlGroup"', taskHeaderStart);
     const taskHeaderSource = source.slice(taskHeaderStart, taskHeaderEnd);
 
     expect(taskHeaderSource).toContain('id="openAddTaskBtn"');
-    expect(taskHeaderSource).toContain('href={brainDumpHref}');
-    expect(taskHeaderSource).toContain('aria-label="Brain Dump"');
-    expect(taskHeaderSource).toContain('data-brain-dump-entry="tasks-header"');
+    expect(taskHeaderSource).not.toContain('aria-label="Brain Dump"');
+    expect(taskHeaderSource).not.toContain('data-brain-dump-entry="tasks-header"');
   });
 
-  it("renders floating and mobile quick-action Brain Dump entries to the shared route", () => {
-    expect(source).toContain('className="taskLaunchBrainDumpFloatingAction"');
-    expect(source).toContain('data-brain-dump-entry="floating-action"');
-    expect(source).toContain('className="taskLaunchMobileBrainDumpQuickAction"');
-    expect(source).toContain('data-brain-dump-entry="mobile-quick-action"');
-    expect(source.match(/href={brainDumpHref}/g)).toHaveLength(3);
+  it("does not render floating or mobile quick-action Brain Dump entries", () => {
+    expect(source).not.toContain('className="taskLaunchBrainDumpFloatingAction"');
+    expect(source).not.toContain('data-brain-dump-entry="floating-action"');
+    expect(source).not.toContain('className="taskLaunchMobileBrainDumpQuickAction"');
+    expect(source).not.toContain('data-brain-dump-entry="mobile-quick-action"');
   });
 
   it("tracks Brain Dump entry clicks with source metadata and no content", () => {
