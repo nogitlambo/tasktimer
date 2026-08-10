@@ -1264,6 +1264,37 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // Trusted Automation settings are readable by the owner but only the trusted server may mutate policy.
+    match /users/{userId}/automationSettings/{docId} {
+      allow read: if isActiveOwner(userId) && docId == "settings";
+      allow create, update, delete: if false;
+    }
+
+    // Trusted Automation execution, audit, lock, and queue records are server-maintained.
+    match /users/{userId}/automationExecutions/{executionId} {
+      allow read: if isActiveOwner(userId)
+        && resource.data.state in ["SUCCEEDED", "FAILED", "SKIPPED", "CANCELLED"];
+      allow create, update, delete: if false;
+    }
+
+    match /users/{userId}/automationHistory/{historyId} {
+      allow read: if isActiveOwner(userId);
+      allow create, update, delete: if false;
+    }
+
+    match /users/{userId}/automationLocks/{lockId} {
+      allow read, create, update, delete: if false;
+    }
+
+    match /users/{userId}/automationQueues/{queueItemId} {
+      allow read, create, update, delete: if false;
+    }
+
+    match /users/{userId}/automationDeadLetters/{deadLetterId} {
+      allow read: if isActiveOwner(userId);
+      allow create, update, delete: if false;
+    }
+
     match /users/{userId}/deletedTasks/{taskId} {
       allow read: if isOwner(userId);
       allow create, update: if isActiveOwner(userId) && isDeletedTaskDoc();

@@ -19,6 +19,7 @@ function createClassList(initial: string[] = []) {
 }
 
 function makeElement(initialClasses: string[] = []) {
+  const attributes = new Map<string, string>();
   const el = {
     classList: createClassList(initialClasses),
     disabled: false,
@@ -28,6 +29,8 @@ function makeElement(initialClasses: string[] = []) {
     style: { display: "" },
     textContent: "",
     value: "",
+    setAttribute: vi.fn((name: string, value: string) => attributes.set(name, value)),
+    getAttribute: vi.fn((name: string) => attributes.get(name) ?? null),
   };
   return el as unknown as HTMLElement & HTMLButtonElement & HTMLInputElement;
 }

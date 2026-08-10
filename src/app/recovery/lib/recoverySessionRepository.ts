@@ -53,6 +53,8 @@ export function parseRecoverySessionRecord(value: unknown): RecoverySession | nu
 export type RecoverySessionRepository = {
   loadSession(uid: string, recoveryId: string): Promise<RecoverySession | null>;
   saveSession(uid: string, session: RecoverySession): Promise<void>;
+  /** Expire a session without applying any task mutation. */
+  expireSession?(uid: string, recoveryId: string, nowMs: number): Promise<RecoverySession | null>;
   dismissSession(uid: string, recoveryId: string, nowMs: number): Promise<RecoverySession | null>;
   completeSession(uid: string, recoveryId: string, nowMs: number): Promise<RecoverySession | null>;
 };
@@ -62,7 +64,7 @@ export function createFirestoreRecoverySessionRepository(db: Firestore = getFire
     return db.collection("users").doc(uid).collection("recoverySessions").doc(recoveryId);
   }
 
-  async function updateStatus(repository: RecoverySessionRepository, uid: string, recoveryId: string, status: Extract<RecoverySessionStatus, "DISMISSED" | "COMPLETED">, nowMs: number) {
+  async function updateStatus(repository: RecoverySessionRepository, uid: string, recoveryId: string, status: Extract<RecoverySessionStatus, "DISMISSED" | "COMPLETED" | "EXPIRED">, nowMs: number) {
     const safeUid = asString(uid, 120);
     const safeRecoveryId = asString(recoveryId, 180);
     if (!safeUid || !safeRecoveryId) return null;
@@ -97,6 +99,9 @@ export function createFirestoreRecoverySessionRepository(db: Firestore = getFire
       if (!safeUid || session.userId !== safeUid) throw new Error("Recovery session ownership mismatch.");
       const parsed = RecoverySessionSchema.parse(session);
       await sessionRef(safeUid, parsed.id).set(buildRecoverySessionFirestoreRecord(parsed));
+    },
+    async expireSession(uid, recoveryId, nowMs) {
+      return updateStatus(repository, uid, recoveryId, "EXPIRED", nowMs);
     },
     async dismissSession(uid, recoveryId, nowMs) {
       return updateStatus(repository, uid, recoveryId, "DISMISSED", nowMs);

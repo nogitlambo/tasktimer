@@ -5,6 +5,8 @@ import { trackRecovery } from "@/app/recovery/lib/recoveryTelemetry";
 
 import { getApiUrl } from "../lib/apiClient";
 
+const PLUS_REQUIRED_MESSAGE = "Upgrade to PLUS to use executive function features.";
+
 type RecoveryActionType = "KEEP_ACTIVE" | "DEFER_TO_LATER_DAY" | "REMOVE_FROM_TODAY" | "REVIEW_DEADLINE" | "CLARIFY_TASK" | "MARK_FOR_LATER_REVIEW";
 type RecoveryClassification = "URGENT" | "IMPORTANT" | "FLEXIBLE" | "STALE" | "UNCLEAR";
 
@@ -20,7 +22,7 @@ type RecoveryAction = {
   classification?: RecoveryClassification;
 };
 
-type RecoverySession = {
+export type RecoverySession = {
   id: string;
   status: "ACTIVE" | "PARTIALLY_APPLIED";
   backlogCount: number;
@@ -41,6 +43,8 @@ type Options = {
   windowRef?: Window;
   fetchImpl?: typeof fetch;
   getCurrentAppPage: () => string;
+  canUseExecutiveFunction?: () => boolean;
+  showUpgradePrompt?: (featureName: string, plan?: "plus") => void;
   getTasks: () => Task[];
   jumpToTaskById?: (taskId: string) => void;
   getIdToken?: () => Promise<string | null>;
@@ -127,16 +131,31 @@ export function createDashboardRecovery(options: Options) {
     return { backlogCount: current.backlogCount, overdueCount: current.overdueCount, urgentCount: current.urgentCount, flexibleCount: current.flexibleCount, actionCount: current.actions.length, capacityMax: current.remainingCapacity?.max };
   }
 
-  function setState(state: "idle" | "loading" | "ready" | "empty" | "error", message: string) {
+  function setState(state: "idle" | "loading" | "ready" | "empty" | "error" | "locked", message: string) {
     card?.setAttribute("data-recovery-state", state);
     const status = element(documentRef, "dashboardRecoveryStatus");
     if (status) status.textContent = message;
     const retry = card?.querySelector<HTMLButtonElement>('[data-recovery="refresh"]');
-    if (retry) retry.disabled = state === "loading";
+    if (retry) {
+      retry.disabled = state === "loading";
+      retry.textContent = state === "locked" ? "Upgrade to PLUS" : "Refresh";
+    }
     const retryButton = element(documentRef, "dashboardRecoveryRetry");
-    if (retryButton) retryButton.hidden = state !== "error";
+    if (retryButton) retryButton.hidden = state !== "error" && state !== "locked";
     const summary = element(documentRef, "dashboardRecoverySummary");
     if (summary) summary.hidden = state !== "ready";
+    card?.classList.toggle("isPlanLocked", state === "locked");
+    if (state === "locked") card?.setAttribute("data-plan-locked", "executiveFunction");
+    else card?.removeAttribute("data-plan-locked");
+  }
+
+  function lockIfNeeded() {
+    if (options.canUseExecutiveFunction?.() !== false) return false;
+    session = null;
+    abortController?.abort();
+    setOverlay(false);
+    setState("locked", PLUS_REQUIRED_MESSAGE);
+    return true;
   }
 
   function taskLabel(taskId: string) {
@@ -249,7 +268,8 @@ export function createDashboardRecovery(options: Options) {
   }
 
   async function refresh(forceRefresh = false, userRequested = false) {
-    if (!card || options.getCurrentAppPage() !== "dashboard") return;
+    if (!card || !["dashboard", "executive"].includes(options.getCurrentAppPage())) return;
+    if (lockIfNeeded()) return;
     abortController?.abort();
     abortController = new AbortController();
     setState("loading", "Checking whether Recovery Mode can help...");
@@ -286,6 +306,10 @@ export function createDashboardRecovery(options: Options) {
   }
 
   async function dismiss() {
+    if (lockIfNeeded()) {
+      options.showUpgradePrompt?.("Recovery Mode", "plus");
+      return;
+    }
     if (!session) return;
     try {
       const idToken = await getIdToken();
@@ -304,6 +328,10 @@ export function createDashboardRecovery(options: Options) {
   }
 
   async function apply() {
+    if (lockIfNeeded()) {
+      options.showUpgradePrompt?.("Recovery Mode", "plus");
+      return;
+    }
     if (!session) return;
     const selectedActions = session.actions.filter((action) => action.selected && action.status === "PROPOSED");
     const status = element(documentRef, "dashboardRecoveryModalStatus");
@@ -344,6 +372,10 @@ export function createDashboardRecovery(options: Options) {
   }
 
   async function undo() {
+    if (lockIfNeeded()) {
+      options.showUpgradePrompt?.("Recovery Mode", "plus");
+      return;
+    }
     if (!session) return;
     const button = documentRef.querySelector<HTMLButtonElement>('[data-recovery="undo"]');
     if (button) button.disabled = true;
@@ -370,6 +402,10 @@ export function createDashboardRecovery(options: Options) {
   }
 
   async function complete() {
+    if (lockIfNeeded()) {
+      options.showUpgradePrompt?.("Recovery Mode", "plus");
+      return;
+    }
     if (!session) return;
     try {
       const idToken = await getIdToken();
@@ -393,6 +429,10 @@ export function createDashboardRecovery(options: Options) {
       const target = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-recovery]");
       const actionTarget = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-recovery-action]");
       const action = target?.getAttribute("data-recovery") || actionTarget?.getAttribute("data-recovery-action");
+      if (action && action !== "close" && lockIfNeeded()) {
+        options.showUpgradePrompt?.("Recovery Mode", "plus");
+        return;
+      }
       if (action === "open") {
         if (session) setOverlay(true);
         else void refresh(true, true);
@@ -426,11 +466,11 @@ export function createDashboardRecovery(options: Options) {
       if (action) action.selected = target.checked;
     });
     windowRef.addEventListener("tasklaunch:app-page-changed", (event) => {
-      if ((event as CustomEvent<{ page?: string }>).detail?.page === "dashboard") void refresh();
+      if (["dashboard", "executive"].includes((event as CustomEvent<{ page?: string }>).detail?.page || "")) void refresh();
     });
     keydownHandler = (event) => { if (event.key === "Escape") setOverlay(false); };
     windowRef.addEventListener("keydown", keydownHandler);
-    if (options.getCurrentAppPage() === "dashboard") void refresh();
+    if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh();
   }
 
   function destroy() {

@@ -13,7 +13,8 @@ class FakeElement {
   closest(selector: string) {
     if (!selector.startsWith("#")) return null;
     const targetId = selector.slice(1);
-    let current: FakeElement | null = this;
+    if (this.id === targetId) return this;
+    let current: FakeElement | null = this.parent;
     while (current) {
       if (current.id === targetId) return current;
       current = current.parent;

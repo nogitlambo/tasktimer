@@ -69,6 +69,7 @@ type RenderTaskCardOptions = {
   showHistory: boolean;
   isHistoryPinned: boolean;
   canUseAdvancedHistory: boolean;
+  canUseExecutiveFunction?: boolean;
   canUseSocialFeatures: boolean;
   hasFriends: boolean;
   isSharedByOwner: boolean;
@@ -93,8 +94,9 @@ export type TaskCardActionHandlers = Record<string, () => void>;
 type DispatchTaskCardActionOptions = {
   action: string;
   canUseAdvancedHistory: boolean;
+  canUseExecutiveFunction?: boolean;
   canUseSocialFeatures: boolean;
-  showUpgradePrompt: (featureName: string, plan?: "pro") => void;
+  showUpgradePrompt: (featureName: string, plan?: "plus" | "pro") => void;
   handlers: Partial<TaskCardActionHandlers>;
 };
 
@@ -451,6 +453,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     showHistory,
     isHistoryPinned,
     canUseAdvancedHistory,
+    canUseExecutiveFunction = true,
     canUseSocialFeatures,
     hasFriends,
     isSharedByOwner,
@@ -545,9 +548,11 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
   const destructiveTitle = hasTaskHistory && task.running ? "Stop task to archive" : destructiveLabel;
   const destructiveDisabled = hasTaskHistory && task.running;
   const destructiveIconSrc = hasTaskHistory ? "/icons/icons_default/archive.webp" : "/icons/icons_default/trash.webp";
+  const clarificationLabel = canUseExecutiveFunction ? "Make easier to start" : "Make easier to start (PLUS)";
+  const clarificationTitle = canUseExecutiveFunction ? "Make this easier to start" : "PLUS feature: Make this easier to start";
   const clarificationActionHtml = task.sharedSourceOwnerUid
     ? ""
-    : `<button class="taskMenuItem" data-action="clarify" title="Make this easier to start" type="button">${renderTaskBackActionTile("Make easier to start", escapeHtml)}</button>`;
+    : `<button class="taskMenuItem" data-action="clarify" title="${clarificationTitle}" type="button" ${canUseExecutiveFunction ? "" : 'data-plan-locked="executiveFunction"'}>${renderTaskBackActionTile(clarificationLabel, escapeHtml)}</button>`;
   return {
     className,
     html: `
@@ -600,13 +605,17 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
 }
 
 export function dispatchTaskCardAction(options: DispatchTaskCardActionOptions) {
-  const { action, canUseAdvancedHistory, canUseSocialFeatures, showUpgradePrompt, handlers } = options;
+  const { action, canUseAdvancedHistory, canUseExecutiveFunction, canUseSocialFeatures, showUpgradePrompt, handlers } = options;
   if ((action === "shareTask" || action === "unshareTask") && !canUseSocialFeatures) {
     showUpgradePrompt("Task sharing and friends", "pro");
     return true;
   }
   if (action === "manualEntry" && !canUseAdvancedHistory) {
     showUpgradePrompt("Manual history entry", "pro");
+    return true;
+  }
+  if (action === "clarify" && canUseExecutiveFunction === false) {
+    showUpgradePrompt("Make easier to start", "plus");
     return true;
   }
   const handler = handlers[action];

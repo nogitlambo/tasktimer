@@ -37,6 +37,7 @@ type TaskListRendererOptions = {
   checkpointRepeatActiveTaskId: () => string | null;
   isCheckpointFlashActive: (taskId: string) => boolean;
   canUseAdvancedHistory: () => boolean;
+  canUseExecutiveFunction?: () => boolean;
   canUseSocialFeatures: () => boolean;
   hasFriends: () => boolean;
   isTaskSharedByOwner: (taskId: string) => boolean;
@@ -229,6 +230,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
         showHistory,
         isHistoryPinned,
         canUseAdvancedHistory: options.canUseAdvancedHistory(),
+        canUseExecutiveFunction: options.canUseExecutiveFunction?.() ?? true,
         canUseSocialFeatures: options.canUseSocialFeatures(),
         hasFriends: options.hasFriends(),
         isSharedByOwner: options.isTaskSharedByOwner(taskId),

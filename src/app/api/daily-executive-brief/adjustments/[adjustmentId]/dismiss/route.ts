@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isDeletedAccountUid } from "@/app/api/account/deletedAccountUid";
 import { verifyFirebaseRequestUser } from "@/app/api/shared/auth";
+import { assertPlusPlanForExecutiveFunction } from "@/app/api/shared/plusEntitlement";
 import { authenticatedApiOptions, withAuthenticatedApiCors } from "@/app/api/shared/cors";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { createFirestoreDailyExecutiveBriefRepository } from "@/app/dailyexecutivebrief/lib/dailyExecutiveBriefRepository";
@@ -20,6 +21,7 @@ export async function POST(req: Request, context: { params: Promise<{ adjustment
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const { uid } = await verifyFirebaseRequestUser(req, body);
     const db = getFirebaseAdminDb();
+    await assertPlusPlanForExecutiveFunction(uid, db);
     if (await isDeletedAccountUid(db, uid)) return withAuthenticatedApiCors(req, NextResponse.json({ error: "This account has been deleted.", code: "auth/account-deleted" }, { status: 410 }));
     const date = asString(body.date, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return withAuthenticatedApiCors(req, NextResponse.json({ error: "A valid brief date is required.", code: "brief/invalid-date" }, { status: 400 }));

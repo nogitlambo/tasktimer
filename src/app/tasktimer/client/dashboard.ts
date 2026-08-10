@@ -235,6 +235,15 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function handleDashboardGridClick(e: any) {
+    const executiveSummaryCard = e.target?.closest?.("#dashboardExecutiveSummary") as HTMLElement | null;
+    if (executiveSummaryCard) {
+      const interactiveTarget = e.target?.closest?.("button,a,input,select,textarea,summary,[role='button'],[tabindex]") as HTMLElement | null;
+      if (!interactiveTarget || interactiveTarget === executiveSummaryCard) {
+        ctx.applyAppPage("executive", { pushNavStack: true, syncUrl: "push" });
+        e.preventDefault();
+        return;
+      }
+    }
     const activityPageBtn = e.target?.closest?.("[data-dashboard-activity-page]") as HTMLButtonElement | null;
     if (activityPageBtn) {
       const direction = String(activityPageBtn.getAttribute("data-dashboard-activity-page") || "").trim();

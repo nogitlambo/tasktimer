@@ -9,6 +9,7 @@ export type TaskTimerEntitlement =
   | "advancedInsights"
   | "advancedTaskConfig"
   | "advancedBackup"
+  | "executiveFunction"
   | "socialFeatures";
 export type TaskTimerPaidOffer = "plus_monthly" | "plus_lifetime";
 
@@ -26,6 +27,7 @@ const PLAN_ENTITLEMENTS: Record<TaskTimerPlan, Record<TaskTimerEntitlement, bool
     advancedInsights: false,
     advancedTaskConfig: false,
     advancedBackup: false,
+    executiveFunction: false,
     socialFeatures: true,
   },
   plus: {
@@ -33,6 +35,7 @@ const PLAN_ENTITLEMENTS: Record<TaskTimerPlan, Record<TaskTimerEntitlement, bool
     advancedInsights: true,
     advancedTaskConfig: true,
     advancedBackup: true,
+    executiveFunction: true,
     socialFeatures: true,
   },
   pro: {
@@ -40,6 +43,7 @@ const PLAN_ENTITLEMENTS: Record<TaskTimerPlan, Record<TaskTimerEntitlement, bool
     advancedInsights: true,
     advancedTaskConfig: true,
     advancedBackup: true,
+    executiveFunction: true,
     socialFeatures: true,
   },
   plus_lifetime: {
@@ -47,6 +51,7 @@ const PLAN_ENTITLEMENTS: Record<TaskTimerPlan, Record<TaskTimerEntitlement, bool
     advancedInsights: true,
     advancedTaskConfig: true,
     advancedBackup: true,
+    executiveFunction: true,
     socialFeatures: true,
   },
 };
@@ -59,9 +64,12 @@ export function normalizeTaskTimerPlan(value: unknown): TaskTimerPlan {
 }
 
 export function getEffectiveTaskTimerPlan(plan: TaskTimerPlan): TaskTimerPlan {
-  // Temporary testing-only override: treat Free users as Pro across the app surface.
-  // Remove after QA when real plan gating should apply again.
-  return plan === "free" ? "plus" : plan;
+  return plan;
+}
+
+export function isTaskTimerPlusPlan(plan: TaskTimerPlanLike | unknown) {
+  const normalized = normalizeTaskTimerPlan(plan);
+  return normalized === "plus" || normalized === "plus_lifetime";
 }
 
 export function getTaskTimerEntitlements(plan: TaskTimerPlan) {

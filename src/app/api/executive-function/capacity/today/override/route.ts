@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isDeletedAccountUid } from "@/app/api/account/deletedAccountUid";
 import { verifyFirebaseRequestUser } from "@/app/api/shared/auth";
+import { assertPlusPlanForExecutiveFunction } from "@/app/api/shared/plusEntitlement";
 import { authenticatedApiOptions, withAuthenticatedApiCors } from "@/app/api/shared/cors";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { localDateForRecommendationTimezone } from "@/app/nextbestaction/lib/nextBestActionRepository";
@@ -54,6 +55,7 @@ type OverrideRouteContext =
 async function resolveContext(req: Request): Promise<OverrideRouteContext> {
   const { uid } = await verifyFirebaseRequestUser(req);
   const db = getFirebaseAdminDb();
+    await assertPlusPlanForExecutiveFunction(uid, db);
   if (await isDeletedAccountUid(db, uid)) {
     return { response: withAuthenticatedApiCors(req, NextResponse.json({ error: "This account has been deleted.", code: "auth/account-deleted" }, { status: 410 })) };
   }

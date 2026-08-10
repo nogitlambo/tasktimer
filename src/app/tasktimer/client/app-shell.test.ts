@@ -82,4 +82,10 @@ describe("createTaskTimerAppShell routing", () => {
 
     expect(getStartupAppPage).not.toHaveBeenCalled();
   });
+
+  it("resolves the Executive app page from the /executive route", () => {
+    stubLocation("/executive");
+
+    expect(createShell().getInitialAppPageFromLocation()).toBe("executive");
+  });
 });

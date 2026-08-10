@@ -1530,14 +1530,9 @@ describe("weekly goals dashboard card", () => {
 describe("dashboard completed card", () => {
   it("keeps desktop Activity Overview to one integrated grid column", () => {
     const css = readFileSync("src/app/tasktimer/styles/03-dashboard.css", "utf8").replace(/\r\n/g, "\n");
-    const desktopOrderCss = css.slice(css.indexOf("/* Desktop dashboard panel order: Activity Overview, Momentum, Task Overview, Focus Heatmap. */"));
-    const activityOverviewRule =
-      desktopOrderCss.match(
-        /@media \(min-width: 981px\)\{[\s\S]*?\.dashboardIntegratedPanel > \.dashboardActivityOverviewCard\{[\s\S]*?\n  \}/
-      )?.[0] || "";
-
-    expect(activityOverviewRule).toContain("grid-column:1 !important;");
-    expect(activityOverviewRule).not.toContain("grid-column:1 / 3 !important;");
+    const desktopOrderCss = css.slice(css.indexOf("/* Desktop dashboard panel order: Activity Overview, Momentum, Task Overview + Focus Heatmap. */"));
+    expect(desktopOrderCss).toContain("grid-column:1 !important;");
+    expect(desktopOrderCss).not.toContain("grid-column:1 / 3 !important;");
   });
 
   it("keeps mobile activity summaries side by side with state-colored progress fills", () => {
@@ -1608,26 +1603,29 @@ describe("dashboard completed card", () => {
     const referenceCss = css.slice(css.indexOf("/* Activity Overview and Momentum reference redesign. */"));
     const sharedPanelRule =
       referenceCss.match(
-        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardActivityOverviewCard,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n\}/
+        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardExecutiveSummary,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n\}/
       )?.[0] || "";
     const sharedPanelTopLineRule =
       referenceCss.match(
-        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardActivityOverviewCard::before,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard::before\{[\s\S]*?\n\}/
+        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardExecutiveSummary::before,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard::before\{[\s\S]*?\n\}/
       )?.[0] || "";
     const mobileSharedPanelRule =
       referenceCss.match(
-        /@media \(max-width: 640px\)\{\n\s+body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardActivityOverviewCard,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n  \}/
+        /@media \(max-width: 640px\)\{\n\s+body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardExecutiveSummary,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n  \}/
       )?.[0] || "";
 
+    expect(sharedPanelRule).toContain(".dashboardIntegratedPanel > .dashboardExecutiveSummary,");
     expect(sharedPanelRule).toContain(".dashboardSupportGrid > .dashboardTasksCompletedCard,");
     expect(sharedPanelRule).toContain(".dashboardSupportGrid > .dashboardHeatCard{");
     expect(sharedPanelRule).toContain("border-radius:18px !important;");
     expect(referenceCss).toContain("--dashboard-reference-panel-bg-top:#0d0f13;");
     expect(referenceCss).toContain("--dashboard-reference-panel-bg-bottom:#0d0f13;");
     expect(sharedPanelRule).toContain("background:linear-gradient(180deg, var(--dashboard-reference-panel-bg-top), var(--dashboard-reference-panel-bg-bottom)) !important;");
+    expect(sharedPanelTopLineRule).toContain(".dashboardIntegratedPanel > .dashboardExecutiveSummary::before,");
     expect(sharedPanelTopLineRule).toContain(".dashboardSupportGrid > .dashboardHeatCard::before{");
     expect(sharedPanelTopLineRule).toContain("background:linear-gradient(90deg, transparent, var(--dashboard-reference-border-strong), transparent) !important;");
     expect(referenceCss).toContain("background:linear-gradient(180deg, #0d0f13 0%, #0d0f13 100%) !important;");
+    expect(mobileSharedPanelRule).toContain(".dashboardIntegratedPanel > .dashboardExecutiveSummary,");
     expect(mobileSharedPanelRule).toContain(".dashboardSupportGrid > .dashboardTasksCompletedCard,");
     expect(mobileSharedPanelRule).toContain(".dashboardSupportGrid > .dashboardHeatCard{");
     expect(mobileSharedPanelRule).toContain("border-radius:16px !important;");

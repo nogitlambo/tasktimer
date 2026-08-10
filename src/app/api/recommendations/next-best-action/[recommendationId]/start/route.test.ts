@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   verifyFirebaseRequestUser: vi.fn(),
   getFirebaseAdminDb: vi.fn(),
   isDeletedAccountUid: vi.fn(),
+  assertPlusPlanForExecutiveFunction: vi.fn(),
   startRecommendation: vi.fn(),
 }));
 
@@ -13,6 +14,10 @@ vi.mock("@/app/api/shared/auth", async () => {
 });
 vi.mock("@/lib/firebaseAdmin", () => ({ getFirebaseAdminDb: mocks.getFirebaseAdminDb }));
 vi.mock("@/app/api/account/deletedAccountUid", () => ({ isDeletedAccountUid: mocks.isDeletedAccountUid }));
+vi.mock("@/app/api/shared/plusEntitlement", async () => {
+  const actual = await vi.importActual<typeof import("@/app/api/shared/plusEntitlement")>("@/app/api/shared/plusEntitlement");
+  return { ...actual, assertPlusPlanForExecutiveFunction: mocks.assertPlusPlanForExecutiveFunction };
+});
 vi.mock("@/app/nextbestaction/lib/nextBestActionRepository", async () => {
   const actual = await vi.importActual<typeof import("@/app/nextbestaction/lib/nextBestActionRepository")>("@/app/nextbestaction/lib/nextBestActionRepository");
   return { ...actual, createFirestoreNextBestActionRepository: vi.fn(() => ({ startRecommendation: mocks.startRecommendation })) };
@@ -20,11 +25,11 @@ vi.mock("@/app/nextbestaction/lib/nextBestActionRepository", async () => {
 
 import { POST } from "./route";
 
-function request() {
+function request(body: Record<string, unknown> = {}) {
   return new Request("https://tasklaunch.app/api/recommendations/next-best-action/nba-1/start", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-firebase-auth": "token" },
-    body: "{}",
+    body: JSON.stringify(body),
   });
 }
 
@@ -32,22 +37,24 @@ describe("POST /api/recommendations/next-best-action/[recommendationId]/start", 
   it("returns the started handoff and preserves idempotency", async () => {
     mocks.verifyFirebaseRequestUser.mockResolvedValue({ uid: "uid-1" });
     mocks.getFirebaseAdminDb.mockReturnValue({});
+    mocks.assertPlusPlanForExecutiveFunction.mockResolvedValue("plus");
     mocks.isDeletedAccountUid.mockResolvedValue(false);
     mocks.startRecommendation.mockResolvedValue({
       kind: "started",
       recommendation: { id: "nba-1", type: "NEXT_BEST_ACTION", taskId: "task-1", status: "STARTED", startedAt: "2026-08-07T09:05:00.000Z" },
     });
 
-    const response = await POST(request(), { params: Promise.resolve({ recommendationId: "nba-1" }) });
+    const response = await POST(request({ timezone: "Australia/Sydney" }), { params: Promise.resolve({ recommendationId: "nba-1" }) });
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({ ok: true, idempotent: false, recommendation: { taskId: "task-1", status: "STARTED" } });
-    expect(mocks.startRecommendation).toHaveBeenCalledWith({ uid: "uid-1", recommendationId: "nba-1", nowMs: expect.any(Number) });
+    expect(mocks.startRecommendation).toHaveBeenCalledWith({ uid: "uid-1", recommendationId: "nba-1", nowMs: expect.any(Number), timezone: "Australia/Sydney" });
   });
 
   it("returns actionable stale and ineligible conflicts", async () => {
     mocks.verifyFirebaseRequestUser.mockResolvedValue({ uid: "uid-1" });
     mocks.getFirebaseAdminDb.mockReturnValue({});
+    mocks.assertPlusPlanForExecutiveFunction.mockResolvedValue("plus");
     mocks.isDeletedAccountUid.mockResolvedValue(false);
     mocks.startRecommendation.mockResolvedValueOnce({ kind: "stale" }).mockResolvedValueOnce({ kind: "ineligible" });
 

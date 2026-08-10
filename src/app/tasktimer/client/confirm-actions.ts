@@ -2,12 +2,12 @@ import type { TaskTimerConfirmOptions } from "./context";
 
 export function buildUpgradePromptConfirmOptions(args: {
   featureLabel: string;
-  requiredPlan: "pro";
+  requiredPlan: "plus" | "pro";
   closeConfirm: () => void;
   openPlans: () => void;
 }) {
   const normalizedFeatureLabel = String(args.featureLabel || "This feature").trim() || "This feature";
-  const planLabel = args.requiredPlan === "pro" ? "Pro" : "Pro";
+  const planLabel = args.requiredPlan === "plus" ? "PLUS" : "Pro";
   return {
     title: `${planLabel} Feature`,
     text: `${normalizedFeatureLabel} is available on the ${planLabel} plan.`,

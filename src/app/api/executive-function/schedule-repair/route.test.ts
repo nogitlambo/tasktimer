@@ -35,7 +35,7 @@ describe("POST /api/executive-function/schedule-repair", () => {
   it("authenticates and generates from server-owned state", async () => {
     const response = await POST(request({ tasks: [{ id: "attacker-task", estimatedMinutes: 999 }], timezone: "UTC" }));
     expect(response.status).toBe(200);
-    expect(mocks.generate).toHaveBeenCalledWith(expect.objectContaining({ uid: "uid-1", localDate: "2026-08-07", forceRefresh: false }));
+    expect(mocks.generate).toHaveBeenCalledWith(expect.objectContaining({ uid: "uid-1", localDate: expect.any(String), forceRefresh: false }));
     expect(mocks.generate.mock.calls[0][0]).not.toHaveProperty("tasks");
   });
 

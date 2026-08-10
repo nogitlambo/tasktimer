@@ -10,6 +10,7 @@ import {
 import { createFirestoreBrainDumpSessionStore } from "@/app/brain-dump/lib/brainDumpSessionStore";
 import { createFirestoreBrainDumpWorkspaceRepository } from "@/app/brain-dump/lib/brainDumpWorkspaceStore";
 import { verifyFirebaseRequestUser } from "../../shared/auth";
+import { assertPlusPlanForExecutiveFunction } from "@/app/api/shared/plusEntitlement";
 import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
 
 function createSessionId() {
@@ -41,6 +42,7 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
     const { uid } = await verifyFirebaseRequestUser(req, body);
+    await assertPlusPlanForExecutiveFunction(uid);
     const workspace = createFirestoreBrainDumpWorkspaceRepository();
     const workspaceTasks = await workspace.loadTasks(uid);
     const archivedTaskMeta = workspace.loadTaskStatusMeta ? await workspace.loadTaskStatusMeta(uid) : {};

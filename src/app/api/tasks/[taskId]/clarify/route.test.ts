@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   loadTask: vi.fn(),
   saveRecommendation: vi.fn(),
   clarifyTask: vi.fn(),
+  getUserDoc: vi.fn(),
 }));
 
 vi.mock("../../../shared/auth", async (importOriginal) => {
@@ -88,7 +89,13 @@ describe("POST /api/tasks/[taskId]/clarify", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.verifyFirebaseRequestUser.mockResolvedValue({ uid: "uid-1", email: "user@example.com", idToken: "token" });
-    mocks.getFirebaseAdminDb.mockReturnValue({ name: "db" });
+    mocks.getUserDoc.mockResolvedValue({ exists: true, get: (field: string) => (field === "plan" ? "plus" : undefined) });
+    mocks.getFirebaseAdminDb.mockReturnValue({
+      name: "db",
+      collection: vi.fn((name: string) => ({
+        doc: vi.fn((id: string) => (name === "users" && id === "uid-1" ? { get: mocks.getUserDoc } : { get: vi.fn() })),
+      })),
+    });
     mocks.isDeletedAccountUid.mockResolvedValue(false);
     mocks.loadTask.mockResolvedValue(task);
     mocks.saveRecommendation.mockResolvedValue(undefined);

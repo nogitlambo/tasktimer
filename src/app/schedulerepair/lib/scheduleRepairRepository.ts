@@ -189,6 +189,8 @@ export type ScheduleRepairSourceContext = {
 export interface ScheduleRepairRepository {
   loadSourceContext(input: { uid: string; localDate: string }): Promise<ScheduleRepairSourceContext>;
   loadProposal(uid: string, repairId: string): Promise<ScheduleRepairProposal | null>;
+  /** Expire a proposal without applying any task mutation. */
+  expireProposal?(uid: string, repairId: string, nowMs: number): Promise<ScheduleRepairProposal | null>;
   saveProposal(uid: string, proposal: ScheduleRepairProposal): Promise<void>;
   applyProposal(input: {
     uid: string;
@@ -237,6 +239,14 @@ export function createFirestoreScheduleRepairRepository(db: Firestore = getFireb
       if (!safeUid || !safeId || safeId.includes("/")) return null;
       const snapshot = await proposalCollection(safeUid).doc(safeId).get();
       return snapshot.exists ? parseProposal(snapshot.data() as RawRow, safeUid) : null;
+    },
+    async expireProposal(uid, repairId) {
+      const proposal = await this.loadProposal(uid, repairId);
+      if (!proposal || proposal.userId !== uid) return null;
+      if (proposal.status === "EXPIRED" || proposal.status !== "ACTIVE") return proposal;
+      const expired = { ...proposal, status: "EXPIRED" as const };
+      await this.saveProposal(uid, expired);
+      return expired;
     },
     async saveProposal(uid, proposal) {
       const safeUid = asString(uid, 120);

@@ -58,6 +58,7 @@ describe("Next Best Action ranking", () => {
         candidate("not-actionable", { actionable: false }),
         candidate("hard-date-ineligible", { hardDateEligible: false }),
         candidate("incompatible-running", { incompatibleRunning: true }),
+        candidate("already-running", { task: task("already-running", { running: true }) }),
       ],
     });
 

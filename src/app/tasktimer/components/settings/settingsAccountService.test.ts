@@ -129,40 +129,40 @@ describe("handleSignOutFlow", () => {
     expect(callOrder).toEqual(["waitForPendingTaskSync", "flushPendingCloudWrites", "signOut"]);
   });
 
-  it("blocks sign-out when preference sync is still pending after flush", async () => {
+  it("signs out when preference sync is still pending after a best-effort flush", async () => {
     mocks.authState.currentUser = { isAnonymous: false };
     mocks.workspaceRepository.hasPendingPreferenceSync.mockReturnValue(true);
 
-    await expect(handleSignOutFlow()).rejects.toThrow(
-      "Could not sign out because your latest local data could not sync to the cloud. Please try Sync again."
-    );
+    await handleSignOutFlow();
 
-    expect(signOut).not.toHaveBeenCalled();
-    expect(mocks.workspaceRepository.clearScopedState).not.toHaveBeenCalled();
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(mocks.workspaceRepository.clearScopedState).toHaveBeenCalledTimes(1);
+    expect(window.location.assign).toHaveBeenCalledWith("/login");
   });
 
-  it("blocks sign-out when task or history sync is still pending after flush", async () => {
+  it("signs out when task or history sync is still pending after a best-effort flush", async () => {
     mocks.authState.currentUser = { isAnonymous: false };
     mocks.workspaceRepository.hasPendingTaskOrHistorySync.mockReturnValue(true);
 
-    await expect(handleSignOutFlow()).rejects.toThrow(
-      "Could not sign out because your latest local data could not sync to the cloud. Please try Sync again."
-    );
+    await handleSignOutFlow();
 
-    expect(signOut).not.toHaveBeenCalled();
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(mocks.workspaceRepository.clearScopedState).toHaveBeenCalledTimes(1);
+    expect(window.location.assign).toHaveBeenCalledWith("/login");
   });
 
-  it("blocks sign-out with a timeout-specific message when sync does not finish", async () => {
+  it("signs out after a best-effort sync timeout", async () => {
     mocks.authState.currentUser = { isAnonymous: false };
     vi.useFakeTimers();
     mocks.workspaceRepository.flushPendingCloudWrites.mockImplementationOnce(() => new Promise(() => {}));
 
     const pending = handleSignOutFlow();
-    const rejection = expect(pending).rejects.toThrow(
-      "Could not sign out because your latest local data could not sync to the cloud before the request timed out. Please try Sync again."
-    );
     await vi.advanceTimersByTimeAsync(15000);
-    await rejection;
+    await pending;
+
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(mocks.workspaceRepository.clearScopedState).toHaveBeenCalledTimes(1);
+    expect(window.location.assign).toHaveBeenCalledWith("/login");
     vi.useRealTimers();
   });
 

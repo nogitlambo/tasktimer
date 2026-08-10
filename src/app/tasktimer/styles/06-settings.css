@@ -6008,6 +6008,119 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   }
 }
 
+/* Trusted Automation controls remain structured, keyboard reachable settings rows. */
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationStatus{
+  min-height:18px;
+  color:#a8a7a7;
+  font-family:var(--font-readable);
+  font-size:13px;
+  line-height:1.35;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationRuleList,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationRecommendationList,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationHistory{
+  display:grid;
+  gap:8px;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationRule,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationHistoryItem{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 0;
+  border-top:1px solid rgba(255,255,255,.1);
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationRule:first-child,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationHistoryItem:first-child{
+  border-top:0;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationRuleControls{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex:0 0 auto;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationTrustLabel select{
+  min-width:104px;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationHistoryItem{
+  display:block;
+  font-family:var(--font-readable);
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationRecommendation{
+  display:block;
+  padding:10px 0;
+  border-top:1px solid rgba(255,255,255,.1);
+  font-family:var(--font-readable);
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationRecommendation:first-child{
+  border-top:0;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationHistoryHead,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationHistoryMeta,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationHistoryReason,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationHistoryHelp{
+  overflow-wrap:anywhere;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationHistoryHead{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  color:var(--text);
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size:11px;
+  font-weight:700;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationHistoryMeta,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationHistoryReason,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationHistoryHelp{
+  margin-top:4px;
+  color:#a8a7a7;
+  font-size:12px;
+  line-height:1.35;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationHistoryHelp{
+  font-size:11px;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationOutcome-success{
+  color:#8df39a;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationOutcome-failed,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationOutcome-cancelled{
+  color:#ff8e8e;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationOutcome-skipped{
+  color:#ffd37a;
+}
+
+@media (max-width: 640px){
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationRule{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationRuleControls{
+    width:100%;
+    justify-content:space-between;
+  }
+}
+
 .accountProfileBio{
   max-width: 280px;
   margin: -2px auto 0;

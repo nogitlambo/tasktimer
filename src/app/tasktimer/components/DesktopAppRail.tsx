@@ -42,6 +42,7 @@ type DesktopRailPage =
   | "dashboard"
   | "tasks"
   | "notes"
+  | "executive"
   | "friends"
   | "leaderboard"
   | "account"
@@ -96,6 +97,16 @@ const NAV_ITEMS: NavItem[] = [
     desktopId: "commandCenterTasksBtn",
     mobileId: "footerTasksBtn",
     href: "/tasklaunch",
+  },
+  {
+    page: "executive",
+    label: "Executive",
+    ariaLabel: "Executive",
+    iconSrc: "/icons/icons_default/executive.webp",
+    desktopId: "commandCenterExecutiveBtn",
+    mobileId: "footerExecutiveBtn",
+    href: "/executive",
+    showInMobileFooter: false,
   },
   {
     page: "friends",
@@ -199,13 +210,14 @@ function railPageOrder(page: DesktopRailPage) {
   if (page === "dashboard") return 0;
   if (page === "notes") return 1;
   if (page === "tasks") return 2;
-  if (page === "friends") return 3;
-  if (page === "leaderboard") return 4;
-  if (page === "account") return 5;
-  if (page === "settings") return 6;
-  if (page === "userGuide") return 7;
-  if (page === "feedback") return 8;
-  if (page === "history") return 9;
+  if (page === "executive") return 3;
+  if (page === "friends") return 4;
+  if (page === "leaderboard") return 5;
+  if (page === "account") return 6;
+  if (page === "settings") return 7;
+  if (page === "userGuide") return 8;
+  if (page === "feedback") return 9;
+  if (page === "history") return 10;
   return -1;
 }
 

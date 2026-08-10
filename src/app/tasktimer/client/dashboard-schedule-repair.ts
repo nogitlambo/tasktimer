@@ -4,6 +4,8 @@ import { trackScheduleRepair } from "@/app/schedulerepair/lib/scheduleRepairTele
 
 import { getApiUrl } from "../lib/apiClient";
 
+const PLUS_REQUIRED_MESSAGE = "Upgrade to PLUS to use executive function features.";
+
 type RepairAction = {
   id: string;
   type: string;
@@ -95,7 +97,7 @@ function element(documentRef: Document, id: string) {
   return documentRef.getElementById(id) as HTMLElement | null;
 }
 
-type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; getCurrentAppPage: () => string; getIdToken?: () => Promise<string | null> };
+type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; getCurrentAppPage: () => string; canUseExecutiveFunction?: () => boolean; showUpgradePrompt?: (featureName: string, plan?: "plus") => void; getIdToken?: () => Promise<string | null> };
 
 function actionLabel(action: RepairAction) {
   if (action.type === "MOVE_TO_LATER_DAY") return `Move task ${action.taskId} to ${action.toDate || "a later day"}`;
@@ -116,18 +118,33 @@ export function createDashboardScheduleRepair(options: Options) {
   let previouslyFocusedElement: HTMLElement | null = null;
   let keydownHandler: ((event: KeyboardEvent) => void) | null = null;
 
-  function setState(state: "loading" | "ready" | "empty" | "error", message: string) {
+  function setState(state: "loading" | "ready" | "empty" | "error" | "locked", message: string) {
     card?.setAttribute("data-schedule-repair-state", state);
     const status = element(documentRef, "dashboardScheduleRepairStatus");
     if (status) status.textContent = message;
     const retry = documentRef.querySelector<HTMLButtonElement>('[data-schedule-repair="refresh"]');
-    if (retry) retry.disabled = state === "loading";
+    if (retry) {
+      retry.disabled = state === "loading";
+      retry.textContent = state === "locked" ? "Upgrade to PLUS" : "Refresh";
+    }
     const review = documentRef.querySelector<HTMLButtonElement>('[data-schedule-repair="review"]');
     if (review) review.hidden = state !== "ready";
     const summary = element(documentRef, "dashboardScheduleRepairSummary");
     if (summary) summary.hidden = state !== "ready";
     const retryButton = element(documentRef, "dashboardScheduleRepairCard")?.querySelector<HTMLButtonElement>(".dashboardScheduleRepairRetry");
-    if (retryButton) retryButton.hidden = state !== "error";
+    if (retryButton) retryButton.hidden = state !== "error" && state !== "locked";
+    card?.classList.toggle("isPlanLocked", state === "locked");
+    if (state === "locked") card?.setAttribute("data-plan-locked", "executiveFunction");
+    else card?.removeAttribute("data-plan-locked");
+  }
+
+  function lockIfNeeded() {
+    if (options.canUseExecutiveFunction?.() !== false) return false;
+    proposal = null;
+    abortController?.abort();
+    setOverlay(false);
+    setState("locked", PLUS_REQUIRED_MESSAGE);
+    return true;
   }
 
   function renderSummary() {
@@ -219,7 +236,8 @@ export function createDashboardScheduleRepair(options: Options) {
   }
 
   async function refresh(forceRefresh = true) {
-    if (!card || options.getCurrentAppPage() !== "dashboard") return;
+    if (!card || !["dashboard", "executive"].includes(options.getCurrentAppPage())) return;
+    if (lockIfNeeded()) return;
     abortController?.abort();
     abortController = new AbortController();
     setState("loading", "Checking today's schedule...");
@@ -253,6 +271,10 @@ export function createDashboardScheduleRepair(options: Options) {
   }
 
   async function dismiss() {
+    if (lockIfNeeded()) {
+      options.showUpgradePrompt?.("Schedule repair", "plus");
+      return;
+    }
     if (!proposal) return;
     try {
       const idToken = await getIdToken();
@@ -271,6 +293,10 @@ export function createDashboardScheduleRepair(options: Options) {
   }
 
   async function apply() {
+    if (lockIfNeeded()) {
+      options.showUpgradePrompt?.("Schedule repair", "plus");
+      return;
+    }
     if (!proposal) return;
     const selectedActions = proposal.actions.filter((action) => action.selected && action.type !== "CLARIFY_TASK");
     const status = element(documentRef, "dashboardScheduleRepairModalStatus");
@@ -310,6 +336,10 @@ export function createDashboardScheduleRepair(options: Options) {
   }
 
   async function undo() {
+    if (lockIfNeeded()) {
+      options.showUpgradePrompt?.("Schedule repair", "plus");
+      return;
+    }
     if (!proposal) return;
     const status = element(documentRef, "dashboardScheduleRepairModalStatus");
     const undoButton = documentRef.querySelector<HTMLButtonElement>('[data-schedule-repair="undo"]');
@@ -349,6 +379,10 @@ export function createDashboardScheduleRepair(options: Options) {
 
   function clarify(target: HTMLElement) {
     const taskId = asString(target.getAttribute("data-schedule-repair-task-id"), 160);
+    if (lockIfNeeded()) {
+      options.showUpgradePrompt?.("Schedule repair", "plus");
+      return;
+    }
     if (!taskId) return;
     dispatchTaskClarificationOpenEvent({ taskId, title: `Task ${taskId}` });
     void trackScheduleRepair("clarification_opened");
@@ -360,6 +394,10 @@ export function createDashboardScheduleRepair(options: Options) {
       const target = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-schedule-repair]");
       const actionTarget = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-schedule-repair-action]");
       const action = target?.getAttribute("data-schedule-repair") || actionTarget?.getAttribute("data-schedule-repair-action");
+      if (action && action !== "close" && lockIfNeeded()) {
+        options.showUpgradePrompt?.("Schedule repair", "plus");
+        return;
+      }
       if (action === "review") setOverlay(true);
       if (action === "close") setOverlay(false);
       if (action === "refresh") void refresh(true);
@@ -372,12 +410,12 @@ export function createDashboardScheduleRepair(options: Options) {
       const target = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-schedule-repair-field]");
       if (target) updateDraft(target);
     });
-    windowRef.addEventListener("tasklaunch:app-page-changed", (event) => { if ((event as CustomEvent<{ page?: string }>).detail?.page === "dashboard") void refresh(false); });
+    windowRef.addEventListener("tasklaunch:app-page-changed", (event) => { if (["dashboard", "executive"].includes((event as CustomEvent<{ page?: string }>).detail?.page || "")) void refresh(false); });
     keydownHandler = (event) => { if (event.key === "Escape") setOverlay(false); };
     windowRef.addEventListener("keydown", keydownHandler);
     windowRef.addEventListener("tasklaunch:recovery-applied", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(true); });
     windowRef.addEventListener("tasklaunch:recovery-undone", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(true); });
-    if (options.getCurrentAppPage() === "dashboard") void refresh(false);
+    if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(false);
   }
 
   function destroy() {

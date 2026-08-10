@@ -28,6 +28,7 @@ import FocusModeScreen from "./components/FocusModeScreen";
 import FriendsOverlays from "./components/FriendsOverlays";
 import GlobalTaskAlerts from "./components/GlobalTaskAlerts";
 import DashboardPageContent from "./components/DashboardPageContent";
+import ExecutivePageContent from "./components/ExecutivePageContent";
 import SessionNotesPageContent from "./components/SessionNotesPageContent";
 import HistoryManagerScreen from "./components/HistoryManagerScreen";
 import HistoryScreen from "./components/HistoryScreen";
@@ -63,6 +64,8 @@ import {
   readStoredCustomAvatarSrc,
 } from "./lib/accountProfileStorage";
 import { formatDashboardDurationShort } from "./lib/historyChart";
+import { hasTaskTimerEntitlement, readTaskTimerPlanFromStorage } from "./lib/entitlements";
+import { resolveTaskTimerRouteHref } from "./lib/routeHref";
 import {
   LEADERBOARD_PROFILE_UPDATED_EVENT,
   LEADERBOARD_POSITION_CHANGED_EVENT,
@@ -1043,6 +1046,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       if (!(target instanceof HTMLElement)) return;
       const brainDumpEntry = target.closest<HTMLAnchorElement>("[data-brain-dump-entry]");
       if (!brainDumpEntry) return;
+      if (!hasTaskTimerEntitlement(readTaskTimerPlanFromStorage(), "executiveFunction")) {
+        event.preventDefault();
+        window.location.href = resolveTaskTimerRouteHref("/account");
+        return;
+      }
       void trackEvent("brain_dump_entry_opened", {
         entry_point: brainDumpEntry.dataset.brainDumpEntry || "unknown",
       });
@@ -2492,6 +2500,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           </section>
 
           <DashboardPageContent active={initialPage === "dashboard"} />
+
+          <ExecutivePageContent active={initialPage === "executive"} />
 
           <SessionNotesPageContent active={initialPage === "notes"} />
 

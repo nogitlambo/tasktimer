@@ -184,9 +184,23 @@ describe("createTaskTimerRuntimeComposition", () => {
 
     expect(workspaceRepository.loadWorkspaceSnapshot).toHaveBeenCalledTimes(1);
     expect(workspaceRepository.loadCachedPreferences).toHaveBeenCalled();
-    expect(composition.stores.cacheRuntimeState.get("cloudPreferencesCache")).toEqual(cachedPreferences);
+    expect(composition.stores.cacheRuntimeState.get("cloudPreferencesCache")).toMatchObject({
+      ...cachedPreferences,
+      rewards: expect.objectContaining({
+        totalXp: 42,
+        totalXpPrecise: 42,
+        currentRankId: "initiate",
+      }),
+    });
     expect(composition.stores.cacheRuntimeState.get("cloudDashboardCache")).toBe(cachedDashboard);
     expect(composition.stores.cacheRuntimeState.get("cloudTaskUiCache")).toBe(cachedTaskUi);
-    expect(composition.stores.rewardState.get("cloudPreferencesCache")).toEqual(cachedPreferences);
+    expect(composition.stores.rewardState.get("cloudPreferencesCache")).toMatchObject({
+      ...cachedPreferences,
+      rewards: expect.objectContaining({
+        totalXp: 42,
+        totalXpPrecise: 42,
+        currentRankId: "initiate",
+      }),
+    });
   });
 });

@@ -13,6 +13,15 @@
 
 Issues are tracked in this repo's GitHub Issues via the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
+Before implementing an issue associated with a PRD:
+
+1. Read the complete GitHub issue including comments:
+   `gh issue view <number> --comments`
+2. Locate and read the referenced parent PRD.
+3. Treat the issue as the implementation scope for the current slice, and the PRD as the broader product and architectural context.
+4. Do not implement unrelated PRD requirements that belong to later issues.
+5. If the issue conflicts with the PRD or current repository architecture, stop and surface the conflict before implementation.
+
 ### Triage labels
 
 The canonical triage labels map directly to this repo's GitHub labels. See `docs/agents/triage-labels.md`.

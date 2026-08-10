@@ -64,6 +64,7 @@ type TaskTimerLifecycleCommandAdapters = {
   getCheckpointAlertSoundMode: () => "once" | "repeat";
   openFocusMode: (index: number) => void;
   save: (opts?: { forceCloudFlush?: boolean }) => void;
+  notifyTaskCompletionChanged?: (taskId: string) => void;
   render: () => void;
   renderDashboardWidgets: () => void;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<unknown>;
@@ -189,6 +190,7 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     void clearNativeRunningTimerNotification(taskId).catch(() => {});
     options.clearCheckpointBaseline(task.id);
     persistTaskTimerCommand(taskId);
+    if (shouldCompleteGoalOnStop) options.notifyTaskCompletionChanged?.(taskId);
     const completedToday = isTaskTimeGoalStartLockedForPeriod(task, stopMs, weekStarting);
     const telemetryParams = {
       source_page: options.getCurrentAppPage(),

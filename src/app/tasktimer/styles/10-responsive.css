@@ -5,6 +5,22 @@
   }
 }
 
+@media (max-width: 720px){
+  .executiveShell{padding:20px 14px 90px}
+  .executiveHeader,.executiveSectionHeading,.executiveTools,.dashboardExecutiveSummary .dashboardPanelLabelRow{display:grid;gap:14px}
+  .executiveTodayMarker{text-align:left}
+  .executiveTodayHealth{grid-template-columns:1fr}
+  .executiveDecisionFlow{display:flex;flex-direction:column}
+  .executiveNbaCard.dashboardNextBestActionCard{order:1;min-height:0}
+  .executivePlanCard{order:2}
+  .executiveAttentionStack{order:3}
+  .executiveTools{order:4}
+  .executivePlanBody{grid-template-columns:1fr}
+  .executivePlanBody .executiveCapacityCard.dashboardDailyCapacityCard{padding:12px 0 0;border-left:0;border-top:1px solid rgba(121,226,255,.16)}
+  .executiveToolLinks{justify-content:flex-start}
+  .dashboardExecutiveSummaryNext{align-items:stretch;flex-direction:column}
+}
+
 @media (max-width: 640px){
 body[data-app-page="tasks"]{
     padding-left:0 !important;

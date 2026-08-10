@@ -19,9 +19,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     if (normalized === "dashboard") return 0;
     if (normalized === "notes") return 1;
     if (normalized === "tasks") return 2;
-    if (normalized === "friends") return 3;
-    if (normalized === "leaderboard") return 4;
-    if (normalized === "history") return 5;
+    if (normalized === "executive") return 3;
+    if (normalized === "friends") return 4;
+    if (normalized === "leaderboard") return 5;
+    if (normalized === "history") return 6;
     return -1;
   }
 
@@ -57,6 +58,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       path === "/tasklaunch" ||
       path === "/dashboard" ||
       path === "/notes" ||
+      path === "/executive" ||
       path === "/friends" ||
       path === "/leaderboards" ||
       path === "/account" ||
@@ -121,6 +123,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     return /\/notes$/i.test(path) || /\/notes\/index\.html$/i.test(path);
   }
 
+  function isTaskTimerExecutivePath(path: string) {
+    return /\/executive$/i.test(path) || /\/executive\/index\.html$/i.test(path);
+  }
+
   function isTaskTimerLeaderboardPath(path: string) {
     return /\/leaderboards$/i.test(path) || /\/leaderboards\/index\.html$/i.test(path) || /\/leaderboard$/i.test(path) || /\/leaderboard\/index\.html$/i.test(path);
   }
@@ -130,6 +136,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       isTaskTimerTasksPath(path) ||
       isTaskTimerDashboardPath(path) ||
       isTaskTimerNotesPath(path) ||
+      isTaskTimerExecutivePath(path) ||
       isTaskTimerFriendsPath(path) ||
       isTaskTimerLeaderboardPath(path) ||
       /\/history-manager$/i.test(path) ||
@@ -140,6 +147,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   function appPathForPage(page: AppPage) {
     if (page === "dashboard") return appRoute("/dashboard");
     if (page === "notes") return appRoute("/notes");
+    if (page === "executive") return appRoute("/executive");
     if (page === "friends") return appRoute("/friends");
     if (page === "leaderboard") return appRoute("/leaderboards");
     if (page === "history") return appRoute("/history-manager");
@@ -176,6 +184,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       if (page === "dashboard") return "dashboard";
       if (page === "schedule") return "schedule";
       if (page === "notes") return "notes";
+      if (page === "executive") return "executive";
       if (page === "friends") return "friends";
       if (page === "leaderboard") return "leaderboard";
       if (page === "history") return "history";
@@ -184,6 +193,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       }
       if (isTaskTimerDashboardPath(path)) return "dashboard";
       if (isTaskTimerNotesPath(path)) return "notes";
+      if (isTaskTimerExecutivePath(path)) return "executive";
       if (isTaskTimerFriendsPath(path)) return "friends";
       if (isTaskTimerLeaderboardPath(path)) return "leaderboard";
       if (/\/history-manager(?:\/index\.html)?$/i.test(path)) return "history";
@@ -209,6 +219,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     if (/\/feedback(?:\/index)?$/i.test(normalized) || /\/feedback\.html$/i.test(normalized)) return "/feedback";
     if (/\/dashboard(?:\/index)?$/i.test(normalized)) return "/dashboard";
     if (/\/notes(?:\/index)?$/i.test(normalized)) return "/notes";
+    if (/\/executive(?:\/index)?$/i.test(normalized)) return "/executive";
     if (/\/friends(?:\/index)?$/i.test(normalized)) return "/friends";
     if (/\/leaderboards?(?:\/index)?$/i.test(normalized)) return "/leaderboards";
     if (/\/tasklaunch(?:\/index)?$/i.test(normalized)) return "/tasklaunch";
@@ -220,6 +231,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     return (
       path === "/tasklaunch" ||
       path === "/notes" ||
+      path === "/executive" ||
       path === "/account" ||
       path === "/settings" ||
       path === "/history-manager" ||
@@ -237,10 +249,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   }
 
   function parseAppPageFromToken(token: string | null | undefined): AppPage | null {
-    const m = String(token || "").match(/\|page=(tasks|schedule|dashboard|notes|friends|leaderboard|history)$/);
+    const m = String(token || "").match(/\|page=(tasks|schedule|dashboard|notes|executive|friends|leaderboard|history)$/);
     if (!m) return null;
     const p = m[1];
-    if (p === "tasks" || p === "schedule" || p === "dashboard" || p === "notes" || p === "friends" || p === "leaderboard" || p === "history") return p;
+    if (p === "tasks" || p === "schedule" || p === "dashboard" || p === "notes" || p === "executive" || p === "friends" || p === "leaderboard" || p === "history") return p;
     return null;
   }
 
@@ -388,6 +400,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     const hasTasksPage = !!ctx.els.appPageTasks;
     const hasDashboardPage = !!ctx.els.appPageDashboard;
     const hasSessionNotesPage = !!ctx.els.appPageSessionNotes;
+    const hasExecutivePage = !!ctx.els.appPageExecutive;
     const hasFriendsPage = !!ctx.els.appPageFriends;
     const hasLeaderboardPage = !!ctx.els.appPageLeaderboard;
 
@@ -396,6 +409,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       (page === "schedule" && !ctx.els.appPageSchedule) ||
       (page === "dashboard" && !hasDashboardPage) ||
       (page === "notes" && !hasSessionNotesPage) ||
+      (page === "executive" && !hasExecutivePage) ||
       (page === "friends" && !hasFriendsPage) ||
       (page === "leaderboard" && !hasLeaderboardPage) ||
       (page === "history" && !ctx.els.appPageHistory);
@@ -431,6 +445,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     ctx.els.appPageSchedule?.setAttribute("aria-hidden", nextPage === "schedule" ? "false" : "true");
     ctx.els.appPageDashboard?.classList.toggle("appPageOn", nextPage === "dashboard");
     ctx.els.appPageSessionNotes?.classList.toggle("appPageOn", nextPage === "notes");
+    ctx.els.appPageExecutive?.classList.toggle("appPageOn", nextPage === "executive");
     ctx.els.appPageFriends?.classList.toggle("appPageOn", nextPage === "friends");
     ctx.els.appPageLeaderboard?.classList.toggle("appPageOn", nextPage === "leaderboard");
     ctx.els.appPageHistory?.classList.toggle("appPageOn", nextPage === "history");
@@ -442,6 +457,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     ctx.els.commandCenterTasksBtn?.classList.toggle("isOn", nextPage === "tasks" || nextPage === "schedule");
     ctx.els.commandCenterDashboardBtn?.classList.toggle("isOn", nextPage === "dashboard");
     ctx.els.commandCenterSessionNotesBtn?.classList.toggle("isOn", nextPage === "notes");
+    ctx.els.commandCenterExecutiveBtn?.classList.toggle("isOn", nextPage === "executive");
     ctx.els.commandCenterGroupsBtn?.classList.toggle("isOn", nextPage === "friends");
     ctx.els.commandCenterLeaderboardBtn?.classList.toggle("isOn", nextPage === "leaderboard");
     ctx.els.commandCenterHistoryBtn?.classList.toggle("isOn", nextPage === "history");
@@ -671,6 +687,11 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       if (e?.defaultPrevented) return;
       e?.preventDefault?.();
       applyAppPage("notes", { pushNavStack: true, syncUrl: "push" });
+    });
+    ctx.on(ctx.els.commandCenterExecutiveBtn, "click", (e: any) => {
+      if (e?.defaultPrevented) return;
+      e?.preventDefault?.();
+      applyAppPage("executive", { pushNavStack: true, syncUrl: "push" });
     });
     ctx.on(ctx.els.commandCenterGroupsBtn, "click", (e: any) => {
       if (e?.defaultPrevented) return;

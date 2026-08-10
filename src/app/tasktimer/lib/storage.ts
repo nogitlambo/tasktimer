@@ -73,6 +73,8 @@ const PENDING_LIVE_SESSION_SYNC_KEY = `${STORAGE_KEY}:pendingLiveSessionSync`;
 const PENDING_PREFERENCES_SYNC_KEY = `${STORAGE_KEY}:pendingPreferencesSync`;
 const ACTIVE_UID_KEY = `${STORAGE_KEY}:activeUid`;
 const FULL_COLOR_TASK_CARDS_KEY = `${STORAGE_KEY}:fullColorTaskCardsEnabled`;
+const FULL_COLOR_TASK_CARDS_FALLBACK_UID_KEY = `${FULL_COLOR_TASK_CARDS_KEY}:uid`;
+const FULL_COLOR_TASK_CARDS_FALLBACK_UPDATED_AT_KEY = `${FULL_COLOR_TASK_CARDS_KEY}:updatedAtMs`;
 export const HISTORY_SAVE_WORKING_EVENT = "tasktimer:history-save-working";
 export type LeaderboardProfileSyncReason = "task-complete-xp-claim";
 export type SaveCloudPreferencesOptions = {
@@ -625,10 +627,41 @@ function preserveSignedOutPreferenceFallbacks(prefs: CachedPreferences): void {
   if (typeof window === "undefined" || !prefs) return;
   try {
     if (typeof prefs.fullColorTaskCardsEnabled === "boolean") {
+      const fallbackUid = String(cachedPreferencesUid || scopedUid() || currentUid() || "").trim();
       window.localStorage.setItem(FULL_COLOR_TASK_CARDS_KEY, prefs.fullColorTaskCardsEnabled ? "true" : "false");
+      if (fallbackUid) window.localStorage.setItem(FULL_COLOR_TASK_CARDS_FALLBACK_UID_KEY, fallbackUid);
+      else window.localStorage.removeItem(FULL_COLOR_TASK_CARDS_FALLBACK_UID_KEY);
+      window.localStorage.setItem(
+        FULL_COLOR_TASK_CARDS_FALLBACK_UPDATED_AT_KEY,
+        String(Math.max(0, Math.floor(Number(prefs.updatedAtMs || 0))))
+      );
     }
   } catch {
     // ignore localStorage failures
+  }
+}
+
+function loadSignedOutFullColorTaskCardsFallback(uid: string): { value: boolean; updatedAtMs: number } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const fallbackUid = String(window.localStorage.getItem(FULL_COLOR_TASK_CARDS_FALLBACK_UID_KEY) || "").trim();
+    if (!uid || fallbackUid !== uid) return null;
+    const rawValue = String(window.localStorage.getItem(FULL_COLOR_TASK_CARDS_KEY) || "").trim().toLowerCase();
+    const value =
+      rawValue === "true" || rawValue === "1" || rawValue === "on"
+        ? true
+        : rawValue === "false" || rawValue === "0" || rawValue === "off"
+          ? false
+          : null;
+    if (typeof value !== "boolean") return null;
+    const updatedAtMs = Math.max(
+      0,
+      Math.floor(Number(window.localStorage.getItem(FULL_COLOR_TASK_CARDS_FALLBACK_UPDATED_AT_KEY) || 0))
+    );
+    if (!updatedAtMs) return null;
+    return { value, updatedAtMs };
+  } catch {
+    return null;
   }
 }
 
@@ -1146,6 +1179,22 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
       : selectedPreferenceSource === "shadow"
         ? shadowPreferences
          : cloudPreferences || shadowPreferences || eligiblePendingPreferences || null;
+  const signedOutFullColorTaskCardsFallback = loadSignedOutFullColorTaskCardsFallback(uid);
+  let shouldReplaySignedOutFullColorTaskCardsFallback = false;
+  if (signedOutFullColorTaskCardsFallback) {
+    const cachedPreferenceUpdatedAtMs = Number(cachedPreferences?.updatedAtMs || 0);
+    if (
+      signedOutFullColorTaskCardsFallback.updatedAtMs >= cachedPreferenceUpdatedAtMs &&
+      cachedPreferences?.fullColorTaskCardsEnabled !== signedOutFullColorTaskCardsFallback.value
+    ) {
+      cachedPreferences = normalizePreferenceSnapshot({
+        ...(cachedPreferences || buildDefaultCloudPreferences()),
+        fullColorTaskCardsEnabled: signedOutFullColorTaskCardsFallback.value,
+        updatedAtMs: Math.max(signedOutFullColorTaskCardsFallback.updatedAtMs, cachedPreferenceUpdatedAtMs + 1),
+      });
+      shouldReplaySignedOutFullColorTaskCardsFallback = true;
+    }
+  }
   const weekStarting = normalizeDashboardWeekStart(cachedPreferences?.weekStarting);
   const reconciledRewards = reconcileRewardProgressWithHistory({
     currentProgress: cachedPreferences?.rewards || DEFAULT_REWARD_PROGRESS,
@@ -1168,6 +1217,11 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   }
   cachedPreferencesUid = cachedPreferences ? uid : "";
   saveShadowPreferences(uid, cachedPreferences);
+  if (shouldReplaySignedOutFullColorTaskCardsFallback && cachedPreferences) {
+    queuedPreferencesSyncSnapshot = cachedPreferences;
+    queuedPreferencesSyncUid = uid;
+    flushQueuedCloudPreferences(uid);
+  }
   if (
     selectedPreferenceSource === "pending" &&
     eligiblePendingPreferences &&

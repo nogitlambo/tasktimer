@@ -1,15 +1,20 @@
+import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import DashboardPageContent from "./DashboardPageContent";
+import ExecutivePageContent from "./ExecutivePageContent";
 
 describe("Dashboard Next Best Action card", () => {
-  it("renders accessible loading and action hooks without a ranked list", () => {
-    const html = renderToStaticMarkup(createElement(DashboardPageContent, { active: true }));
+  it("keeps the Dashboard compact and renders accessible action hooks on Executive", () => {
+    const dashboardHtml = renderToStaticMarkup(createElement(DashboardPageContent, { active: true }));
+    const html = renderToStaticMarkup(createElement(ExecutivePageContent, { active: true }));
 
+    expect(dashboardHtml).toContain('id="dashboardExecutiveSummary"');
+    expect(dashboardHtml).not.toContain('id="dashboardNextBestActionCard"');
     expect(html).toContain('id="dashboardNextBestActionCard"');
-    expect(html).toContain('aria-label="Next Best Action"');
+    expect(html).toContain('aria-labelledby="executiveNbaHeading"');
     expect(html).toContain('id="dashboardNextBestActionTimeSelect"');
     expect(html).toContain('<option value="10">10m</option>');
     expect(html).toContain('<option value="20">20m</option>');
@@ -22,20 +27,29 @@ describe("Dashboard Next Best Action card", () => {
     expect(html).toContain('data-next-best-action="why"');
     expect(html).not.toContain('data-next-best-action-rank');
     expect(html).toContain('id="dashboardDailyExecutiveBriefCard"');
-    expect(html).toContain('aria-label="Daily Executive Brief"');
-    expect(html).toContain('id="dashboardDailyExecutiveBriefToggle"');
-    expect(html).toContain('id="dashboardDailyExecutiveBriefRefresh"');
+    expect(html).toContain('aria-labelledby="executivePlanHeading"');
+    expect(html).toContain('data-daily-executive-brief="refresh"');
     expect(html).toContain('id="dashboardDailyCapacityCard"');
-    expect(html).toContain('aria-label="Today&#x27;s capacity"');
+    expect(html).toContain('aria-labelledby="executiveCapacityHeading"');
     expect(html).toContain('id="dashboardDailyCapacityRange"');
     expect(html).toContain('id="dashboardDailyCapacityStatus"');
-    expect(html).toContain('id="dashboardDailyCapacityAdjust"');
+    expect(html).toContain('data-daily-capacity="adjust"');
     expect(html).toContain('id="dashboardDailyCapacityAdjustOverlay"');
+    expect(html).toContain('class="overlay primitiveSciFiModalOverlay dashboardDailyCapacityAdjustPrimitiveOverlay"');
+    expect(html).toContain('class="modal dashboardDailyCapacityAdjustPrimitiveModal modalConfirmation"');
     expect(html).toContain('aria-describedby="dashboardDailyCapacityAdjustDescription"');
     expect(html).toContain('data-daily-capacity="close"');
     expect(html).toContain('aria-pressed="false"');
     expect(html).toContain('data-daily-capacity-state-option="LIGHT"');
     expect(html).toContain('id="dashboardDailyCapacityCustomMinutesInput"');
     expect(html).toContain('data-daily-capacity="clear"');
+    expect(html).toContain("dashboardDailyCapacityAdjustPrimitiveFooter");
+    expect(html).toContain("primitiveSciFiModalPrimaryAction");
+    const css = readFileSync("src/app/tasktimer/styles/04-overlays.css", "utf8").replace(/\r\n/g, "\n");
+    expect(css).toContain("#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustStates{");
+    expect(css).toContain("grid-template-columns:repeat(4, minmax(0, 1fr)) !important;");
+    expect(css).toContain("#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustPrimitiveFooter{");
+    expect(css).toContain("grid-template-columns:repeat(3, minmax(0, 1fr)) !important;");
+    expect(css).toContain("min-width:0 !important;");
   });
 });

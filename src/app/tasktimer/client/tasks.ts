@@ -85,7 +85,8 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
           weekStarting: ctx.getWeekStarting(),
         });
       }
-      ctx.save();
+      ctx.save({ forceCloudFlush: true });
+      ctx.notifyTaskCompletionChanged?.(String(task.id || ""));
     },
     syncSharedTaskSummariesForTask: ctx.syncSharedTaskSummariesForTask,
     render: ctx.render,
@@ -102,6 +103,10 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
 
   function canUseSocialFeatures() {
     return ctx.hasEntitlement("socialFeatures");
+  }
+
+  function canUseExecutiveFunction() {
+    return ctx.hasEntitlement("executiveFunction");
   }
 
   const taskListRenderer = createTaskListRenderer({
@@ -134,6 +139,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     checkpointRepeatActiveTaskId: ctx.checkpointRepeatActiveTaskId,
     isCheckpointFlashActive: ctx.isCheckpointFlashActive,
     canUseAdvancedHistory,
+    canUseExecutiveFunction,
     canUseSocialFeatures,
     hasFriends: () => ctx.getGroupsFriendships().length > 0,
     isTaskSharedByOwner: ctx.isTaskSharedByOwner,
@@ -176,6 +182,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     getCheckpointAlertSoundMode: ctx.getCheckpointAlertSoundMode,
     openFocusMode: ctx.openFocusMode,
     save: ctx.save,
+    notifyTaskCompletionChanged: ctx.notifyTaskCompletionChanged,
     render: ctx.render,
     renderDashboardWidgets: ctx.renderDashboardWidgets,
     syncSharedTaskSummariesForTask: ctx.syncSharedTaskSummariesForTask,
@@ -289,6 +296,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   const taskCardActionEffects = createTaskCardActionEffects({
     getTasks: ctx.getTasks,
     canUseAdvancedHistory,
+    canUseExecutiveFunction,
     canUseSocialFeatures,
     showUpgradePrompt: ctx.showUpgradePrompt,
     startTask,

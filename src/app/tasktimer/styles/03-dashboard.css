@@ -1,4 +1,81 @@
 /* Generated from tasktimer.css split. */
+/* Executive experience and compact Dashboard summary */
+.executiveShell{width:min(1040px,100%);margin:0 auto;padding:16px;color:var(--text-primary,#f1f7ff)}
+.executiveHeader,.executiveSectionHeading,.executiveTools,.dashboardExecutiveSummary .dashboardPanelLabelRow{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.executiveHeader{padding-bottom:16px;border-bottom:1px solid rgba(121,226,255,.16)}
+.executiveHeader h1,.executiveSectionHeading h2,.executiveSectionHeading h3,.executiveTools h2,.executiveCompactHeading h3,.executiveAttentionStack>h2{margin:0;color:var(--text-primary,#f1f7ff)}
+.executiveHeader h1{font-size:clamp(24px,3.4vw,34px);letter-spacing:.02em}
+.executiveHeaderSummary{margin:6px 0 0;color:var(--text-secondary,#aeb9cc);max-width:520px;font:13px var(--font-readable,inherit)}
+.executiveEyebrow{margin:0 0 7px;color:var(--accent,#a9d65f);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.executiveTodayMarker{display:grid;gap:5px;text-align:right;color:var(--text-secondary,#aeb9cc);font-size:12px;text-transform:uppercase;letter-spacing:.1em}
+.executiveTodayMarker strong{color:var(--text-primary,#f1f7ff);font-size:14px;letter-spacing:.04em}
+.executiveTodayHealth{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin:12px 0 14px;background:rgba(121,226,255,.14)}
+.executiveTodayHealth div{display:grid;gap:5px;padding:12px 14px;background:#0d0f13}
+#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveTodayHealth{gap:8px;background:transparent}
+#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveTodayHealth div{border:1px solid #2a2f38;border-radius:8px}
+.executiveTodayHealth span{color:var(--text-secondary,#aeb9cc);font-size:11px;text-transform:uppercase;letter-spacing:.1em}
+.executiveTodayHealth strong{font-size:16px;color:var(--text-primary,#f1f7ff)}
+#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health]{color:#ff9f43}
+#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="REALISTIC"]{color:#92e35b}
+#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="SLIGHTLY_OVERLOADED"]{color:#ffd84d}
+#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="SIGNIFICANTLY_OVERLOADED"]{color:#ff7462}
+.executiveDecisionFlow{display:grid;gap:12px}
+.executiveCard,.executiveTools,.dashboardExecutiveSummary{border:1px solid rgba(121,226,255,.18);background:rgba(13,15,19,.92);padding:16px;box-shadow:0 10px 26px rgba(0,0,0,.18)}
+.executiveNbaCard.dashboardNextBestActionCard{min-height:260px;border-color:rgba(169,214,95,.34)}
+#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveNbaCard.dashboardNextBestActionCard,
+#app[aria-label="TaskLaunch App"] #appPageExecutive .executivePlanCard.dashboardDailyExecutiveBriefCard{
+  border-color:#2a2f38;
+  border-radius:8px;
+}
+.executiveSectionHeading h2{font-size:17px}
+.executiveSectionHeading h3,.executiveCompactHeading h3,.executiveAttentionStack>h2{font-size:15px}
+.executiveStatus{margin:10px 0;color:var(--text-secondary,#aeb9cc);font:13px var(--font-readable,inherit)}
+.executiveNbaContent,.executivePlanCard .dashboardDailyExecutiveBriefContent,.executiveCapacityContent{display:grid;gap:13px}
+.executiveNbaContent .dashboardNextBestActionTitle{font-size:clamp(22px,3vw,30px);margin:8px 0 0}
+.executiveNbaContent .dashboardNextBestActionFirstAction{font-size:16px;color:var(--text-primary,#f1f7ff)}
+.executiveNbaContent .dashboardNextBestActionExplanation,.executivePlanCard .dashboardDailyExecutiveBriefSummary,.dashboardDailyCapacityExplanation{color:var(--text-secondary,#aeb9cc);font:13px var(--font-readable,inherit);line-height:1.5}
+.executiveFacts,.dashboardNextBestActionMeta{display:flex;flex-wrap:wrap;gap:8px;color:var(--text-secondary,#aeb9cc);font-size:12px}
+.executiveFacts span,.dashboardNextBestActionMeta span{padding:6px 8px;border:1px solid rgba(121,226,255,.16)}
+.executivePlanHealth{min-height:4px;border-left:3px solid var(--accent,#a9d65f);padding-left:10px;color:var(--text-primary,#f1f7ff);font-weight:700}
+.executivePlanBody{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,.38fr);gap:18px;align-items:start}
+.executivePlanMain{min-width:0}
+.executiveCompactHeading{display:grid;gap:0}
+.executivePlanCard.dashboardDailyExecutiveBriefCard{min-height:0}
+.executivePlanBody .executiveCapacityCard.dashboardDailyCapacityCard{display:grid;gap:8px;min-height:0;padding:0 0 0 16px;border-left:1px solid rgba(121,226,255,.16)}
+.executiveCapacityCard .executiveStatus{margin:8px 0}
+.executiveCapacityCard .executiveCapacityContent{display:grid;gap:8px}
+.executiveCapacityContent strong{font-size:18px;color:var(--text-primary,#f1f7ff)}
+.executiveCapacityContent span{color:var(--accent,#a9d65f);font-weight:700;text-transform:capitalize}
+.executiveDisclosure{display:grid;gap:6px;color:rgba(225,231,244,.62);font:11px var(--font-readable,inherit)}
+.executiveDisclosure summary{cursor:pointer;color:rgba(225,231,244,.62)}
+.executiveDisclosure .dashboardDailyCapacityExplanation{margin:0}
+.executiveAttentionStack{display:none;gap:8px}
+.executiveAttentionStack:has(.executiveAttentionCard[data-schedule-repair-state="ready"]),.executiveAttentionStack:has(.executiveAttentionCard[data-schedule-repair-state="error"]),.executiveAttentionStack:has(.executiveAttentionCard[data-schedule-repair-state="locked"]),.executiveAttentionStack:has(.executiveRecoveryCard[data-recovery-state="ready"]),.executiveAttentionStack:has(.executiveRecoveryCard[data-recovery-state="error"]),.executiveAttentionStack:has(.executiveRecoveryCard[data-recovery-state="locked"]){display:grid}
+.executiveAttentionStack .executiveAttentionCard,.executiveAttentionStack .executiveRecoveryCard{display:none}
+.executiveAttentionStack .executiveAttentionCard[data-schedule-repair-state="ready"],.executiveAttentionStack .executiveAttentionCard[data-schedule-repair-state="error"],.executiveAttentionStack .executiveAttentionCard[data-schedule-repair-state="locked"],.executiveAttentionStack .executiveRecoveryCard[data-recovery-state="ready"],.executiveAttentionStack .executiveRecoveryCard[data-recovery-state="error"],.executiveAttentionStack .executiveRecoveryCard[data-recovery-state="locked"]{display:block}
+.executiveTools{align-items:center}
+.executiveToolLinks{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.dashboardExecutiveSummary{grid-column:1/-1;margin-bottom:16px;cursor:pointer}
+.dashboardExecutiveSummaryTitle{margin:0;font-size:18px}
+.dashboardExecutiveSummaryStatus{margin:12px 0;color:var(--text-secondary,#aeb9cc);font:13px var(--font-readable,inherit)}
+.dashboardExecutiveSummaryContent{display:grid;gap:10px}
+.dashboardExecutiveSummaryPlanHealth{margin:0;color:var(--text-primary,#f1f7ff);font-weight:700}
+.dashboardExecutiveSummaryDivider{height:1px;background:rgba(121,226,255,.12)}
+.dashboardExecutiveSummaryFacts{display:flex;flex-wrap:wrap;gap:8px;color:var(--text-secondary,#aeb9cc);font-size:12px}
+.dashboardExecutiveSummaryFacts span{padding:5px 8px;border:1px solid rgba(121,226,255,.16)}
+.dashboardExecutiveSummaryNext{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:10px;border-top:1px solid rgba(121,226,255,.12)}
+.dashboardExecutiveSummaryNext div{display:grid;gap:4px}.dashboardExecutiveSummaryNext strong{color:var(--accent,#a9d65f);font-size:11px;text-transform:uppercase;letter-spacing:.12em}
+.dashboardExecutiveSummaryNext span{color:var(--text-primary,#f1f7ff)}
+.dashboardExecutiveSummaryNext span+span{color:var(--text-secondary,#aeb9cc);font:13px var(--font-readable,inherit)}
+.dashboardExecutiveSummaryFallback{color:var(--text-secondary,#aeb9cc);font:13px var(--font-readable,inherit)}
+
+@media (min-width: 981px){
+  #app[aria-label="TaskLaunch App"] #appPageExecutive .executiveShell{
+    width: 100%;
+    max-width: none;
+  }
+}
+
 /* Dashboard container overrides */
 .dashboardShellBody{
   border: none !important;
@@ -429,6 +506,11 @@
   gap:8px 18px;
   color:rgba(225,231,244,.6);
   font-size:11px;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageExecutive .dashboardDailyExecutiveBriefHealth,
+#app[aria-label="TaskLaunch App"] #appPageExecutive .dashboardDailyExecutiveBriefFacts span{
+  border-radius:999px;
 }
 
 .dashboardDailyExecutiveBriefAction{
@@ -6343,7 +6425,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell{
-  border-radius: 0 !important;
+  border-radius: 5px !important;
   overflow: hidden;
 }
 
@@ -9028,6 +9110,11 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardActivityTaskOverviewCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardDailyCapacityCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardDailyExecutiveBriefCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardNextBestActionCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardScheduleRepairCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardRecoveryCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardMomentumCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardHeatCard{
   border:1px solid rgba(121,226,255,.16) !important;
@@ -9068,6 +9155,11 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard::before,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardActivityTaskOverviewCard::before,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardDailyCapacityCard::before,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardDailyExecutiveBriefCard::before,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardNextBestActionCard::before,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardScheduleRepairCard::before,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardRecoveryCard::before,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardMomentumCard::before,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardHeatCard::before{
   content:"";
@@ -9131,6 +9223,224 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   box-shadow:0 0 6px rgba(79,199,255,.95) !important;
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardPanelTitleDotExecutive{
+  background:#ff5468 !important;
+  box-shadow:0 0 6px rgba(255,84,104,.95) !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyCapacityCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardScheduleRepairCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRecoveryCard{
+  gap:0 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefCard{
+  order:1 !important;
+  grid-column:span 12 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyCapacityCard{
+  order:2 !important;
+  grid-column:span 6 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionCard{
+  order:3 !important;
+  grid-column:span 6 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardScheduleRepairCard{
+  order:4 !important;
+  grid-column:span 6 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRecoveryCard{
+  order:5 !important;
+  grid-column:span 6 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard{
+  order:10 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityTaskOverviewCard{
+  order:11 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardSupportGrid{
+  order:12 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyCapacityActions,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefHeaderActions,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionActions,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardScheduleRepairActions,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRecoveryActions{
+  align-items:center !important;
+  gap:8px !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyCapacityActions .btn,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefHeaderActions .btn,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionActions .btn,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardScheduleRepairActions .btn,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRecoveryActions .btn,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyCapacityRetry,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefRetry,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionRetry,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardScheduleRepairRetry,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRecoveryRetry{
+  flex:0 0 auto !important;
+  width:auto !important;
+  min-height:32px !important;
+  padding:0 10px !important;
+  border-radius:0 !important;
+  font-family:var(--font-orbitron), var(--font-readable), sans-serif !important;
+  font-size:11px !important;
+  line-height:1.15 !important;
+  letter-spacing:0 !important;
+  white-space:nowrap !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefTimeLabel,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimeLabel{
+  color:var(--dashboard-reference-dim) !important;
+  font-family:var(--font-readable) !important;
+  font-size:11px !important;
+  line-height:1.2 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefTimeLabel select,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimeLabel select{
+  min-height:32px !important;
+  border:1px solid var(--dashboard-reference-border) !important;
+  border-radius:0 !important;
+  background:rgba(8,12,18,.82) !important;
+  color:var(--dashboard-reference-text) !important;
+  font-family:var(--font-readable) !important;
+  font-size:12px !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyCapacityStatus,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyCapacityExplanation,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefStatus,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefSummary,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefFacts,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefAdjustments,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefAction,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionStatus,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionFirstAction,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionExplanation,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionEmpty,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionError,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardScheduleRepairStatus,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardScheduleRepairSummary,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRecoveryStatus,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRecoverySummary{
+  color:var(--dashboard-reference-dim) !important;
+  font-family:var(--font-readable) !important;
+  font-size:13px !important;
+  line-height:1.4 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyCapacityRange,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTitle,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardScheduleRepairSummary strong,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRecoverySummary strong{
+  color:var(--dashboard-reference-text) !important;
+  font-family:var(--font-tight), var(--font-readable), sans-serif !important;
+  letter-spacing:0 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionActions .btn[hidden]{
+  display:none !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyCapacityRange,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTitle{
+  font-size:24px !important;
+  font-weight:800 !important;
+  line-height:1.08 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyCapacityState,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefHealth{
+  border-color:rgba(146,227,91,.24) !important;
+  color:var(--dashboard-reference-green) !important;
+  background:rgba(146,227,91,.08) !important;
+  font-family:var(--font-geist-mono, var(--font-readable)) !important;
+  font-size:11px !important;
+  letter-spacing:0 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyCapacityContent,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardScheduleRepairSummary,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRecoverySummary{
+  gap:8px 16px !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefContent,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionContent{
+  gap:12px !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefAdjustments{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:6px !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefAdjustments > span{
+  display:block !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefDismissLink{
+  display:inline !important;
+  width:auto !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  margin:0 0 0 8px !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  color:var(--dashboard-reference-text) !important;
+  font-family:var(--font-readable) !important;
+  font-size:13px !important;
+  font-weight:650 !important;
+  line-height:inherit !important;
+  letter-spacing:0 !important;
+  text-decoration:underline !important;
+  text-underline-offset:3px !important;
+  cursor:pointer !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefDismissLink:hover,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefDismissLink:focus-visible{
+  color:var(--dashboard-reference-green) !important;
+  outline:0 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefDismissLink:disabled{
+  color:var(--dashboard-reference-faint) !important;
+  cursor:default !important;
+  text-decoration:none !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefAction{
+  border:1px solid var(--dashboard-reference-border) !important;
+  border-radius:10px !important;
+  background:rgba(255,255,255,.035) !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefAction .btn{
+  grid-column:auto !important;
+  justify-self:start !important;
+}
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatFaceFront{
   grid-template-rows:auto auto auto minmax(0, 1fr) !important;
   padding-bottom:0 !important;
@@ -9149,6 +9459,11 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 @media (max-width: 640px){
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardActivityTaskOverviewCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardDailyCapacityCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardDailyExecutiveBriefCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardNextBestActionCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardScheduleRepairCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardRecoveryCard,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardMomentumCard,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardHeatCard{
     padding:18px 20px !important;
@@ -9158,6 +9473,22 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardPanelLabelRow,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumTitleRow{
     margin-bottom:18px !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyCapacityCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardScheduleRepairCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRecoveryCard{
+    grid-column:span 12 !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyCapacityActions .btn,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefHeaderActions .btn,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionActions .btn,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardScheduleRepairActions .btn,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRecoveryActions .btn{
+    flex:0 0 auto !important;
+    width:auto !important;
   }
 }
 
@@ -9270,8 +9601,14 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   --dashboard-reference-green:#92e35b;
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardExecutiveSummary,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityTaskOverviewCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardDailyCapacityCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardDailyExecutiveBriefCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardNextBestActionCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardScheduleRepairCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardRecoveryCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardTasksCompletedCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardMomentumCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardHeatCard{
@@ -9285,8 +9622,14 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     inset 0 1px 0 rgba(255,255,255,.045) !important;
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardExecutiveSummary::before,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard::before,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityTaskOverviewCard::before,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardDailyCapacityCard::before,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardDailyExecutiveBriefCard::before,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardNextBestActionCard::before,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardScheduleRepairCard::before,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardRecoveryCard::before,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardTasksCompletedCard::before,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardMomentumCard::before,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardHeatCard::before{
@@ -9298,6 +9641,180 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   height:1px !important;
   background:linear-gradient(90deg, transparent, var(--dashboard-reference-border-strong), transparent) !important;
   pointer-events:none !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardExecutiveSummary{
+  grid-template-columns:minmax(0, 1fr) !important;
+  grid-template-rows:auto auto minmax(0, 1fr) !important;
+  gap:0 !important;
+  min-height:0 !important;
+  padding:26px 28px !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryTitleRow{
+  margin:0 0 12px !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryStatus{
+  margin:0 0 14px !important;
+  color:var(--dashboard-reference-dim) !important;
+  font-family:var(--font-readable) !important;
+  font-size:12px !important;
+  line-height:1.45 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryStatus[data-plan-health]{
+  display:inline-flex !important;
+  width:max-content !important;
+  max-width:100% !important;
+  align-items:center !important;
+  padding:5px 10px !important;
+  border:1px solid #ff9f43 !important;
+  border-radius:999px !important;
+  background:transparent !important;
+  color:#ff9f43 !important;
+  font-family:var(--font-readable) !important;
+  font-size:11px !important;
+  font-weight:700 !important;
+  line-height:1.2 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryStatus[data-plan-health="REALISTIC"]{
+  border-color:#92e35b !important;
+  background:transparent !important;
+  color:#92e35b !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryStatus[data-plan-health="SLIGHTLY_OVERLOADED"]{
+  border-color:#ffd84d !important;
+  background:transparent !important;
+  color:#ffd84d !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryStatus[data-plan-health="SIGNIFICANTLY_OVERLOADED"]{
+  border-color:#ff7462 !important;
+  background:transparent !important;
+  color:#ff7462 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryContent{
+  display:grid !important;
+  gap:14px !important;
+  align-content:start !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryContent[hidden]{
+  display:none !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryPlanHealth{
+  margin:0 !important;
+  color:var(--dashboard-reference-text) !important;
+  font-family:var(--font-readable) !important;
+  font-size:13px !important;
+  font-weight:600 !important;
+  line-height:1.45 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryDivider{
+  display:block !important;
+  width:100% !important;
+  height:1px !important;
+  background:var(--dashboard-reference-border) !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryFacts{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  gap:0 !important;
+  margin:0 !important;
+  color:var(--dashboard-reference-dim) !important;
+  font-family:var(--font-readable) !important;
+  font-size:12.5px !important;
+  line-height:1.25 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryFacts span{
+  flex:1 1 180px !important;
+  min-width:0 !important;
+  padding:9px 0 !important;
+  border:0 !important;
+  border-bottom:1px solid var(--dashboard-reference-border) !important;
+  color:var(--dashboard-reference-dim) !important;
+  overflow-wrap:anywhere !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext{
+  display:flex !important;
+  align-items:flex-end !important;
+  justify-content:space-between !important;
+  gap:16px !important;
+  margin:0 !important;
+  padding:0 !important;
+  border-top:0 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext[hidden]{
+  display:none !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext div{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  gap:4px 6px !important;
+  min-width:0 !important;
+  align-items:baseline !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext strong{
+  flex:1 0 100% !important;
+  color:#c9ff24 !important;
+  font-family:var(--font-orbitron), var(--font-readable), sans-serif !important;
+  font-size:10px !important;
+  font-weight:800 !important;
+  line-height:1.1 !important;
+  letter-spacing:0 !important;
+  text-transform:uppercase !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext span{
+  color:var(--dashboard-reference-text) !important;
+  font-family:var(--font-readable) !important;
+  font-size:15px !important;
+  font-weight:700 !important;
+  line-height:1.35 !important;
+  overflow-wrap:anywhere !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext span+span{
+  color:var(--dashboard-reference-dim) !important;
+  font-family:var(--font-readable) !important;
+  font-size:13px !important;
+  font-weight:600 !important;
+  line-height:1.35 !important;
+  white-space:nowrap !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext span+span::before{
+  content:"\00b7";
+  margin-right:6px;
+  color:var(--dashboard-reference-faint);
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext .btn{
+  flex:0 0 auto !important;
+  min-height:36px !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext .btn[hidden]{
+  display:none !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryFallback{
+  color:var(--dashboard-reference-dim) !important;
+  font-family:var(--font-readable) !important;
+  font-size:12px !important;
+  line-height:1.6 !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard{
@@ -9877,6 +10394,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 
 @media (max-width: 980px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardExecutiveSummary,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard{
     min-height:0 !important;
   }
@@ -9888,6 +10406,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 
 @media (max-width: 640px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardExecutiveSummary,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityTaskOverviewCard,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardTasksCompletedCard,
@@ -9895,6 +10414,15 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardHeatCard{
     padding:22px 20px !important;
     border-radius:16px !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext{
+    align-items:stretch !important;
+    flex-direction:column !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext .btn{
+    flex:1 1 140px !important;
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryStack{
@@ -9986,6 +10514,15 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardSupportGrid{
     display:contents !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardExecutiveSummary{
+    grid-column:1 !important;
+    grid-row:2 !important;
+    align-self:stretch !important;
+    box-sizing:border-box !important;
+    min-height:340px !important;
+    height:340px !important;
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardMomentumCard{

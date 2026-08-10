@@ -1,6 +1,7 @@
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getApiUrl } from "../lib/apiClient";
 import { dispatchTaskClarificationStartTaskEvent } from "./task-clarification-events";
+import { TASK_COMPLETION_CHANGED_EVENT } from "./task-completion-events";
 
 export type NextBestActionDashboardRecommendation = {
   recommendationId: string;
@@ -25,6 +26,7 @@ export type NextBestActionDashboardResponse =
   | { kind: "invalid" };
 
 const TIME_OPTIONS = [10, 20, 30, 60, null] as const;
+const PLUS_REQUIRED_MESSAGE = "Upgrade to PLUS to use executive function features.";
 
 function asString(value: unknown, maxLength = 240) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
@@ -100,6 +102,8 @@ type CreateDashboardNextBestActionOptions = {
   windowRef?: Window;
   fetchImpl?: typeof fetch;
   getCurrentAppPage: () => string;
+  canUseExecutiveFunction?: () => boolean;
+  showUpgradePrompt?: (featureName: string, plan?: "plus") => void;
   getIdToken?: () => Promise<string | null>;
 };
 
@@ -112,19 +116,34 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
   let abortController: AbortController | null = null;
   const shownTaskIds = new Set<string>();
 
-  function setStatus(message: string, state: "loading" | "empty" | "error" | "stale" | "ready") {
+  function setStatus(message: string, state: "loading" | "empty" | "error" | "stale" | "ready" | "locked" | "started") {
     const status = getElement(documentRef, "dashboardNextBestActionStatus");
     if (status) status.textContent = message;
     card?.setAttribute("data-next-best-action-state", state);
-    setHidden(getElement(documentRef, "dashboardNextBestActionContent"), state !== "ready");
+    setHidden(getElement(documentRef, "dashboardNextBestActionContent"), state !== "ready" && state !== "started");
     setHidden(getElement(documentRef, "dashboardNextBestActionEmpty"), state !== "empty");
-    setHidden(getElement(documentRef, "dashboardNextBestActionError"), state !== "error" && state !== "stale");
+    setHidden(getElement(documentRef, "dashboardNextBestActionError"), state !== "error" && state !== "stale" && state !== "locked");
     const retry = getElement(documentRef, "dashboardNextBestActionRetry") as HTMLButtonElement | null;
-    if (retry) retry.hidden = state !== "error" && state !== "stale";
+    if (retry) {
+      retry.hidden = state !== "error" && state !== "stale" && state !== "locked";
+      retry.disabled = false;
+      retry.textContent = state === "locked" ? "Upgrade to PLUS" : "Retry";
+      retry.dataset.planLocked = state === "locked" ? "executiveFunction" : "";
+    }
     const actionButtons = documentRef.querySelectorAll<HTMLButtonElement>("[data-next-best-action-action]");
     actionButtons.forEach((button) => {
       button.disabled = state !== "ready";
     });
+    card?.classList.toggle("isPlanLocked", state === "locked");
+    if (state === "locked") card?.setAttribute("data-plan-locked", "executiveFunction");
+    else card?.removeAttribute("data-plan-locked");
+  }
+
+  function lockIfNeeded() {
+    if (options.canUseExecutiveFunction?.() !== false) return false;
+    abortController?.abort();
+    setStatus(PLUS_REQUIRED_MESSAGE, "locked");
+    return true;
   }
 
   function renderRecommendation(recommendation: NextBestActionDashboardRecommendation) {
@@ -150,11 +169,28 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
     }
     const actionButtons = documentRef.querySelectorAll<HTMLButtonElement>("[data-next-best-action-action]");
     actionButtons.forEach((button) => {
+      button.hidden = false;
       button.disabled = false;
+      if (button.getAttribute("data-next-best-action-action") === "start") button.textContent = "Start now";
       button.setAttribute("data-next-best-action-task-id", recommendation.taskId);
       button.setAttribute("data-next-best-action-recommendation-id", recommendation.recommendationId);
     });
     setStatus("Recommendation ready", "ready");
+  }
+
+  function renderRecommendationStarted() {
+    setStatus("Task in progress.", "started");
+    const actionButtons = documentRef.querySelectorAll<HTMLButtonElement>("[data-next-best-action-action]");
+    actionButtons.forEach((button) => {
+      const action = button.getAttribute("data-next-best-action-action");
+      button.disabled = true;
+      if (action === "start") {
+        button.textContent = "In Progress";
+        button.hidden = false;
+      } else {
+        button.hidden = true;
+      }
+    });
   }
 
   async function getIdToken() {
@@ -163,7 +199,8 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
   }
 
   async function refresh(availableMinutes?: number | null) {
-    if (options.getCurrentAppPage() !== "dashboard" || !card) return;
+    if (!["dashboard", "executive"].includes(options.getCurrentAppPage()) || !card) return;
+    if (lockIfNeeded()) return;
     shownTaskIds.clear();
     abortController?.abort();
     abortController = new AbortController();
@@ -205,7 +242,7 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
       const response = await fetchImpl(getApiUrl(`/api/recommendations/next-best-action/${encodeURIComponent(recommendationId)}/start`), {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
-        body: "{}",
+        body: JSON.stringify({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC" }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -214,6 +251,7 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
         throw error;
       }
       dispatchTaskClarificationStartTaskEvent({ taskId });
+      renderRecommendationStarted();
     } catch (error) {
       const code = (error as Error & { code?: string })?.code;
       setStatus(code === "recommendation/stale" || code === "recommendation/expired" ? "This recommendation is out of date. Refresh to choose again." : error instanceof Error ? error.message : "Could not start the recommended task.", code === "recommendation/stale" || code === "recommendation/expired" ? "stale" : "error");
@@ -268,6 +306,10 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
   function handleAction(event: Event) {
     const target = (event.target as HTMLElement | null)?.closest?.("[data-next-best-action-action]") as HTMLElement | null;
     if (!target) return;
+    if (lockIfNeeded()) {
+      options.showUpgradePrompt?.("Next Best Action", "plus");
+      return;
+    }
     const action = target.getAttribute("data-next-best-action-action");
     if (action === "start") {
       void startRecommendation(target);
@@ -300,7 +342,7 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
 
   function handlePageChange(event: Event) {
     const page = (event as CustomEvent<{ page?: unknown }>).detail?.page;
-    if (page === "dashboard") void refresh(getSelectedMinutes());
+    if (page === "dashboard" || page === "executive") void refresh(getSelectedMinutes());
   }
 
   function getSelectedMinutes() {
@@ -316,13 +358,22 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
     });
     documentRef.addEventListener("click", handleAction);
     windowRef.addEventListener("tasklaunch:app-page-changed", handlePageChange);
-    windowRef.addEventListener("tasklaunch:schedule-repair-applied", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(getSelectedMinutes()); });
-    windowRef.addEventListener("tasklaunch:schedule-repair-undone", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(getSelectedMinutes()); });
-    windowRef.addEventListener("tasklaunch:recovery-applied", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(getSelectedMinutes()); });
-    windowRef.addEventListener("tasklaunch:recovery-undone", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(getSelectedMinutes()); });
+    windowRef.addEventListener("tasklaunch:schedule-repair-applied", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(getSelectedMinutes()); });
+    windowRef.addEventListener("tasklaunch:schedule-repair-undone", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(getSelectedMinutes()); });
+    windowRef.addEventListener("tasklaunch:recovery-applied", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(getSelectedMinutes()); });
+    windowRef.addEventListener("tasklaunch:recovery-undone", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(getSelectedMinutes()); });
+    windowRef.addEventListener(TASK_COMPLETION_CHANGED_EVENT, () => {
+      if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(getSelectedMinutes());
+    });
     const retry = getElement(documentRef, "dashboardNextBestActionRetry");
-    retry?.addEventListener("click", () => void refresh(getSelectedMinutes()));
-    if (options.getCurrentAppPage() === "dashboard") void refresh(getSelectedMinutes());
+    retry?.addEventListener("click", () => {
+      if (lockIfNeeded()) {
+        options.showUpgradePrompt?.("Next Best Action", "plus");
+        return;
+      }
+      void refresh(getSelectedMinutes());
+    });
+    if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(getSelectedMinutes());
   }
 
   function destroy() {

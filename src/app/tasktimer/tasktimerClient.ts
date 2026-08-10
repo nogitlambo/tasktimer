@@ -1,6 +1,7 @@
 ﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type { HistoryEntry, Task } from "./lib/types";
+import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { nowMs, formatTwo, formatTime, formatDateTime } from "./lib/time";
 import { cryptoRandomId } from "./lib/ids";
 import { sortMilestones } from "./lib/milestones";
@@ -130,6 +131,9 @@ import { createDashboardDailyExecutiveBrief } from "./client/dashboard-daily-exe
 import { createDashboardDailyCapacity } from "./client/dashboard-daily-capacity";
 import { createDashboardScheduleRepair } from "./client/dashboard-schedule-repair";
 import { createDashboardRecovery } from "./client/dashboard-recovery";
+import { createDashboardExecutiveSummary } from "./client/dashboard-executive-summary";
+import { createExecutiveSurface } from "./client/executive-surface";
+import { dispatchTaskCompletionChangedEvent } from "./client/task-completion-events";
 import { getRichNoteEditorValue, setRichNoteEditorValue } from "./client/rich-session-notes";
 import { normalizeInteractionHapticsIntensity } from "./lib/interactionHapticsIntensity";
 import { Capacitor } from "@capacitor/core";
@@ -285,6 +289,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return hasTaskTimerEntitlement(getCurrentPlan(), entitlement);
   }
 
+  function canUseExecutiveFunction() {
+    return hasEntitlement("executiveFunction");
+  }
+
   let actionConfirmationTimer: number | null = null;
   let openFriendProfileFromLeaderboardListener: EventListener | null = null;
   let dashboardNextBestActionApi: ReturnType<typeof createDashboardNextBestAction> | null = null;
@@ -292,6 +300,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let dashboardDailyCapacityApi: ReturnType<typeof createDashboardDailyCapacity> | null = null;
   let dashboardScheduleRepairApi: ReturnType<typeof createDashboardScheduleRepair> | null = null;
   let dashboardRecoveryApi: ReturnType<typeof createDashboardRecovery> | null = null;
+  let dashboardExecutiveSummaryApi: ReturnType<typeof createDashboardExecutiveSummary> | null = null;
+  let executiveSurfaceApi: ReturnType<typeof createExecutiveSurface> | null = null;
 
   const destroy = () => {
     delete document.body.dataset.tasktimerNativeRuntime;
@@ -313,6 +323,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     dashboardDailyCapacityApi?.destroy();
     dashboardScheduleRepairApi?.destroy();
     dashboardRecoveryApi?.destroy();
+    dashboardExecutiveSummaryApi?.destroy();
+    executiveSurfaceApi?.destroy();
     finishInitialAuthHydration();
     dashboardBusyApi.destroy();
     destroyTaskTimerRuntime({
@@ -324,10 +336,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     });
   };
 
-  function showUpgradePrompt(featureLabel: string, requiredPlan: TaskTimerPlan = "pro") {
+  function showUpgradePrompt(featureLabel: string, requiredPlan: TaskTimerPlan = "plus") {
     const confirmConfig = buildUpgradePromptConfirmOptions({
       featureLabel,
-      requiredPlan: requiredPlan === "pro" ? "pro" : "pro",
+      requiredPlan: requiredPlan === "pro" ? "pro" : "plus",
       closeConfirm,
       openPlans: () => {
         window.location.href = "/account";
@@ -806,6 +818,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         if (nextDashboard) workspaceRepository.saveDashboard(nextDashboard);
       },
       navigateToAppRoute: (path) => navigateToAppRouteViaShell(path),
+      applyAppPage: (page, opts) => applyAppPage(page, opts),
       jumpToTaskById: (taskId) => runtimeActions.jumpToTaskById(taskId),
     },
   });
@@ -813,28 +826,52 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     documentRef: document,
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
+    canUseExecutiveFunction,
+    showUpgradePrompt,
   });
   dashboardDailyExecutiveBriefApi = createDashboardDailyExecutiveBrief({
     documentRef: document,
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
+    canUseExecutiveFunction,
+    showUpgradePrompt,
   });
   dashboardDailyCapacityApi = createDashboardDailyCapacity({
     documentRef: document,
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
+    canUseExecutiveFunction,
+    showUpgradePrompt,
   });
   dashboardScheduleRepairApi = createDashboardScheduleRepair({
     documentRef: document,
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
+    canUseExecutiveFunction,
+    showUpgradePrompt,
   });
   dashboardRecoveryApi = createDashboardRecovery({
     documentRef: document,
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
+    canUseExecutiveFunction,
+    showUpgradePrompt,
     getTasks: () => taskCollectionBindings.getTasks(),
     jumpToTaskById: (taskId) => runtimeActions.jumpToTaskById(taskId),
+  });
+  dashboardExecutiveSummaryApi = createDashboardExecutiveSummary({
+    documentRef: document,
+    windowRef: window,
+    getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
+    canUseExecutiveFunction,
+    showUpgradePrompt,
+  });
+  executiveSurfaceApi = createExecutiveSurface({
+    documentRef: document,
+    windowRef: window,
+    getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
+    canUseExecutiveFunction,
+    getIdToken: () => getFirebaseAuthClient()?.currentUser?.getIdToken() ?? Promise.resolve(null),
   });
   const {
     dashboardBusyApi,
@@ -926,6 +963,12 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     registerDashboardEvents,
   } = dashboardApi;
 
+  const notifyTaskCompletionChanged = (taskId: string) => {
+    void workspaceRepository.waitForPendingTaskSync().finally(() => {
+      dispatchTaskCompletionChangedEvent(taskId);
+    });
+  };
+
   const tasksApi = createTaskTimerTasks(
     createTaskTimerTasksContext({
       els,
@@ -960,6 +1003,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       getElapsedMs: (task) => sessionApi?.getElapsedMs(task) ?? 0,
       getTaskElapsedMs: (task) => sessionApi?.getTaskElapsedMs(task) ?? 0,
       save: renderBindings.save,
+      notifyTaskCompletionChanged,
       saveHistory: workspaceRepository.saveHistory,
       saveDeletedMeta: workspaceRepository.saveDeletedMeta,
       escapeHtmlUI,
@@ -1189,6 +1233,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderDashboardWidgets: renderBindings.renderDashboardWidgets,
       renderDashboardLiveWidgets: () => renderDashboardLiveWidgetsWithMemo(),
       save: renderBindings.save,
+      notifyTaskCompletionChanged,
       openOverlay: overlayBindings.openOverlay,
       closeOverlay: overlayBindings.closeOverlay,
       navigateToAppRoute: navigateToAppRouteViaShell,
@@ -1700,6 +1745,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       focusState,
       rewardState,
       runtimeDestroyed: () => runtime.destroyed,
+      notifyTaskCompletionChanged,
       getCurrentUid: () => getCurrentTaskTimerUid(),
       pendingTaskJumpMemory: () => cacheRuntimeState.get("pendingTaskJumpMemory"),
       setPendingTaskJumpMemory: (value) => {
@@ -1884,6 +1930,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     dashboardDailyCapacityApi?.register();
     dashboardScheduleRepairApi?.register();
     dashboardRecoveryApi?.register();
+    dashboardExecutiveSummaryApi?.register();
+    executiveSurfaceApi?.register();
   }
 
   function hydrateUiStateFromCaches(opts?: { skipDashboardWidgetsRender?: boolean }) {

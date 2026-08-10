@@ -3,6 +3,8 @@ import { getApiUrl } from "../lib/apiClient";
 import { dispatchTaskClarificationOpenEvent, dispatchTaskClarificationStartTaskEvent } from "./task-clarification-events";
 import { trackDailyExecutiveBrief } from "@/app/dailyexecutivebrief/lib/dailyExecutiveBriefTelemetry";
 
+const PLUS_REQUIRED_MESSAGE = "Upgrade to PLUS to use executive function features.";
+
 type BriefPlan = {
   planHealth: string;
   deadlineRisk: string;
@@ -78,7 +80,7 @@ function element(documentRef: Document, id: string) {
   return documentRef.getElementById(id) as HTMLElement | null;
 }
 
-type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; getCurrentAppPage: () => string; getIdToken?: () => Promise<string | null> };
+type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; getCurrentAppPage: () => string; canUseExecutiveFunction?: () => boolean; showUpgradePrompt?: (featureName: string, plan?: "plus") => void; getIdToken?: () => Promise<string | null> };
 
 export function createDashboardDailyExecutiveBrief(options: Options) {
   const documentRef = options.documentRef ?? document;
@@ -90,15 +92,30 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
   let expanded = true;
   let currentBrief: DailyExecutiveBriefDashboard | null = null;
 
-  function setState(state: "loading" | "ready" | "empty" | "insufficient" | "stale" | "error", message: string) {
+  function setState(state: "loading" | "ready" | "empty" | "insufficient" | "stale" | "error" | "locked", message: string) {
     card?.setAttribute("data-daily-executive-brief-state", state);
     const status = element(documentRef, "dashboardDailyExecutiveBriefStatus");
     if (status) status.textContent = message;
     const retry = element(documentRef, "dashboardDailyExecutiveBriefRetry") as HTMLButtonElement | null;
-    if (retry) retry.hidden = !["error", "stale"].includes(state);
+    if (retry) {
+      retry.hidden = !["error", "stale", "locked"].includes(state);
+      retry.disabled = false;
+      retry.textContent = state === "locked" ? "Upgrade to PLUS" : "Retry";
+    }
     const start = documentRef.querySelector<HTMLButtonElement>('[data-daily-executive-brief="start"]');
     if (start) start.disabled = state !== "ready";
-    setHidden(element(documentRef, "dashboardDailyExecutiveBriefAction"), state !== "ready");
+    setHidden(element(documentRef, "dashboardDailyExecutiveBriefAction"), state !== "ready" || options.getCurrentAppPage() === "executive");
+    card?.classList.toggle("isPlanLocked", state === "locked");
+    if (state === "locked") card?.setAttribute("data-plan-locked", "executiveFunction");
+    else card?.removeAttribute("data-plan-locked");
+  }
+
+  function lockIfNeeded() {
+    if (options.canUseExecutiveFunction?.() !== false) return false;
+    currentBrief = null;
+    abortController?.abort();
+    setState("locked", PLUS_REQUIRED_MESSAGE);
+    return true;
   }
 
   function render(brief: DailyExecutiveBriefDashboard) {
@@ -114,7 +131,7 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
     const deadline = element(documentRef, "dashboardDailyExecutiveBriefDeadline");
     if (deadline) deadline.textContent = `Deadline risk: ${brief.plan.deadlineRisk.toLowerCase()}`;
     const action = element(documentRef, "dashboardDailyExecutiveBriefAction");
-    if (brief.nextBestAction && action) {
+    if (brief.nextBestAction && action && options.getCurrentAppPage() !== "executive") {
       action.setAttribute("data-daily-executive-brief-task-id", brief.nextBestAction.taskId);
       action.setAttribute("data-daily-executive-brief-recommendation-id", brief.nextBestAction.recommendationId);
       const title = element(documentRef, "dashboardDailyExecutiveBriefActionTitle");
@@ -143,7 +160,7 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
           const row = documentRef.createElement("span");
           row.textContent = `${item.type.toLowerCase()} task ${item.taskId}: ${item.explanation}`;
           const dismiss = documentRef.createElement("button");
-          dismiss.className = "btn btn-ghost";
+          dismiss.className = "dashboardDailyExecutiveBriefDismissLink";
           dismiss.type = "button";
           dismiss.textContent = "Dismiss";
           dismiss.setAttribute("data-daily-executive-brief-dismiss", item.adjustmentId);
@@ -161,6 +178,10 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
 
   async function dismissAdjustment(target: HTMLElement) {
     const adjustmentId = asString(target.getAttribute("data-daily-executive-brief-dismiss"), 320);
+    if (lockIfNeeded()) {
+      options.showUpgradePrompt?.("Daily Executive Brief", "plus");
+      return;
+    }
     if (!adjustmentId || !currentBrief) return;
     try {
       const idToken = await getIdToken();
@@ -182,6 +203,10 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
 
   async function startRecommendation() {
     const recommendation = currentBrief?.nextBestAction;
+    if (lockIfNeeded()) {
+      options.showUpgradePrompt?.("Daily Executive Brief", "plus");
+      return;
+    }
     if (!recommendation) return;
     setState("loading", "Revalidating the recommended task...");
     try {
@@ -200,6 +225,10 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
 
   function clarifyRecommendation() {
     const recommendation = currentBrief?.nextBestAction;
+    if (lockIfNeeded()) {
+      options.showUpgradePrompt?.("Task clarification", "plus");
+      return;
+    }
     if (!recommendation) return;
     dispatchTaskClarificationOpenEvent({ taskId: recommendation.taskId, title: recommendation.title });
   }
@@ -210,7 +239,8 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
   }
 
   async function refresh(forceRefresh = false, selectedMinutes = getSelectedMinutes()) {
-    if (options.getCurrentAppPage() !== "dashboard" || !card) return;
+    if (!["dashboard", "executive"].includes(options.getCurrentAppPage()) || !card) return;
+    if (lockIfNeeded()) return;
     abortController?.abort(); abortController = new AbortController(); const sequence = ++requestSequence;
     setState("loading", "Loading your daily brief...");
     try {
@@ -245,6 +275,10 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
       const target = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-daily-executive-brief]");
       const action = target?.getAttribute("data-daily-executive-brief");
       const dismissTarget = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-daily-executive-brief-dismiss]");
+      if ((action || dismissTarget) && action !== "toggle" && lockIfNeeded()) {
+        options.showUpgradePrompt?.("Daily Executive Brief", "plus");
+        return;
+      }
       if (dismissTarget) { void dismissAdjustment(dismissTarget); return; }
       if (action === "start") { void startRecommendation(); return; }
       if (action === "clarify") { clarifyRecommendation(); return; }
@@ -254,12 +288,12 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
     documentRef.addEventListener("change", (event) => {
       if ((event.target as HTMLElement | null)?.id === "dashboardDailyExecutiveBriefTimeSelect") void refresh(true);
     });
-    windowRef.addEventListener("tasklaunch:app-page-changed", (event) => { if ((event as CustomEvent<{ page?: string }>).detail?.page === "dashboard") void refresh(); });
-    windowRef.addEventListener("tasklaunch:schedule-repair-applied", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(true); });
-    windowRef.addEventListener("tasklaunch:schedule-repair-undone", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(true); });
-    windowRef.addEventListener("tasklaunch:recovery-applied", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(true); });
-    windowRef.addEventListener("tasklaunch:recovery-undone", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(true); });
-    if (options.getCurrentAppPage() === "dashboard") void refresh();
+    windowRef.addEventListener("tasklaunch:app-page-changed", (event) => { if (["dashboard", "executive"].includes((event as CustomEvent<{ page?: string }>).detail?.page || "")) void refresh(); });
+    windowRef.addEventListener("tasklaunch:schedule-repair-applied", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(true); });
+    windowRef.addEventListener("tasklaunch:schedule-repair-undone", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(true); });
+    windowRef.addEventListener("tasklaunch:recovery-applied", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(true); });
+    windowRef.addEventListener("tasklaunch:recovery-undone", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(true); });
+    if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh();
   }
   function destroy() { abortController?.abort(); requestSequence += 1; }
   return { register, refresh, destroy, parseBriefResponse };

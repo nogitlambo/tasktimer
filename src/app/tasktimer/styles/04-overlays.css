@@ -14017,6 +14017,176 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   max-height: 48px !important;
 }
 
+#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .modal.dashboardDailyCapacityAdjustPrimitiveModal.modalConfirmation{
+  display:block !important;
+  width:min(560px, calc(100vw - 28px)) !important;
+  min-height:0 !important;
+  max-height:calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom)) !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  padding:var(--modal-padding) !important;
+  border:1px solid rgba(86, 90, 98, .86) !important;
+  border-radius:8px !important;
+  clip-path:none !important;
+  background:linear-gradient(180deg, rgba(28, 30, 36, .98) 0%, rgba(13, 15, 19, .98) 100%) !important;
+  box-shadow:var(--modal-shadow) !important;
+  color:var(--text) !important;
+}
+
+#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .modal.dashboardDailyCapacityAdjustPrimitiveModal.modalConfirmation::before,
+#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .modal.dashboardDailyCapacityAdjustPrimitiveModal.modalConfirmation::after{
+  content:none !important;
+}
+
+#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustPrimitiveHeader{
+  display:block !important;
+  min-height:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  color:var(--text) !important;
+  font-family:var(--font-tight) !important;
+  font-size:15px !important;
+  font-weight:700 !important;
+  line-height:1.25 !important;
+  letter-spacing:0 !important;
+  text-shadow:none !important;
+}
+
+#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustPrimitiveBody{
+  display:grid !important;
+  gap:12px !important;
+  min-width:0 !important;
+  margin:0 !important;
+  padding:16px 0 0 !important;
+}
+
+#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .confirmText,
+#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .modalDropdownHelp{
+  margin:0 !important;
+  padding:0 !important;
+  background:transparent !important;
+  color:var(--accent3) !important;
+  font-family:var(--font-readable) !important;
+  font-size:13px !important;
+  line-height:1.55 !important;
+  text-shadow:none !important;
+}
+
+#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustStates{
+  display:grid !important;
+  grid-template-columns:repeat(4, minmax(0, 1fr)) !important;
+  gap:8px !important;
+  min-width:0 !important;
+  margin:0 !important;
+}
+
+#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustStates .dashboardDailyCapacityAdjustPrimitiveAction{
+  width:100% !important;
+  min-width:0 !important;
+  max-width:none !important;
+  height:42px !important;
+  min-height:42px !important;
+  max-height:42px !important;
+  padding:0 10px !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+}
+
+#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustStates .btn[aria-pressed="true"]{
+  border-color:var(--accent) !important;
+  background:rgba(196, 255, 43, .16) !important;
+  color:var(--accent) !important;
+}
+
+#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityCustomMinutes{
+  display:grid !important;
+  grid-template-columns:minmax(0, 1fr) auto !important;
+  gap:6px 10px !important;
+  min-width:0 !important;
+  margin:0 !important;
+  color:var(--accent3) !important;
+  font-family:var(--font-readable) !important;
+  font-size:13px !important;
+  line-height:1.35 !important;
+}
+
+#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityCustomMinutes input{
+  grid-column:1 !important;
+  width:100% !important;
+  min-width:0 !important;
+  min-height:36px !important;
+  padding:6px 8px !important;
+  border:1px solid rgba(154,168,199,.38) !important;
+  border-radius:0 !important;
+  background:#1a1b20 !important;
+  color:#edf2ff !important;
+  font-family:var(--font-readable) !important;
+  font-size:13px !important;
+}
+
+#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityCustomMinutes span{
+  grid-column:2 !important;
+  grid-row:2 !important;
+  align-self:center !important;
+  color:var(--accent3) !important;
+  font-family:var(--font-readable) !important;
+  font-size:11px !important;
+  font-weight:700 !important;
+  text-transform:uppercase !important;
+}
+
+#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustError{
+  margin:0 !important;
+  color:#ffb4a8 !important;
+  font-family:var(--font-readable) !important;
+  font-size:13px !important;
+}
+
+#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustPrimitiveFooter{
+  display:grid !important;
+  grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
+  min-height:0 !important;
+  align-items:stretch !important;
+  justify-content:stretch !important;
+  gap:10px !important;
+  margin-top:16px !important;
+  padding:0 !important;
+  border-top:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+
+#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustPrimitiveFooter .dashboardDailyCapacityAdjustPrimitiveAction{
+  width:100% !important;
+  min-width:0 !important;
+  max-width:none !important;
+  height:48px !important;
+  min-height:48px !important;
+  max-height:48px !important;
+  padding:0 10px !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+}
+
+@media (max-width: 560px){
+  #dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustStates{
+    grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  #dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustPrimitiveFooter{
+    grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  #dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustPrimitiveFooter .dashboardDailyCapacityAdjustPrimitivePrimaryAction{
+    grid-column:1 / -1 !important;
+  }
+}
+
 body[data-tasktimer-native-runtime="true"] #signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation .confirmBtns{
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;

@@ -21,7 +21,7 @@ export async function generateDailyExecutiveBrief(input: {
   const existing = await input.repository.loadBrief(input.uid, input.date);
   let source;
   try {
-    source = await input.repository.loadSourceContext(input.uid);
+    source = await input.repository.loadSourceContext(input.uid, { todayDate: input.date });
   } catch (error) {
     if (!input.forceRefresh && existing && existing.date === input.date && Date.parse(existing.expiresAt) > nowMs) return { snapshot: existing, reused: true };
     throw error;

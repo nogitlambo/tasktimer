@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   isDeletedAccountUid: vi.fn(),
   createRepository: vi.fn(),
   getCapacity: vi.fn(),
+  getUserDoc: vi.fn(),
 }));
 
 vi.mock("@/app/api/shared/auth", () => ({ verifyFirebaseRequestUser: mocks.verifyFirebaseRequestUser }));
@@ -44,7 +45,12 @@ describe("GET /api/executive-function/capacity/today", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.verifyFirebaseRequestUser.mockResolvedValue({ uid: "uid-1" });
-    mocks.getFirebaseAdminDb.mockReturnValue({});
+    mocks.getUserDoc.mockResolvedValue({ exists: true, get: (field: string) => (field === "plan" ? "plus" : undefined) });
+    mocks.getFirebaseAdminDb.mockReturnValue({
+      collection: vi.fn((name: string) => ({
+        doc: vi.fn((id: string) => (name === "users" && id === "uid-1" ? { get: mocks.getUserDoc } : { get: vi.fn() })),
+      })),
+    });
     mocks.isDeletedAccountUid.mockResolvedValue(false);
     mocks.createRepository.mockReturnValue({});
     mocks.getCapacity.mockResolvedValue({ snapshot, reused: false });

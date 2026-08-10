@@ -121,6 +121,7 @@ type CreatePersistenceOptionsArgs = {
   focusState: MutableStore;
   rewardState: MutableStore;
   runtimeDestroyed: () => boolean;
+  notifyTaskCompletionChanged?: (taskId: string) => void;
   getCurrentUid: () => string;
   pendingTaskJumpMemory: () => string | null;
   setPendingTaskJumpMemory: (value: string | null) => void;
@@ -324,6 +325,7 @@ type CreateTasksOptionsArgs = {
   getElapsedMs: (task: Task) => number;
   getTaskElapsedMs: (task: Task) => number;
   save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
+  notifyTaskCompletionChanged?: (taskId: string) => void;
   saveHistory: (history: HistoryByTaskId, opts?: { allowDestructiveReplace?: boolean }) => void;
   saveDeletedMeta: (meta: DeletedTaskMeta) => void;
   escapeHtmlUI: (value: unknown) => string;
@@ -541,6 +543,7 @@ type CreateSessionOptionsArgs = {
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardLiveWidgets: () => void;
   save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
+  notifyTaskCompletionChanged?: (taskId: string) => void;
   openOverlay: (overlay: HTMLElement | null) => void;
   closeOverlay: (overlay: HTMLElement | null) => void;
   navigateToAppRoute: (path: string) => void;
@@ -722,6 +725,7 @@ type CreateDashboardOptionsArgs = {
   renderDashboardHeatTaskList: (dayKey: string, dateLabel: string) => boolean;
   openDashboardHeatTaskSummary: (dayKey: string, taskId: string) => boolean;
   openDashboardActivityDaySummary: (dayKey: string) => boolean;
+  applyAppPage: Parameters<typeof createTaskTimerDashboard>[0]["applyAppPage"];
   navigateToAppRoute: (path: string) => void;
   jumpToTaskById: (taskId: string) => void;
 };
@@ -1051,6 +1055,7 @@ export function createTaskTimerPersistenceContext(
     getPendingTaskJumpMemory: args.pendingTaskJumpMemory,
     setPendingTaskJumpMemory: args.setPendingTaskJumpMemory,
     getRuntimeDestroyed: args.runtimeDestroyed,
+    notifyTaskCompletionChanged: args.notifyTaskCompletionChanged,
     getCurrentUid: args.getCurrentUid,
     getFocusModeTaskId: () => asType<string | null>(args.focusState.get("focusModeTaskId")),
     getFocusSessionNoteSaveTimer: () => asType<number | null>(args.focusState.get("focusSessionNoteSaveTimer")),
@@ -1285,6 +1290,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     maybeRestorePendingTimeGoalFlow: args.maybeRestorePendingTimeGoalFlow,
     getElapsedMs: args.getElapsedMs,
     getTaskElapsedMs: args.getTaskElapsedMs,
+    notifyTaskCompletionChanged: args.notifyTaskCompletionChanged,
     save: args.save,
     saveHistory: args.saveHistory,
     saveDeletedMeta: args.saveDeletedMeta,
@@ -1482,6 +1488,7 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
     renderDashboardWidgets: args.renderDashboardWidgets,
     renderDashboardLiveWidgets: args.renderDashboardLiveWidgets,
     save: args.save,
+    notifyTaskCompletionChanged: args.notifyTaskCompletionChanged,
     openOverlay: args.openOverlay,
     closeOverlay: args.closeOverlay,
     navigateToAppRoute: args.navigateToAppRoute,
@@ -1673,6 +1680,7 @@ export function createTaskTimerDashboardContext(
     renderDashboardHeatTaskList: args.renderDashboardHeatTaskList,
     openDashboardHeatTaskSummary: args.openDashboardHeatTaskSummary,
     openDashboardActivityDaySummary: args.openDashboardActivityDaySummary,
+    applyAppPage: args.applyAppPage,
     navigateToAppRoute: args.navigateToAppRoute,
     jumpToTaskById: args.jumpToTaskById,
   };

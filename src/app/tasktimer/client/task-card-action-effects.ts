@@ -5,8 +5,9 @@ import { dispatchTaskCardAction } from "./task-card-view-model";
 type TaskCardActionEffectsOptions = {
   getTasks: () => Task[];
   canUseAdvancedHistory: () => boolean;
+  canUseExecutiveFunction?: () => boolean;
   canUseSocialFeatures: () => boolean;
-  showUpgradePrompt: (featureName: string, plan?: "pro") => void;
+  showUpgradePrompt: (featureName: string, plan?: "plus" | "pro") => void;
   startTask: (index: number) => void;
   stopTask: (index: number) => void;
   rewindCheckpoint: (index: number) => void;
@@ -94,6 +95,7 @@ export function createTaskCardActionEffects(options: TaskCardActionEffectsOption
     return dispatchTaskCardAction({
       action,
       canUseAdvancedHistory: options.canUseAdvancedHistory(),
+      canUseExecutiveFunction: options.canUseExecutiveFunction?.() ?? true,
       canUseSocialFeatures: options.canUseSocialFeatures(),
       showUpgradePrompt: options.showUpgradePrompt,
       handlers: {

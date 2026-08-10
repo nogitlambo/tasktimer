@@ -210,3 +210,19 @@ describe("firestore adaptive capacity rules", () => {
     expect(rules).toContain("allow create, update, delete: if false;");
   });
 });
+
+describe("firestore Trusted Automation rules", () => {
+  it("keeps policy readable by active owners while denying client writes to automation state", () => {
+    const rules = readRules();
+
+    expect(rules).toContain('match /users/{userId}/automationSettings/{docId}');
+    expect(rules).toContain('allow read: if isActiveOwner(userId) && docId == "settings";');
+    expect(rules).toContain('match /users/{userId}/automationExecutions/{executionId}');
+    expect(rules).toContain('match /users/{userId}/automationHistory/{historyId}');
+    expect(rules).toContain('match /users/{userId}/automationLocks/{lockId}');
+    expect(rules).toContain('match /users/{userId}/automationQueues/{queueItemId}');
+    expect(rules).toContain('match /users/{userId}/automationDeadLetters/{deadLetterId}');
+    expect(rules).toContain('allow read: if isActiveOwner(userId)');
+    expect(rules).toContain('allow read, create, update, delete: if false;');
+  });
+});

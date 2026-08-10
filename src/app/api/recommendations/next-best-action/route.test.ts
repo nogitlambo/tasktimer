@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   enforceUidRateLimit: vi.fn(),
   createCapacityRepository: vi.fn(),
   getCapacity: vi.fn(),
+  getUserDoc: vi.fn(),
 }));
 
 vi.mock("../../shared/auth", async (importOriginal) => {
@@ -47,7 +48,13 @@ describe("POST /api/recommendations/next-best-action", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-08-07T09:00:00.000Z"));
     mocks.verifyFirebaseRequestUser.mockResolvedValue({ uid: "uid-1", email: "user@example.com", idToken: "token" });
-    mocks.getFirebaseAdminDb.mockReturnValue({ name: "db" });
+    mocks.getUserDoc.mockResolvedValue({ exists: true, get: (field: string) => (field === "plan" ? "plus" : undefined) });
+    mocks.getFirebaseAdminDb.mockReturnValue({
+      name: "db",
+      collection: vi.fn((name: string) => ({
+        doc: vi.fn((id: string) => (name === "users" && id === "uid-1" ? { get: mocks.getUserDoc } : { get: vi.fn() })),
+      })),
+    });
     mocks.isDeletedAccountUid.mockResolvedValue(false);
     mocks.enforceUidRateLimit.mockResolvedValue(undefined);
     mocks.loadCandidates.mockResolvedValue([
@@ -139,6 +146,22 @@ describe("POST /api/recommendations/next-best-action", () => {
         expiresAt: "2026-08-07T09:30:00.000Z",
       })
     );
+  });
+
+  it("rejects free users before rate limits, candidate loading, or persistence", async () => {
+    mocks.getUserDoc.mockResolvedValueOnce({ exists: true, get: (field: string) => (field === "plan" ? "free" : undefined) });
+
+    const result = await POST(request());
+    const payload = await result.json();
+
+    expect(result.status).toBe(402);
+    expect(payload).toMatchObject({
+      error: "Upgrade to PLUS to use executive function features.",
+      code: "plan/plus-required",
+    });
+    expect(mocks.enforceUidRateLimit).not.toHaveBeenCalled();
+    expect(mocks.loadCandidates).not.toHaveBeenCalled();
+    expect(mocks.saveRecommendation).not.toHaveBeenCalled();
   });
 
   it("returns the empty state without fabricating or persisting a recommendation", async () => {

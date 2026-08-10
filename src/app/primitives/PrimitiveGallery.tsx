@@ -352,6 +352,55 @@ export default function PrimitiveGallery() {
         </PrimitiveSection>
 
         <PrimitiveSection
+          title="Dashboard Panel Baseline"
+          note="Use the Momentum panel as the dashboard panel baseline: dark panel chrome, compact title row, scan-friendly body rows, and a separated insight footer."
+          code={`<section className="dashboardCard dashboardMomentumCard primitiveDashboardPanelBaseline" aria-label="Panel baseline">\n  <div className="dashboardMomentumTitleRow">\n    <div className="dashboardCardTitle dashboardPanelTitle">\n      <span className="dashboardPanelTitleDot" aria-hidden="true" />\n      <span>Panel Baseline</span>\n    </div>\n  </div>\n  <div className="dashboardMomentumMainSection">\n    <div className="primitiveDashboardPanelMetric">\n      <span className="primitiveDashboardPanelMetricValue">72</span>\n      <span className="primitiveDashboardPanelMetricLabel">Primary signal</span>\n    </div>\n  </div>\n  <section className="dashboardMomentumDriversSection dashboardMomentumDriversTextSection" aria-label="Panel rows">\n    <ul className="dashboardMomentumDrivers dashboardMomentumDriverTextList">\n      <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText"><span className="dashboardMomentumDriverLabel">Recent signal</span><b className="dashboardMomentumDriverValue">18 / 30</b></span></li>\n    </ul>\n  </section>\n  <section className="dashboardMomentumFooterBand" aria-label="Panel insight">\n    <p className="dashboardMomentumFooterMessage">Use one concise insight to explain what changed or what matters next.</p>\n  </section>\n</section>`}
+          exampleClassName="primitiveDashboardPanelPreviewPanel"
+        >
+          <section className="dashboardCard dashboardMomentumCard primitiveDashboardPanelBaseline" aria-label="Panel baseline">
+            <div className="dashboardMomentumTitleRow">
+              <div className="dashboardCardTitle dashboardPanelTitle">
+                <span className="dashboardPanelTitleDot" aria-hidden="true" />
+                <span>Panel Baseline</span>
+              </div>
+            </div>
+            <div className="dashboardMomentumMainSection">
+              <div className="primitiveDashboardPanelMetric" aria-label="Primary signal">
+                <span className="primitiveDashboardPanelMetricValue">72</span>
+                <span className="primitiveDashboardPanelMetricLabel">Primary signal</span>
+              </div>
+            </div>
+            <section className="dashboardMomentumDriversSection dashboardMomentumDriversTextSection" aria-label="Panel rows">
+              <ul className="dashboardMomentumDrivers dashboardMomentumDriverTextList">
+                <li className="dashboardMomentumDriver">
+                  <span className="dashboardMomentumDriverText">
+                    <span className="dashboardMomentumDriverLabel">Recent signal</span>
+                    <b className="dashboardMomentumDriverValue">18 / 30</b>
+                  </span>
+                </li>
+                <li className="dashboardMomentumDriver">
+                  <span className="dashboardMomentumDriverText">
+                    <span className="dashboardMomentumDriverLabel">Consistency</span>
+                    <b className="dashboardMomentumDriverValue">24 / 30</b>
+                  </span>
+                </li>
+                <li className="dashboardMomentumDriver">
+                  <span className="dashboardMomentumDriverText">
+                    <span className="dashboardMomentumDriverLabel">Current target</span>
+                    <b className="dashboardMomentumDriverValue">30 / 40</b>
+                  </span>
+                </li>
+              </ul>
+            </section>
+            <section className="dashboardMomentumFooterBand" aria-label="Panel insight">
+              <p className="dashboardMomentumFooterMessage">
+                Use one concise insight to explain what changed or what matters next.
+              </p>
+            </section>
+          </section>
+        </PrimitiveSection>
+
+        <PrimitiveSection
           title="Lime Theme Tokens"
           note="Use current app tokens for primitive color decisions and keep new controls aligned to the lime theme path."
           code={`color: var(--text);\nbackground: var(--bg);\nborder-color: var(--accent);`}

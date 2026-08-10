@@ -196,7 +196,7 @@ describe("task timer persistence resume-pending cleanup", () => {
     harness.api.load();
 
     expect(harness.getTasks()[0]).toMatchObject({ accumulatedMs: 30_000, hasStarted: true, resumePendingSinceDayKey: "2026-05-03" });
-    expect(harness.saveTasks).toHaveBeenCalledWith(harness.getTasks());
+    expect(harness.saveTasks).toHaveBeenCalledWith(harness.getTasks(), { forceCloudFlush: true });
     expect(harness.syncSharedTaskSummariesForTasks).toHaveBeenCalledWith(["task-1"]);
   });
 
@@ -217,7 +217,7 @@ describe("task timer persistence resume-pending cleanup", () => {
     harness.api.load();
 
     expect(harness.getTasks()[0]).toMatchObject({ accumulatedMs: 30_000, hasStarted: true, resumePendingSinceDayKey: "2026-05-03" });
-    expect(harness.saveTasks).toHaveBeenCalledWith(harness.getTasks());
+    expect(harness.saveTasks).toHaveBeenCalledWith(harness.getTasks(), { forceCloudFlush: true });
   });
 
   it("finalizes a closed-app daily time-goal live session during task snapshot load", () => {
@@ -284,7 +284,7 @@ describe("task timer persistence resume-pending cleanup", () => {
         awardedXp: 30,
       },
     }]);
-    expect(harness.saveTasks).toHaveBeenCalledWith(harness.getTasks());
+    expect(harness.saveTasks).toHaveBeenCalledWith(harness.getTasks(), { forceCloudFlush: true });
     expect(harness.syncSharedTaskSummariesForTasks).toHaveBeenCalledWith(["task-1"]);
   });
 
@@ -375,7 +375,7 @@ describe("task timer persistence resume-pending cleanup", () => {
     });
     expect(harness.getHistory()).toEqual({});
     expect(harness.finalizeLiveSession).not.toHaveBeenCalled();
-    expect(harness.saveTasks).toHaveBeenCalledWith(harness.getTasks());
+    expect(harness.saveTasks).toHaveBeenCalledWith(harness.getTasks(), { forceCloudFlush: true });
     expect(harness.syncSharedTaskSummariesForTasks).toHaveBeenCalledWith(["task-1"]);
   });
 });

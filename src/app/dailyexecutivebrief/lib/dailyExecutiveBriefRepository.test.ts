@@ -31,6 +31,31 @@ const row = {
 };
 
 describe("Firestore Daily Executive Brief repository", () => {
+  it("marks a current-period goal completion as completed for planning", async () => {
+    const task = {
+      id: "task-1",
+      name: "Finish report",
+      timeGoalMinutes: 90,
+      timeGoalPeriod: "day",
+      timeGoalCompletedDayKey: "2026-08-07",
+      timeGoalCompletedReason: "goal",
+      accumulatedMs: 0,
+    };
+    const db = {
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({
+          collection: vi.fn((name: string) => name === "tasks"
+            ? { get: vi.fn().mockResolvedValue({ docs: [{ id: "task-1", data: () => task }] }) }
+            : { doc: vi.fn(() => ({ get: vi.fn().mockResolvedValue({ exists: false }) })) }),
+        })),
+      })),
+    };
+
+    const source = await createFirestoreDailyExecutiveBriefRepository(db as never).loadSourceContext("uid-1", { todayDate: "2026-08-07" });
+
+    expect(source.tasks[0]).toMatchObject({ id: "task-1", completed: true });
+  });
+
   it("dismisses an owned active adjustment idempotently without touching task state", async () => {
     const set = vi.fn();
     const ref = { get: vi.fn(), set };

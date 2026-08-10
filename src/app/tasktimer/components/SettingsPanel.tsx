@@ -12,6 +12,7 @@ import { SettingsHelpPane } from "./settings/SettingsHelpPane";
 import { SettingsNotificationsPane, SettingsSoundsPane } from "./settings/SettingsNotificationsPane";
 import { SettingsPreferencesPane } from "./settings/SettingsPreferencesPane";
 import { SettingsPrivacyPane } from "./settings/SettingsPrivacyPane";
+import { TrustedAutomationSettingsPane } from "./settings/TrustedAutomationSettingsPane";
 import { SettingsAboutPane } from "./settings/SettingsAboutPane";
 import type { SettingsFeedbackState, SettingsPaneKey } from "./settings/types";
 import { useSettingsAccountState } from "./settings/useSettingsAccountState";
@@ -40,6 +41,7 @@ const SETTINGS_DETAIL_TITLES: Partial<Record<SettingsPaneKey, string>> = {
   sounds: "Sounds & Alerts",
   notifications: "Notifications",
   privacy: "Privacy Policy",
+  automation: "Trusted Automation",
   help: "Help Center",
   about: "About",
   feedback: "Feedback",
@@ -52,6 +54,7 @@ const SETTINGS_DETAIL_SUBTITLES: Partial<Record<SettingsPaneKey, string>> = {
   sounds: "Manage in-app sounds and checkpoint audio alerts.",
   notifications: "Manage push notifications and checkpoint toast alerts.",
   privacy: "Review Timebase's privacy policy, including data handling, local storage behavior, and account deletion information.",
+  automation: "Control consent, rule permissions, pause state, and read-only automation history.",
   help: "Open privacy and feedback resources.",
   about: "TaskLaunch version and current build information",
   feedback: "Share product feedback and suggestions.",
@@ -213,6 +216,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
           <SettingsSoundsPane active={paneState.activePane === "sounds"} exiting={paneState.exitingPane === "sounds"} />
           <SettingsNotificationsPane active={paneState.activePane === "notifications"} exiting={paneState.exitingPane === "notifications"} />
           <SettingsPrivacyPane active={paneState.activePane === "privacy"} exiting={paneState.exitingPane === "privacy"} />
+          <TrustedAutomationSettingsPane active={paneState.activePane === "automation"} exiting={paneState.exitingPane === "automation"} />
           <SettingsHelpPane active={paneState.activePane === "help"} exiting={paneState.exitingPane === "help"} />
           <SettingsAboutPane active={paneState.activePane === "about"} exiting={paneState.exitingPane === "about"} />
           <SettingsFeedbackPane

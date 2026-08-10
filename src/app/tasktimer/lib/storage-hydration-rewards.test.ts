@@ -194,6 +194,43 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     expect(loadCachedPreferences()).toBeNull();
   });
 
+  it("replays a newer same-account full color task card fallback over stale cloud preferences after sign-in", async () => {
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      fullColorTaskCardsEnabled: true,
+      updatedAtMs: 200,
+    });
+    clearScopedStorageState();
+    cloudStoreMocks.savePreferences.mockClear();
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: {
+        ...buildDefaultCloudPreferences(),
+        fullColorTaskCardsEnabled: false,
+        updatedAtMs: 100,
+      },
+      dashboard: null,
+      taskUi: null,
+    });
+
+    await hydrateStorageFromCloud({ force: true });
+
+    expect(loadCachedPreferences()).toEqual(
+      expect.objectContaining({
+        fullColorTaskCardsEnabled: true,
+        updatedAtMs: 200,
+      })
+    );
+    expect(cloudStoreMocks.savePreferences).toHaveBeenCalledWith(
+      "uid-1",
+      expect.objectContaining({ fullColorTaskCardsEnabled: true })
+    );
+  });
+
   it("preserves earned XP when a deleted task's history is gone during hydration", async () => {
     const currentRewards = rebuildRewardProgressFromHistory({
       historyByTaskId: {

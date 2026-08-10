@@ -12,6 +12,7 @@ import {
   normalizeOptimalProductivityPeriod,
   timeOfDayToMinutes,
 } from "@/app/tasktimer/lib/productivityPeriod";
+import { normalizeDashboardWeekStart } from "@/app/tasktimer/lib/historyChart";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 
 import { RECOMMENDATION_COLLECTION } from "@/app/recommendations/lib/recommendationContract";
@@ -92,6 +93,26 @@ export function localDateForRecommendationTimezone(timezone: string, nowMs: numb
   return `${values.year}-${values.month}-${values.day}`;
 }
 
+export function localWeekStartDateForRecommendationTimezone(timezone: string, nowMs: number, weekStarting: unknown = "mon") {
+  const localDate = localDateForRecommendationTimezone(timezone, nowMs);
+  const localDateMs = Date.parse(`${localDate}T00:00:00.000Z`);
+  if (!Number.isFinite(localDateMs)) return localDate;
+  const weekStartIndex = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 }[normalizeDashboardWeekStart(weekStarting)];
+  const localWeekdayIndex = new Date(localDateMs).getUTCDay();
+  const daysSinceWeekStart = (localWeekdayIndex - weekStartIndex + 7) % 7;
+  return new Date(localDateMs - daysSinceWeekStart * 86400000).toISOString().slice(0, 10);
+}
+
+export function isTaskCompletedForRecommendationPeriod(raw: RawRow, nowMs: number, timezone = "UTC", weekStarting: unknown = "mon") {
+  const period = raw.timeGoalPeriod === "week" ? "week" : "day";
+  const completionKey = asString(period === "week" ? raw.timeGoalCompletedWeekKey : raw.timeGoalCompletedDayKey, 40);
+  if (!completionKey) return false;
+  const currentPeriodKey = period === "week"
+    ? localWeekStartDateForRecommendationTimezone(timezone, nowMs, weekStarting)
+    : localDateForRecommendationTimezone(timezone, nowMs);
+  return completionKey === currentPeriodKey;
+}
+
 function readHistoryRows(taskId: string, taskRows: Array<{ id: string; data: () => RawRow }>, canonicalRows: Array<{ data: () => RawRow }>) {
   const entries: HistoryEntry[] = [];
   const seen = new Set<string>();
@@ -164,10 +185,12 @@ export type NextBestActionStartResult =
 export interface NextBestActionRepository {
   loadCandidates(input: NextBestActionCandidateLoadInput): Promise<NextBestActionCandidate[]>;
   saveRecommendation(uid: string, recommendation: NextBestActionRecommendation): Promise<void>;
+  /** Expire prior active recommendations after an authoritative refresh. */
+  invalidateActiveRecommendations?(input: { uid: string; nowMs: number; exceptRecommendationId?: string }): Promise<number>;
   loadRecommendation(uid: string, recommendationId: string): Promise<NextBestActionRecommendation | null>;
   skipRecommendation(input: { uid: string; recommendationId: string; nowMs: number }): Promise<"skipped" | "idempotent" | "expired" | "not-active" | "not-found">;
   dismissRecommendation(input: { uid: string; recommendationId: string; nowMs: number; feedbackCode?: string | null }): Promise<"dismissed" | "idempotent" | "expired" | "not-active" | "not-found">;
-  startRecommendation(input: { uid: string; recommendationId: string; nowMs: number }): Promise<NextBestActionStartResult>;
+  startRecommendation(input: { uid: string; recommendationId: string; nowMs: number; timezone?: string }): Promise<NextBestActionStartResult>;
 }
 
 export function createFirestoreNextBestActionRepository(db: Firestore = getFirebaseAdminDb()): NextBestActionRepository {
@@ -176,7 +199,7 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
   }
 
   return {
-    async loadCandidates({ uid, nowMs }) {
+    async loadCandidates({ uid, nowMs, timezone = "UTC" }) {
       const safeUid = asString(uid, 120);
       if (!safeUid) return [];
       const tasksCollection = userCollection(safeUid, "tasks");
@@ -191,6 +214,8 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
       const canonicalRows = canonicalHistorySnapshot.docs.map((doc) => ({ data: () => doc.data() as RawRow }));
       const clarifications = clarificationSignals(recommendationSnapshot.docs.map((doc) => ({ data: () => doc.data() as RawRow })), nowMs);
       const preferences = preferencesSnapshot.exists ? (preferencesSnapshot.data() as RawRow) : null;
+      const weekStarting = normalizeDashboardWeekStart(preferences?.weekStarting);
+      const recommendationTimezone = normalizeTimezone(timezone);
       const candidates = await Promise.all(
         taskSnapshot.docs.map(async (doc) => {
           const raw = doc.data() as RawRow;
@@ -204,7 +229,10 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
             taskVersion: computeTaskClarificationSourceVersion(task.id, raw),
             active: raw.active !== false && raw.status !== "inactive",
             deleted: deletedTaskIds.has(doc.id),
-            completed: raw.completed === true || raw.status === "completed",
+            completed:
+              raw.completed === true ||
+              raw.status === "completed" ||
+              isTaskCompletedForRecommendationPeriod(raw, nowMs, recommendationTimezone, weekStarting),
             blocked: raw.blocked === true || raw.isBlocked === true,
             actionable: raw.actionable !== false,
             hardDateEligible: raw.hardDateEligible !== false,
@@ -229,6 +257,29 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
       const safeUid = asString(uid, 120);
       if (!safeUid || recommendation.userId !== safeUid) throw new Error("Recommendation ownership mismatch.");
       await userCollection(safeUid, RECOMMENDATION_COLLECTION).doc(asString(recommendation.id, 160)).set(buildNextBestActionFirestoreRecord(recommendation));
+    },
+
+    async invalidateActiveRecommendations({ uid, nowMs, exceptRecommendationId }) {
+      const safeUid = asString(uid, 120);
+      const safeExceptId = asString(exceptRecommendationId, 160);
+      if (!safeUid) return 0;
+      const recommendations = userCollection(safeUid, RECOMMENDATION_COLLECTION);
+      return db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(recommendations);
+        const stale = snapshot.docs.filter((doc) => {
+          if (doc.id === safeExceptId) return false;
+          const recommendation = parseNextBestActionRecommendationRecord(doc.data() as Record<string, unknown>);
+          return recommendation?.userId === safeUid && recommendation.status === "ACTIVE";
+        });
+        for (const doc of stale) {
+          transaction.update(doc.ref, {
+            status: "EXPIRED",
+            respondedAt: Timestamp.fromMillis(nowMs),
+            invalidatedAt: Timestamp.fromMillis(nowMs),
+          });
+        }
+        return stale.length;
+      });
     },
 
     async loadRecommendation(uid, recommendationId) {
@@ -281,12 +332,13 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
       });
     },
 
-    async startRecommendation({ uid, recommendationId, nowMs }) {
+    async startRecommendation({ uid, recommendationId, nowMs, timezone = "UTC" }) {
       const safeUid = asString(uid, 120);
       const safeRecommendationId = asString(recommendationId, 160);
       if (!safeUid || !safeRecommendationId) return { kind: "not-found" };
       const recommendationRef = userCollection(safeUid, RECOMMENDATION_COLLECTION).doc(safeRecommendationId);
       const taskRefFor = (taskId: string) => userCollection(safeUid, "tasks").doc(taskId);
+      const preferencesRef = userCollection(safeUid, "preferences").doc("v1");
       return db.runTransaction(async (transaction) => {
         const recommendationSnapshot = await transaction.get(recommendationRef);
         if (!recommendationSnapshot.exists) return { kind: "not-found" } as const;
@@ -294,6 +346,7 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
         if (!recommendation || recommendation.userId !== safeUid) return { kind: "not-found" } as const;
         const taskSnapshot = await transaction.get(taskRefFor(recommendation.taskId));
         if (!taskSnapshot.exists) return { kind: "not-found" } as const;
+        const preferencesSnapshot = await transaction.get(preferencesRef);
         if (recommendation.status === "STARTED") return { kind: "idempotent", recommendation } as const;
         if (recommendation.status !== "ACTIVE") return recommendation.status === "EXPIRED" ? ({ kind: "expired" } as const) : ({ kind: "not-found" } as const);
         if (Date.parse(String(recommendation.expiresAt)) <= nowMs) {
@@ -301,9 +354,12 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
           return { kind: "expired" } as const;
         }
         const taskData = taskSnapshot.data() as RawRow;
+        const preferences = preferencesSnapshot.exists ? (preferencesSnapshot.data() as RawRow) : null;
+        const weekStarting = normalizeDashboardWeekStart(preferences?.weekStarting);
         const currentTaskVersion = computeTaskClarificationSourceVersion(recommendation.taskId, taskData);
         if (currentTaskVersion !== recommendation.sourceTaskVersion) return { kind: "stale" } as const;
-        const eligible = taskData.active !== false && taskData.deleted !== true && taskData.status !== "inactive" && taskData.status !== "completed" && taskData.completed !== true && taskData.blocked !== true && taskData.isBlocked !== true && taskData.actionable !== false;
+        const completedForPeriod = isTaskCompletedForRecommendationPeriod(taskData, nowMs, timezone, weekStarting);
+        const eligible = taskData.running !== true && taskData.active !== false && taskData.deleted !== true && taskData.status !== "inactive" && taskData.status !== "completed" && taskData.completed !== true && !completedForPeriod && taskData.blocked !== true && taskData.isBlocked !== true && taskData.actionable !== false;
         if (!eligible) return { kind: "ineligible" } as const;
         const startedAt = new Date(nowMs).toISOString();
         transaction.update(recommendationRef, { status: "STARTED", startedAt: Timestamp.fromMillis(nowMs), respondedAt: Timestamp.fromMillis(nowMs) });

@@ -7,6 +7,7 @@ import {
   transcribeVoiceBrainDump,
 } from "@/app/brain-dump/lib/brainDumpProcessing";
 import { verifyFirebaseRequestUser } from "../../shared/auth";
+import { assertPlusPlanForExecutiveFunction } from "@/app/api/shared/plusEntitlement";
 import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
 
 function errorStatus(error: unknown) {
@@ -33,6 +34,7 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
     const { uid } = await verifyFirebaseRequestUser(req, body);
+    await assertPlusPlanForExecutiveFunction(uid);
     const transcription = await transcribeVoiceBrainDump({
       uid,
       audioBase64: String(body.audioBase64 || ""),

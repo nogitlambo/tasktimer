@@ -9,6 +9,7 @@ export type SettingsPaneKey =
   | "sounds"
   | "notifications"
   | "privacy"
+  | "automation"
   | "help"
   | "about"
   | "feedback"

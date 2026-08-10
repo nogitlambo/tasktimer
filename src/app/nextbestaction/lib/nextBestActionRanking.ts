@@ -157,6 +157,7 @@ function isEligible(candidate: NextBestActionCandidate, context: NextBestActionR
   const taskId = String(candidate.task.id || "").trim();
   if (!taskId || candidate.ownerUid !== context.userId) return false;
   if ((context.excludedTaskIds || []).includes(taskId)) return false;
+  if (candidate.task.running === true) return false;
   if (candidate.active === false || candidate.deleted || candidate.completed || candidate.blocked) return false;
   if (candidate.actionable === false || candidate.hardDateEligible === false || candidate.incompatibleRunning) return false;
   return true;

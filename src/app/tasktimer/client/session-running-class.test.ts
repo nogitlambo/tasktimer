@@ -2851,11 +2851,11 @@ describe("task timer session tick", () => {
     );
     const progressRule = css.match(/\.focusDialProgress\{[\s\S]*?\n\}/)?.[0] ?? "";
     const progressFillRule = css.match(/\.focusDialProgressFill\{[\s\S]*?\n\}/)?.[0] ?? "";
-    const exitBarRule = css.match(/\.focusModeExitBar\{[\s\S]*?\n\}/)?.[0] ?? "";
     const focusModeHeadRule = taskCss.match(/\.focusModeHead\{[\s\S]*?\n\}/)?.[0] ?? "";
     const focusModeScreen = readFileSync("src/app/tasktimer/components/FocusModeScreen.tsx", "utf8").replace(/\r\n/g, "\n");
 
-    expect(focusModeScreenRule).toContain('url("/leaderboard/deep-space-bg.webp") center / cover no-repeat #000');
+    expect(focusModeScreenRule).toContain("radial-gradient(140% 120% at 50% 0%");
+    expect(focusModeScreenRule).toContain("linear-gradient(180deg, #1e2126 0%, #111318 48%, #08090c 100%)");
     expect(focusModeOpenRule).toContain("display:flex !important");
     expect(focusModeOpenRule).toContain("flex-direction:column");
     expect(focusModeOpenRule).toContain("overflow-y:auto");
@@ -2867,7 +2867,8 @@ describe("task timer session tick", () => {
     expect(focusNotesRules.some((rule) => rule.includes("margin-bottom:clamp(18px, 2.8dvh, 34px)"))).toBe(true);
     expect(focusNotesBodyRules.some((rule) => rule.includes("display:flex"))).toBe(true);
     expect(focusNotesBodyRules.some((rule) => rule.includes("flex-direction:column"))).toBe(true);
-    expect(focusNoteEditorGridRule).toContain("margin-bottom:clamp(18px, 2.8dvh, 34px)");
+    expect(focusNoteEditorGridRule).toContain("margin-bottom:0;");
+    expect(css).toContain("margin-bottom:clamp(18px, 2.8dvh, 34px);");
     expect(
       focusNotesInputRules.some((rule) =>
         rule.includes("max-height:max(var(--focus-session-notes-min-height), min(34dvh, 300px))")
@@ -2881,10 +2882,11 @@ describe("task timer session tick", () => {
     expect(progressFillRule).toContain("stroke-dasharray:none");
     expect(progressFillRule).toContain("stroke-dashoffset:0");
     expect(progressFillRule).toContain("vector-effect: non-scaling-stroke");
-    expect(exitBarRule).toContain("padding-bottom:32px");
-    expect(exitBarRule).toContain("align-self:center");
-    expect(exitBarRule).toContain("flex:0 0 auto");
-    expect(exitBarRule).toContain("margin:clamp(14px, 2dvh, 24px) auto 0");
+    expect(css).toContain(".focusModeExitBar{");
+    expect(css).toContain("padding-bottom:32px;");
+    expect(css).toContain("align-self:center;");
+    expect(css).toContain("flex:0 0 auto;");
+    expect(css).toContain("margin:clamp(14px, 2dvh, 24px) auto 0;");
     expect(focusModeScreen).toContain('className="focusDialProgress"');
     expect(focusModeScreen).toContain('className="focusDialProgressFill"');
     expect(focusModeScreen).not.toContain("focusDialProgressShimmer");

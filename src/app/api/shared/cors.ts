@@ -15,7 +15,7 @@ export function getAuthenticatedApiCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
   const headers = new Headers({
     Vary: "Origin",
-    "Access-Control-Allow-Methods": "POST, PATCH, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Firebase-Auth",
     "Access-Control-Max-Age": "600",
   });

@@ -26,6 +26,8 @@ describe("parseHistoryManagerManualDraft", () => {
     expect(parsed).toEqual({
       entry: {
         ts: new Date("2026-05-03T06:30").getTime(),
+        startedAtMs: new Date("2026-05-03T06:30").getTime(),
+        finishedAtMs: new Date("2026-05-03T07:55").getTime(),
         ms: 85 * 60 * 1000,
         name: "Focus",
         note: "Retrospective note",
@@ -51,6 +53,8 @@ describe("parseHistoryManagerManualDraft", () => {
     expect(parsed).toEqual({
       entry: {
         ts: new Date("2026-05-03T06:30").getTime(),
+        startedAtMs: new Date("2026-05-03T06:30").getTime(),
+        finishedAtMs: new Date("2026-05-03T07:00").getTime(),
         ms: 30 * 60 * 1000,
         name: "Focus",
         completionDifficulty: 4,

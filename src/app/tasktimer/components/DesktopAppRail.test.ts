@@ -19,6 +19,7 @@ describe("DesktopAppRail profile menu", () => {
       "Dashboard",
       "Notes",
       "Tasks",
+      "Executive",
       "Friends",
       "Leaderboards",
     ]);
@@ -31,6 +32,9 @@ describe("DesktopAppRail profile menu", () => {
     ]);
     expect(desktopItems.find((item) => item.page === "notes")?.iconSrc).toBe("/icons/icons_default/notes.webp");
     expect(desktopItems.find((item) => item.page === "notes")?.href).toBe("/notes");
+    expect(desktopItems.find((item) => item.page === "executive")?.iconSrc).toBe("/icons/icons_default/executive.webp");
+    expect(desktopItems.find((item) => item.page === "executive")?.href).toBe("/executive");
+    expect(mobileItems.some((item) => item.mobileId === "footerExecutiveBtn")).toBe(false);
     expect(desktopItems.find((item) => item.page === "leaderboard")?.iconSrc).toBe("/icons/icons_default/leaderboards.webp");
   });
 

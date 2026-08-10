@@ -2,7 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createNextBestActionRecommendation } from "./nextBestActionRecommendation";
 import { computeTaskClarificationSourceVersion } from "@/app/taskclarification/lib/taskClarification";
-import { buildNextBestActionFirestoreRecord, createFirestoreNextBestActionRepository } from "./nextBestActionRepository";
+import {
+  buildNextBestActionFirestoreRecord,
+  createFirestoreNextBestActionRepository,
+  isTaskCompletedForRecommendationPeriod,
+} from "./nextBestActionRepository";
 
 function recommendation() {
   return createNextBestActionRecommendation({
@@ -50,6 +54,29 @@ function startHarness(options: { task?: Record<string, unknown>; recommendation?
 }
 
 describe("Next Best Action recommendation persistence", () => {
+  it("excludes current daily completions, including reset completions, but allows prior days", () => {
+    const currentDay = {
+      timeGoalPeriod: "day",
+      timeGoalCompletedDayKey: "2026-08-07",
+      timeGoalCompletedReason: "reset",
+    };
+
+    expect(isTaskCompletedForRecommendationPeriod(currentDay, Date.parse("2026-08-07T09:00:00.000Z"), "UTC")).toBe(true);
+    expect(isTaskCompletedForRecommendationPeriod(currentDay, Date.parse("2026-08-08T09:00:00.000Z"), "UTC")).toBe(false);
+    expect(isTaskCompletedForRecommendationPeriod({ ...currentDay, timeGoalCompletedDayKey: "2026-08-06" }, Date.parse("2026-08-07T09:00:00.000Z"), "UTC")).toBe(false);
+  });
+
+  it("respects Monday and Sunday weekly period boundaries", () => {
+    const weekly = { timeGoalPeriod: "week", timeGoalCompletedWeekKey: "2026-08-03" };
+    const sundayWeek = { timeGoalPeriod: "week", timeGoalCompletedWeekKey: "2026-08-09" };
+    const sunday = Date.parse("2026-08-09T12:00:00.000Z");
+
+    expect(isTaskCompletedForRecommendationPeriod(weekly, sunday, "UTC", "mon")).toBe(true);
+    expect(isTaskCompletedForRecommendationPeriod(weekly, sunday, "UTC", "sun")).toBe(false);
+    expect(isTaskCompletedForRecommendationPeriod(sundayWeek, sunday, "UTC", "sun")).toBe(true);
+    expect(isTaskCompletedForRecommendationPeriod(sundayWeek, Date.parse("2026-08-16T12:00:00.000Z"), "UTC", "sun")).toBe(false);
+  });
+
   it("writes the discriminated record to the existing user-scoped recommendation area", async () => {
     const set = vi.fn(async () => undefined);
     let savedPath = "";
@@ -100,6 +127,9 @@ describe("Next Best Action recommendation persistence", () => {
       plannedStartDay: "mon",
       plannedStartTime: "10:00",
       timeGoalMinutes: 45,
+      timeGoalPeriod: "day",
+      timeGoalCompletedDayKey: "2026-08-07",
+      timeGoalCompletedReason: "reset",
     };
     const taskDoc = {
       id: "task-1",
@@ -130,6 +160,7 @@ describe("Next Best Action recommendation persistence", () => {
     expect(candidates[0]).toMatchObject({
       ownerUid: "uid-1",
       task: { id: "task-1", name: "Prepare launch", timeGoalMinutes: 45 },
+      completed: true,
       history: [{ name: "Prepare launch", ms: 30 * 60000 }],
       focusWindowMatched: true,
     });
@@ -177,13 +208,26 @@ describe("Next Best Action recommendation persistence", () => {
     const expired = startHarness({ recommendation: { ...recommendation(), expiresAt: "2026-08-07T08:00:00.000Z" } });
     const blocked = startHarness({ task: { id: "task-1", name: "Prepare launch", blocked: true } });
     const started = startHarness({ recommendation: { ...recommendation(), status: "STARTED" } });
+    const completed = startHarness({ task: {
+      id: "task-1",
+      name: "Prepare launch",
+      active: true,
+      actionable: true,
+      blocked: false,
+      completed: false,
+      timeGoalPeriod: "day",
+      timeGoalCompletedDayKey: "2026-08-07",
+      timeGoalCompletedReason: "reset",
+    } });
 
     await expect(stale.repository.startRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs: Date.parse("2026-08-07T09:05:00.000Z") })).resolves.toMatchObject({ kind: "stale" });
     await expect(expired.repository.startRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs: Date.parse("2026-08-07T09:05:00.000Z") })).resolves.toMatchObject({ kind: "expired" });
     await expect(blocked.repository.startRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs: Date.parse("2026-08-07T09:05:00.000Z") })).resolves.toMatchObject({ kind: "ineligible" });
     await expect(started.repository.startRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs: Date.parse("2026-08-07T09:05:00.000Z") })).resolves.toMatchObject({ kind: "idempotent" });
+    await expect(completed.repository.startRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs: Date.parse("2026-08-07T09:05:00.000Z"), timezone: "UTC" })).resolves.toMatchObject({ kind: "ineligible" });
     expect(stale.updates).toHaveLength(0);
     expect(blocked.updates).toHaveLength(0);
+    expect(completed.updates).toHaveLength(0);
   });
 
   it("rejects a recommendation whose envelope ownership does not match the authenticated user", async () => {
@@ -203,5 +247,36 @@ describe("Next Best Action recommendation persistence", () => {
     expect(dismissal.updates[0]?.value).toMatchObject({ status: "DISMISSED", feedbackCode: "wrong_timing" });
     expect(alternative.task.name).toBe("Prepare launch");
     expect(dismissal.task.name).toBe("Prepare launch");
+  });
+
+  it("expires prior active recommendations while preserving the newly refreshed recommendation", async () => {
+    const active = recommendation();
+    const preserved = { ...recommendation(), id: "nba-new" };
+    const updates: Array<{ ref: { path?: string }; value: Record<string, unknown> }> = [];
+    const db = {
+      collection: () => ({
+        doc: () => ({
+          collection: () => ({ path: "users/uid-1/taskRecommendations" }),
+        }),
+      }),
+      runTransaction: async (callback: (transaction: { get: (ref: unknown) => Promise<unknown>; update: (ref: { path?: string }, value: Record<string, unknown>) => void }) => Promise<unknown>) =>
+        callback({
+          get: async () => ({
+            docs: [
+              { id: active.id, ref: { path: `users/uid-1/taskRecommendations/${active.id}` }, data: () => buildNextBestActionFirestoreRecord(active) },
+              { id: preserved.id, ref: { path: `users/uid-1/taskRecommendations/${preserved.id}` }, data: () => buildNextBestActionFirestoreRecord(preserved) },
+            ],
+          }),
+          update: (ref, value) => updates.push({ ref, value }),
+        }),
+    };
+    const repository = createFirestoreNextBestActionRepository(db as never);
+
+    await expect(repository.invalidateActiveRecommendations?.({ uid: "uid-1", nowMs: Date.parse("2026-08-09T09:00:00.000Z"), exceptRecommendationId: "nba-new" })).resolves.toBe(1);
+    expect(updates).toHaveLength(1);
+    expect(updates[0]).toMatchObject({
+      ref: { path: "users/uid-1/taskRecommendations/nba-1" },
+      value: { status: "EXPIRED", invalidatedAt: expect.anything() },
+    });
   });
 });

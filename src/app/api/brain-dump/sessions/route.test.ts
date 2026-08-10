@@ -13,6 +13,8 @@ const mocks = vi.hoisted(() => ({
     loadTaskStatusMeta: vi.fn(),
   },
   verifyFirebaseRequestUser: vi.fn(),
+  getFirebaseAdminDb: vi.fn(),
+  getUserDoc: vi.fn(),
 }));
 
 vi.mock("../../shared/auth", async (importOriginal) => {
@@ -22,6 +24,8 @@ vi.mock("../../shared/auth", async (importOriginal) => {
     verifyFirebaseRequestUser: mocks.verifyFirebaseRequestUser,
   };
 });
+
+vi.mock("@/lib/firebaseAdmin", () => ({ getFirebaseAdminDb: mocks.getFirebaseAdminDb }));
 
 vi.mock("@/app/brain-dump/lib/brainDumpProvider", () => ({
   getBrainDumpAiProvider: () => mocks.provider,
@@ -56,6 +60,12 @@ describe("POST /api/brain-dump/sessions", () => {
       uid: "uid-1",
       email: "user@example.com",
       idToken: "token",
+    });
+    mocks.getUserDoc.mockResolvedValue({ exists: true, get: (field: string) => (field === "plan" ? "plus" : undefined) });
+    mocks.getFirebaseAdminDb.mockReturnValue({
+      collection: vi.fn((name: string) => ({
+        doc: vi.fn((id: string) => (name === "users" && id === "uid-1" ? { get: mocks.getUserDoc } : { get: vi.fn() })),
+      })),
     });
     mocks.provider.extractTyped.mockResolvedValue({
       items: [

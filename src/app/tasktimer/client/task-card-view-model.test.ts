@@ -118,6 +118,15 @@ describe("task card view model", () => {
     expect(rendered.html).not.toContain('<button class="iconBtn" data-action="edit" title="Edit">');
   });
 
+  it("renders the task clarification menu action as a PLUS-locked entry when executive function is unavailable", () => {
+    const rendered = renderCard({ canUseExecutiveFunction: false });
+
+    expect(rendered.html).toContain('data-action="clarify"');
+    expect(rendered.html).toContain('data-plan-locked="executiveFunction"');
+    expect(rendered.html).toContain('title="PLUS feature: Make this easier to start"');
+    expectTaskMenuLabel(rendered.html, "Make easier to start (PLUS)");
+  });
+
   it("renders Archive instead of Delete when the task has history entries", () => {
     const rendered = renderCard({ hasTaskHistory: true });
 
@@ -837,6 +846,7 @@ describe("task card view model", () => {
     const handled = dispatchTaskCardAction({
       action: "fastForwardCheckpoint",
       canUseAdvancedHistory: true,
+      canUseExecutiveFunction: true,
       canUseSocialFeatures: true,
       showUpgradePrompt: (featureName) => calls.push(`upgrade:${featureName}`),
       handlers: {
@@ -854,6 +864,7 @@ describe("task card view model", () => {
     const manualHandled = dispatchTaskCardAction({
       action: "manualEntry",
       canUseAdvancedHistory: false,
+      canUseExecutiveFunction: true,
       canUseSocialFeatures: true,
       showUpgradePrompt: (featureName) => calls.push(`upgrade:${featureName}`),
       handlers: {
@@ -863,6 +874,7 @@ describe("task card view model", () => {
     const shareHandled = dispatchTaskCardAction({
       action: "shareTask",
       canUseAdvancedHistory: true,
+      canUseExecutiveFunction: true,
       canUseSocialFeatures: false,
       showUpgradePrompt: (featureName) => calls.push(`upgrade:${featureName}`),
       handlers: {
@@ -873,5 +885,23 @@ describe("task card view model", () => {
     expect(manualHandled).toBe(true);
     expect(shareHandled).toBe(true);
     expect(calls).toEqual(["upgrade:Manual history entry", "upgrade:Task sharing and friends"]);
+  });
+
+  it("gates locked task clarification before invoking handlers", () => {
+    const calls: string[] = [];
+
+    const handled = dispatchTaskCardAction({
+      action: "clarify",
+      canUseAdvancedHistory: true,
+      canUseExecutiveFunction: false,
+      canUseSocialFeatures: true,
+      showUpgradePrompt: (featureName) => calls.push(`upgrade:${featureName}`),
+      handlers: {
+        clarify: () => calls.push("clarify"),
+      },
+    });
+
+    expect(handled).toBe(true);
+    expect(calls).toEqual(["upgrade:Make easier to start"]);
   });
 });

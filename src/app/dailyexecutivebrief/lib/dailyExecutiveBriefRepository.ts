@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { Timestamp, type Firestore } from "firebase-admin/firestore";
 
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
+import { normalizeDashboardWeekStart, type DashboardWeekStart } from "@/app/tasktimer/lib/historyChart";
 
 import { DailyExecutiveBriefSnapshotSchema, type DailyExecutiveBriefSnapshot } from "./dailyExecutiveBriefContract";
 import { DailyExecutiveBriefAvailabilitySchema, type DailyExecutiveBriefPlanningInput, type DailyExecutiveBriefTask } from "./dailyExecutiveBriefPlanning";
@@ -32,7 +33,24 @@ function asMillis(value: unknown) {
   return Number.isFinite(Number(value)) ? Math.floor(Number(value)) : 0;
 }
 
-function mapTask(id: string, row: RawRow): DailyExecutiveBriefTask {
+function currentWeekStartDate(todayDate: string, weekStarting: DashboardWeekStart) {
+  const dateMs = Date.parse(`${todayDate}T00:00:00.000Z`);
+  if (!Number.isFinite(dateMs)) return todayDate;
+  const startIndex = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 }[weekStarting];
+  const weekday = new Date(dateMs).getUTCDay();
+  const daysSinceStart = (weekday - startIndex + 7) % 7;
+  return new Date(dateMs - daysSinceStart * 86_400_000).toISOString().slice(0, 10);
+}
+
+function isCompletedForCurrentPeriod(row: RawRow, todayDate: string, weekStarting: DashboardWeekStart) {
+  const completionKey = row.timeGoalPeriod === "week" ? row.timeGoalCompletedWeekKey : row.timeGoalCompletedDayKey;
+  const normalizedKey = asString(completionKey, 40);
+  if (!normalizedKey) return false;
+  const currentKey = row.timeGoalPeriod === "week" ? currentWeekStartDate(todayDate, weekStarting) : todayDate;
+  return normalizedKey === currentKey;
+}
+
+function mapTask(id: string, row: RawRow, todayDate: string, weekStarting: DashboardWeekStart): DailyExecutiveBriefTask {
   const dueDate = asString(row.onceOffTargetDate, 10);
   return {
     id: asString(row.id, 160) || id,
@@ -46,6 +64,7 @@ function mapTask(id: string, row: RawRow): DailyExecutiveBriefTask {
     inProgress: row.running === true,
     requiresClarification: row.requiresClarification === true,
     blocksImportantWork: row.blocksImportantWork === true,
+    completed: row.completed === true || row.status === "completed" || isCompletedForCurrentPeriod(row, todayDate, weekStarting),
   };
 }
 
@@ -80,7 +99,7 @@ function snapshotFromFirestore(row: RawRow): DailyExecutiveBriefSnapshot | null 
 export type DailyExecutiveBriefSourceContext = Pick<DailyExecutiveBriefPlanningInput, "tasks" | "availability"> & { sourceVersion: string };
 
 export interface DailyExecutiveBriefRepository {
-  loadSourceContext(uid: string): Promise<DailyExecutiveBriefSourceContext>;
+  loadSourceContext(uid: string, context?: { todayDate?: string }): Promise<DailyExecutiveBriefSourceContext>;
   loadBrief(uid: string, date: string): Promise<DailyExecutiveBriefSnapshot | null>;
   saveBrief(uid: string, snapshot: DailyExecutiveBriefSnapshot): Promise<void>;
   dismissAdjustment(input: { uid: string; date: string; adjustmentId: string; nowMs: number }): Promise<"dismissed" | "idempotent" | "not-found" | "expired">;
@@ -92,7 +111,7 @@ export function createFirestoreDailyExecutiveBriefRepository(db: Firestore = get
   }
 
   return {
-    async loadSourceContext(uid) {
+    async loadSourceContext(uid, context) {
       const safeUid = asString(uid, 120);
       if (!safeUid) return { tasks: [], availability: DailyExecutiveBriefAvailabilitySchema.parse({}), sourceVersion: buildSourceVersion([], null) };
       const root = userDoc(safeUid);
@@ -102,9 +121,11 @@ export function createFirestoreDailyExecutiveBriefRepository(db: Firestore = get
       ]);
       const rows = taskSnapshot.docs.map((doc) => doc.data() as RawRow);
       const preferences = preferenceSnapshot.exists ? preferenceSnapshot.data() as RawRow : null;
+      const todayDate = /^\d{4}-\d{2}-\d{2}$/.test(String(context?.todayDate || "")) ? String(context?.todayDate) : "";
+      const weekStarting = normalizeDashboardWeekStart(preferences?.weekStarting);
       const focusWindowPresent = !!(asString(preferences?.optimalProductivityStartTime, 8) && asString(preferences?.optimalProductivityEndTime, 8));
       return {
-        tasks: taskSnapshot.docs.map((doc) => mapTask(doc.id, doc.data() as RawRow)),
+        tasks: taskSnapshot.docs.map((doc) => mapTask(doc.id, doc.data() as RawRow, todayDate, weekStarting)),
         availability: DailyExecutiveBriefAvailabilitySchema.parse({ focusWindowPresent }),
         sourceVersion: buildSourceVersion(rows, preferences),
       };

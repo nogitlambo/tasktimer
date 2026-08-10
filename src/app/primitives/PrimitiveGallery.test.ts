@@ -18,6 +18,7 @@ describe("PrimitiveGallery", () => {
     expect(html).toContain("Destructive Confirmation Modal Baseline");
     expect(html).toContain("Dropdown Menus");
     expect(html).toContain("Switches And Checks");
+    expect(html).toContain("Dashboard Panel Baseline");
     expect(html).toContain("btn btn-accent primitiveSciFiModalAction primitiveSciFiModalPrimaryAction");
     expect(html).not.toContain("primitiveDisabledButton");
     expect(html).toContain('class="iconBtn"');
@@ -55,6 +56,14 @@ describe("PrimitiveGallery", () => {
     expect(html).toContain("Destructive");
     expect(html).not.toContain("Open Modal Preview");
     expect(html).toContain("dashboardCard");
+    expect(html).toContain("dashboardCard dashboardMomentumCard primitiveDashboardPanelBaseline");
+    expect(html).toContain("dashboardMomentumTitleRow");
+    expect(html).toContain("dashboardCardTitle dashboardPanelTitle");
+    expect(html).toContain("dashboardPanelTitleDot");
+    expect(html).toContain("dashboardMomentumMainSection");
+    expect(html).toContain("dashboardMomentumDriversSection dashboardMomentumDriversTextSection");
+    expect(html).toContain("dashboardMomentumFooterBand");
+    expect(html).toContain("Panel Baseline");
     expect(html).toContain("--accent");
     expect(html).not.toContain("<select");
     expect(html).not.toContain("standardModalOverlay");
@@ -116,6 +125,36 @@ describe("PrimitiveGallery", () => {
     )?.[0] || "";
 
     expect(sharedCardRule).toContain("border-radius: 6px;");
+  });
+
+  it("documents the Momentum-derived dashboard panel baseline in primitive-scoped CSS", () => {
+    const css = readFileSync("src/app/primitives/primitives.css", "utf8").replace(/\r\n/g, "\n");
+
+    const previewRule = css.match(
+      /:where\(#app\[aria-label="TaskLaunch Primitives"\], #app\.primitiveSurface\) \.primitiveDashboardPanelPreviewPanel\{[\s\S]*?\n\}/
+    )?.[0] || "";
+    const baselineRule = css.match(
+      /:where\(#app\[aria-label="TaskLaunch Primitives"\], #app\.primitiveSurface\) \.primitiveDashboardPanelBaseline\{[\s\S]*?\n\}/
+    )?.[0] || "";
+    const topLineRule = css.match(
+      /:where\(#app\[aria-label="TaskLaunch Primitives"\], #app\.primitiveSurface\) \.primitiveDashboardPanelBaseline::before\{[\s\S]*?\n\}/
+    )?.[0] || "";
+    const footerRule = css.match(
+      /:where\(#app\[aria-label="TaskLaunch Primitives"\], #app\.primitiveSurface\) \.primitiveDashboardPanelBaseline \.dashboardMomentumFooterBand\{[\s\S]*?\n\}/
+    )?.[0] || "";
+    const mobileRule = css.match(
+      /@media \(max-width: 640px\)\{[\s\S]*?:where\(#app\[aria-label="TaskLaunch Primitives"\], #app\.primitiveSurface\) \.primitiveDashboardPanelBaseline\{[\s\S]*?\n  \}/
+    )?.[0] || "";
+
+    expect(previewRule).toContain("--dashboard-reference-panel-bg-top: #0d0f13;");
+    expect(previewRule).toContain("--dashboard-reference-panel-bg-bottom: #0d0f13;");
+    expect(previewRule).toContain("--dashboard-reference-border: rgba(148,168,200,.12);");
+    expect(baselineRule).toContain("border: 1px solid var(--dashboard-reference-border) !important;");
+    expect(baselineRule).toContain("border-radius: 18px !important;");
+    expect(baselineRule).toContain("background: linear-gradient(180deg, var(--dashboard-reference-panel-bg-top), var(--dashboard-reference-panel-bg-bottom)) !important;");
+    expect(topLineRule).toContain("background: linear-gradient(90deg, transparent, var(--dashboard-reference-border-strong), transparent) !important;");
+    expect(footerRule).toContain("border-top: 1px solid var(--dashboard-reference-border) !important;");
+    expect(mobileRule).toContain("border-radius: 16px !important;");
   });
 
   it("keeps destructive and non-destructive confirmation previews the same width", () => {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isDeletedAccountUid } from "@/app/api/account/deletedAccountUid";
 import { verifyFirebaseRequestUser } from "@/app/api/shared/auth";
+import { assertPlusPlanForExecutiveFunction } from "@/app/api/shared/plusEntitlement";
 import { authenticatedApiOptions, withAuthenticatedApiCors } from "@/app/api/shared/cors";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { createFirestoreNextBestActionRepository } from "@/app/nextbestaction/lib/nextBestActionRepository";
@@ -22,6 +23,7 @@ export async function POST(req: Request, context: RouteContext) {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const { uid } = await verifyFirebaseRequestUser(req, body);
     const db = getFirebaseAdminDb();
+    await assertPlusPlanForExecutiveFunction(uid, db);
     if (await isDeletedAccountUid(db, uid)) return withAuthenticatedApiCors(req, NextResponse.json({ error: "This account has been deleted.", code: "auth/account-deleted" }, { status: 410 }));
     const recommendationId = asString((await context.params).recommendationId);
     const feedbackCode = asString(body.feedbackCode, 40) || null;

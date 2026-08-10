@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { assertPlusPlanForExecutiveFunction } from "@/app/api/shared/plusEntitlement";
 
 import { isDeletedAccountUid } from "@/app/api/account/deletedAccountUid";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
@@ -28,6 +29,7 @@ export async function POST(req: Request, context: RouteContext) {
       return withAuthenticatedApiCors(req, NextResponse.json({ error: "Clarification recommendation not found.", code: "task-clarification/not-found" }, { status: 404 }));
     }
     const db = getFirebaseAdminDb();
+    await assertPlusPlanForExecutiveFunction(uid, db);
     if (await isDeletedAccountUid(db, uid)) {
       return withAuthenticatedApiCors(req, NextResponse.json({ error: "This account has been deleted.", code: "auth/account-deleted" }, { status: 410 }));
     }

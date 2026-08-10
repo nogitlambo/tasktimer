@@ -19,7 +19,7 @@ describe("Landing", () => {
     expect(html).not.toContain("loop");
     expect(html).not.toContain("isLaunchStarting");
     expect(html).toContain('href="/login"');
-    expect(html).toContain("Launch My Free Account");
+    expect(html).toContain("GET STARTED");
     expect(html).toContain("Get it on Google Play");
     expect(html).toContain('src="/logo/googleplay.webp"');
     expect(html).toContain('class="landingV2SecondaryBtnIcon"');

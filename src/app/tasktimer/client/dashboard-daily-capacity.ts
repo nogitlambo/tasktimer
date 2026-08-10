@@ -3,6 +3,8 @@ import { trackDailyCapacity } from "@/app/adaptivecapacity/lib/dailyCapacityTele
 
 import { getApiUrl } from "../lib/apiClient";
 
+const PLUS_REQUIRED_MESSAGE = "Upgrade to PLUS to use executive function features.";
+
 type DailyCapacityState = "REDUCED" | "LIGHT" | "STANDARD" | "STRONG" | "USER_DEFINED" | "INSUFFICIENT_DATA";
 type DailyCapacityConfidence = "LOW" | "MEDIUM" | "HIGH";
 type DailyCapacityPrimarySource = "USER_CUSTOM" | "USER_STATE" | "WEEKDAY_HISTORY" | "ROLLING_HISTORY" | "DEFAULT";
@@ -92,7 +94,7 @@ function element(documentRef: Document, id: string) {
   return documentRef.getElementById(id) as HTMLElement | null;
 }
 
-type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; getCurrentAppPage: () => string; getIdToken?: () => Promise<string | null> };
+type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; getCurrentAppPage: () => string; canUseExecutiveFunction?: () => boolean; showUpgradePrompt?: (featureName: string, plan?: "plus") => void; getIdToken?: () => Promise<string | null> };
 
 export function createDashboardDailyCapacity(options: Options) {
   const documentRef = options.documentRef ?? document;
@@ -121,12 +123,29 @@ export function createDashboardDailyCapacity(options: Options) {
     };
   }
 
-  function setState(state: "loading" | "ready" | "error", message: string) {
+  function setState(state: "loading" | "ready" | "error" | "locked", message: string) {
     card?.setAttribute("data-daily-capacity-state", state);
     const status = element(documentRef, "dashboardDailyCapacityStatus");
     if (status) status.textContent = message;
     const retry = element(documentRef, "dashboardDailyCapacityRetry") as HTMLButtonElement | null;
-    if (retry) retry.hidden = state !== "error";
+    if (retry) {
+      retry.hidden = state !== "error" && state !== "locked";
+      retry.disabled = false;
+      retry.textContent = state === "locked" ? "Upgrade to PLUS" : "Retry";
+    }
+    const adjust = documentRef.querySelector<HTMLButtonElement>('[data-daily-capacity="adjust"]');
+    if (adjust) adjust.disabled = state === "locked";
+    card?.classList.toggle("isPlanLocked", state === "locked");
+    if (state === "locked") card?.setAttribute("data-plan-locked", "executiveFunction");
+    else card?.removeAttribute("data-plan-locked");
+  }
+
+  function lockIfNeeded() {
+    if (options.canUseExecutiveFunction?.() !== false) return false;
+    currentCapacity = null;
+    abortController?.abort();
+    setState("locked", PLUS_REQUIRED_MESSAGE);
+    return true;
   }
 
   function render(capacity: DailyCapacityDashboardSnapshot) {
@@ -184,7 +203,8 @@ export function createDashboardDailyCapacity(options: Options) {
   }
 
   async function refresh(forceRefresh = false) {
-    if (!card || options.getCurrentAppPage() !== "dashboard") return;
+    if (!card || !["dashboard", "executive"].includes(options.getCurrentAppPage())) return;
+    if (lockIfNeeded()) return;
     abortController?.abort();
     abortController = new AbortController();
     setState("loading", "Loading today's capacity...");
@@ -208,6 +228,10 @@ export function createDashboardDailyCapacity(options: Options) {
   }
 
   async function updateOverride(method: "POST" | "DELETE") {
+    if (lockIfNeeded()) {
+      options.showUpgradePrompt?.("Today's capacity", "plus");
+      return;
+    }
     try {
       const idToken = await getIdToken();
       if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
@@ -241,8 +265,16 @@ export function createDashboardDailyCapacity(options: Options) {
     documentRef.addEventListener("click", (event) => {
       const target = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-daily-capacity]");
       const action = target?.getAttribute("data-daily-capacity");
+      if (action && action !== "close" && lockIfNeeded()) {
+        options.showUpgradePrompt?.("Today's capacity", "plus");
+        return;
+      }
       if (action === "refresh") void refresh(true);
       if (action === "adjust") {
+        if (lockIfNeeded()) {
+          options.showUpgradePrompt?.("Today's capacity", "plus");
+          return;
+        }
         setOverlay(true);
         telemetry("override_opened", currentCapacity ? capacityTelemetry(currentCapacity) : {});
       }
@@ -257,7 +289,7 @@ export function createDashboardDailyCapacity(options: Options) {
       }
     });
     windowRef.addEventListener("tasklaunch:app-page-changed", (event) => {
-      if ((event as CustomEvent<{ page?: string }>).detail?.page === "dashboard") void refresh();
+      if (["dashboard", "executive"].includes((event as CustomEvent<{ page?: string }>).detail?.page || "")) void refresh();
     });
     windowRef.addEventListener("tasklaunch:capacity-source-changed", () => {
       telemetry("source_changed");
@@ -271,13 +303,13 @@ export function createDashboardDailyCapacity(options: Options) {
       telemetry("source_changed");
       void refresh(true);
     });
-    windowRef.addEventListener("tasklaunch:recovery-applied", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(true); });
-    windowRef.addEventListener("tasklaunch:recovery-undone", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(true); });
+    windowRef.addEventListener("tasklaunch:recovery-applied", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(true); });
+    windowRef.addEventListener("tasklaunch:recovery-undone", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(true); });
     keydownHandler = (event) => {
       if (event.key === "Escape") setOverlay(false);
     };
     windowRef.addEventListener("keydown", keydownHandler);
-    if (options.getCurrentAppPage() === "dashboard") void refresh();
+    if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh();
   }
 
   function destroy() {

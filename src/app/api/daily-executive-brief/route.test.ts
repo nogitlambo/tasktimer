@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   isDeletedAccountUid: vi.fn(),
   createRepository: vi.fn(),
   generate: vi.fn(),
+  getUserDoc: vi.fn(),
 }));
 
 vi.mock("../shared/auth", async (importOriginal) => ({ ...(await importOriginal<typeof import("../shared/auth")>()), verifyFirebaseRequestUser: mocks.verifyFirebaseRequestUser }));
@@ -26,7 +27,12 @@ describe("POST /api/daily-executive-brief", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.verifyFirebaseRequestUser.mockResolvedValue({ uid: "uid-1" });
-    mocks.getFirebaseAdminDb.mockReturnValue({});
+    mocks.getUserDoc.mockResolvedValue({ exists: true, get: (field: string) => (field === "plan" ? "plus" : undefined) });
+    mocks.getFirebaseAdminDb.mockReturnValue({
+      collection: vi.fn((name: string) => ({
+        doc: vi.fn((id: string) => (name === "users" && id === "uid-1" ? { get: mocks.getUserDoc } : { get: vi.fn() })),
+      })),
+    });
     mocks.isDeletedAccountUid.mockResolvedValue(false);
     mocks.createRepository.mockReturnValue({});
     mocks.generate.mockResolvedValue({ snapshot: brief, reused: false });

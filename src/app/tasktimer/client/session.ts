@@ -1941,7 +1941,8 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
     ctx.closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
     ctx.closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
-    ctx.save();
+    ctx.save({ forceCloudFlush: true });
+    ctx.notifyTaskCompletionChanged?.(taskId);
     if (!opts.logHistory) {
       void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
     }

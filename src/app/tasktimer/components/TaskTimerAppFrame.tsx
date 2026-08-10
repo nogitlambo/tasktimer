@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from "react";
 import AppImg from "@/components/AppImg";
 import { usePathname, useSearchParams } from "next/navigation";
 import DesktopAppRail from "./DesktopAppRail";
@@ -25,10 +25,11 @@ import {
   type RankPromotionRecord,
 } from "../lib/rewards";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
+import { hasTaskTimerEntitlement, readTaskTimerPlanFromStorage, TASKTIMER_PLAN_CHANGED_EVENT } from "../lib/entitlements";
 import SignOutConfirmModal from "./SignOutConfirmModal";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 
-type MainAppPage = "tasks" | "schedule" | "dashboard" | "notes" | "friends" | "leaderboard" | "history";
+type MainAppPage = "tasks" | "schedule" | "dashboard" | "notes" | "executive" | "friends" | "leaderboard" | "history";
 
 type TaskLaunchMobileMenuLinkItem = {
   kind: "link";
@@ -221,6 +222,7 @@ export default function TaskTimerAppFrame({
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
   const [activeDesktopInsigniaUpgradeSeq, setActiveDesktopInsigniaUpgradeSeq] = useState<number | null>(null);
+  const [canUseExecutiveFunction, setCanUseExecutiveFunction] = useState(true);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuBtnRef = useRef<HTMLButtonElement | null>(null);
   const mobileMenuSwipeCloseRef = useRef<MobileSwipeCloseState>(getResetMobileSwipeCloseState());
@@ -235,6 +237,8 @@ export default function TaskTimerAppFrame({
   const xpProgressSubtext = getXpProgressSubtext(rewardsHeader.totalXp, rewardsHeader.xpToNext);
   const topbarUserLabel = currentUserLabel.toLocaleLowerCase();
   const brainDumpHref = resolveTaskTimerRouteHref("/brain-dump");
+  const brainDumpEntryLabel = canUseExecutiveFunction ? "Brain Dump" : "Brain Dump (PLUS)";
+  const brainDumpEntryTitle = canUseExecutiveFunction ? "Brain Dump" : "PLUS feature: Brain Dump";
   const rankThumbnailSrc = useMemo(() => getRankLadderThumbnailSrc(currentRankId, ""), [currentRankId]);
   const isDesktopInsigniaUpgradeActive = shouldRenderDesktopInsigniaUpgrade(
     desktopInsigniaUpgrade,
@@ -255,6 +259,15 @@ export default function TaskTimerAppFrame({
       getDesktopInsigniaUpgradeAudioCallback(achievementSoundsEnabled, playDesktopInsigniaUpgradeAudio)
     );
   }, [achievementSoundsEnabled, desktopInsigniaUpgrade]);
+
+  useEffect(() => {
+    const syncPlan = () => {
+      setCanUseExecutiveFunction(hasTaskTimerEntitlement(readTaskTimerPlanFromStorage(), "executiveFunction"));
+    };
+    syncPlan();
+    window.addEventListener(TASKTIMER_PLAN_CHANGED_EVENT, syncPlan);
+    return () => window.removeEventListener(TASKTIMER_PLAN_CHANGED_EVENT, syncPlan);
+  }, []);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -308,11 +321,17 @@ export default function TaskTimerAppFrame({
     setShowSignOutConfirm(true);
   }, []);
 
-  const handleOpenBrainDumpEntry = useCallback(() => {
+  const handleOpenBrainDumpEntry = useCallback((event: ReactMouseEvent<HTMLAnchorElement>) => {
+    event.stopPropagation();
+    if (!canUseExecutiveFunction) {
+      event.preventDefault();
+      window.location.href = resolveTaskTimerRouteHref("/account");
+      return;
+    }
     void trackEvent("brain_dump_entry_opened", {
       entry_point: "executive_function_image",
     });
-  }, []);
+  }, [canUseExecutiveFunction]);
 
   const handleConfirmSignOut = useCallback(async () => {
     if (signOutBusy) return;
@@ -513,8 +532,10 @@ export default function TaskTimerAppFrame({
           <a
             className="taskLaunchBrainDumpEntry taskLaunchTopbarBrainDumpEntry"
             href={brainDumpHref}
-            aria-label="Brain Dump"
-            title="Brain Dump"
+            aria-label={brainDumpEntryLabel}
+            title={brainDumpEntryTitle}
+            data-brain-dump-entry="topbar-executive-function-image"
+            data-plan-locked={canUseExecutiveFunction ? undefined : "executiveFunction"}
             onClick={handleOpenBrainDumpEntry}
           >
             <AppImg className="taskLaunchTopbarExecutiveFunctionImg" src="/executive_function.png" alt="" aria-hidden="true" />
@@ -604,8 +625,10 @@ export default function TaskTimerAppFrame({
             <a
               className="taskLaunchBrainDumpEntry appShellHeaderBrainDumpEntry"
               href={brainDumpHref}
-              aria-label="Brain Dump"
-              title="Brain Dump"
+              aria-label={brainDumpEntryLabel}
+              title={brainDumpEntryTitle}
+              data-brain-dump-entry="desktop-executive-function-image"
+              data-plan-locked={canUseExecutiveFunction ? undefined : "executiveFunction"}
               onClick={handleOpenBrainDumpEntry}
             >
               <AppImg className="appShellHeaderExecutiveFunctionImg" src="/executive_function.png" alt="" aria-hidden="true" />

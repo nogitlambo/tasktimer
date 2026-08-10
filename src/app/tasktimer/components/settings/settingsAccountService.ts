@@ -124,16 +124,10 @@ export async function loadClaimedUsername(uid: string): Promise<string> {
 export async function handleSignOutFlow() {
   const auth = getFirebaseAuthClient();
   if (!auth) throw new Error("Email sign-in is not configured for this environment.");
-  try {
-    await syncLocalProfileDataToCloud();
-  } catch (error) {
-    if (error instanceof ProfileSyncError && error.code === "timeout") {
-      throw new Error(
-        "Could not sign out because your latest local data could not sync to the cloud before the request timed out. Please try Sync again."
-      );
-    }
-    throw new Error("Could not sign out because your latest local data could not sync to the cloud. Please try Sync again.");
-  }
+  await syncLocalProfileDataToCloud().catch(() => {
+    // Sign-out is a session action, not a sync confirmation. Manual Sync still
+    // reports cloud failures, but logout must clear local state and exit.
+  });
   await signOut(auth);
   workspaceRepository.clearScopedState();
   redirectToLogin();

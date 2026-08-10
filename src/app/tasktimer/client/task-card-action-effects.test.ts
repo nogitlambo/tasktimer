@@ -17,7 +17,7 @@ function task(overrides: Partial<Task> = {}): Task {
   } as Task;
 }
 
-function createHarness(overrides: Partial<{ advanced: boolean; social: boolean; uid: string | null; appPage: string }> = {}) {
+function createHarness(overrides: Partial<{ advanced: boolean; executive: boolean; social: boolean; uid: string | null; appPage: string }> = {}) {
   const calls: string[] = [];
   const timers: Array<() => void> = [];
   const confirmOptions: Array<{ onOk: () => void }> = [];
@@ -25,6 +25,7 @@ function createHarness(overrides: Partial<{ advanced: boolean; social: boolean; 
   const effects = createTaskCardActionEffects({
     getTasks: () => [task()],
     canUseAdvancedHistory: () => overrides.advanced ?? true,
+    canUseExecutiveFunction: () => overrides.executive ?? true,
     canUseSocialFeatures: () => overrides.social ?? true,
     showUpgradePrompt: (featureName) => calls.push(`upgrade:${featureName}`),
     startTask: (index) => calls.push(`start:${index}`),
@@ -93,6 +94,14 @@ describe("task card action effects", () => {
 
     expect(harness.effects.handleAction({ action: "clarify", taskIndex: 4, taskId: "task-1" })).toBe(true);
     expect(harness.calls).toEqual(["clarify:4"]);
+  });
+
+  it("gates clarification before opening executive-function review", () => {
+    const harness = createHarness({ executive: false });
+
+    expect(harness.effects.handleAction({ action: "clarify", taskIndex: 4, taskId: "task-1" })).toBe(true);
+
+    expect(harness.calls).toEqual(["upgrade:Make easier to start"]);
   });
 
   it("gates locked actions before side effects run", () => {

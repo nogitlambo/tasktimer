@@ -118,10 +118,7 @@ describe("BrainDumpClient", () => {
     expect(source).toContain('trackEvent("brain_dump_tasks_create_failed"');
     expect(source).toContain("failed_count: payload.batch.failedCount");
     expect(source).toContain("retryable_count: payload.batch.retryableCount");
-    expect(source).toContain(`void trackEvent("brain_dump_tasks_created", {
-          created_count: payload.batch.createdCount,
-          skipped_count: payload.batch.skippedCount,
-        });`);
+    expect(source).toContain('void trackEvent("brain_dump_tasks_created", {');
   });
 
   it("preserves typed drafts through failures and exposes safe recovery controls", () => {

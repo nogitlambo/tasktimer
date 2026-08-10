@@ -63,6 +63,7 @@ type CreateTaskTimerPersistenceOptions = {
   getPendingTaskJumpMemory: () => string | null;
   setPendingTaskJumpMemory: (value: string | null) => void;
   getRuntimeDestroyed: () => boolean;
+  notifyTaskCompletionChanged?: (taskId: string) => void;
   getCurrentUid: () => string;
   getFocusModeTaskId: () => string | null;
   getFocusSessionNoteSaveTimer: () => number | null;
@@ -187,8 +188,11 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
       ])
     );
     if (changedTaskIds.length) {
-      options.workspaceRepository.saveTasks(tasksWithLiveSessions);
+      options.workspaceRepository.saveTasks(tasksWithLiveSessions, { forceCloudFlush: true });
       void options.syncSharedTaskSummariesForTasks(changedTaskIds).catch(() => {});
+      liveSessionResult.closedAppDailyTimeGoalCompletions.forEach((completion) => {
+        options.notifyTaskCompletionChanged?.(completion.taskId);
+      });
     }
     if (liveSessionResult.closedAppDailyTimeGoalCompletions.length) {
       options.maybeRestorePendingTimeGoalFlow();
