@@ -19,25 +19,46 @@ const featureCards: Array<{
   description: string;
 }> = [
   {
-    code: "F-001",
+    code: "brain-dump",
     icon: "flow",
-    title: "Adaptive Task Flow",
+    title: "Brain Dump - Get it out of your head",
     description:
-      "TaskLaunch aligns with how you naturally operate, turning your energy, timing, and habits into a system where starting and progressing feels effortless instead of forced.",
+      "Drop in everything that's competing for your attention. Type it, say it, or add an image. TaskLaunch turns the mess into structured, actionable tasks.",
   },
   {
-    code: "F-002",
-    icon: "automation",
-    title: "Intelligent Automation",
-    description:
-      "Routine decisions and admin fade into the background, creating a frictionless environment where momentum builds and your attention stays on meaningful work.",
-  },
-  {
-    code: "F-003",
+    code: "clarify",
     icon: "insight",
-    title: "Insight-led Refinement",
+    title: "Clarify - Make the unclear actionable",
     description:
-      "AI continuously interprets your patterns and progress to surface what's working, eliminate drag, and guide smarter next moves without disrupting your flow.",
+      "Vague or overwhelming tasks become easier to approach. TaskLaunch helps define what \"done\" looks like, break down bigger tasks, and uncover a clear first step.",
+  },
+  {
+    code: "prioritise",
+    icon: "insight",
+    title: "Prioritise - Know what to do next",
+    description:
+      "Instead of staring at a list and deciding where to start, TaskLaunch weighs what matters, what fits, and what needs attention to surface your best next action.",
+  },
+  {
+    code: "plan",
+    icon: "automation",
+    title: "Plan - Build a day that actually fits",
+    description:
+      "TaskLaunch considers your available time, focus patterns, priorities, deadlines, and realistic capacity to help shape a plan you can actually follow.",
+  },
+  {
+    code: "adapt",
+    icon: "flow",
+    title: "Adapt - When the day changes, the plan changes with it",
+    description:
+      "Things take longer. Energy shifts. Life interrupts. TaskLaunch recognises when your plan no longer fits and helps you safely adjust without starting over.",
+  },
+  {
+    code: "recover",
+    icon: "automation",
+    title: "Recover - Get back into motion",
+    description:
+      "Missed a few days? Backlog piling up? TaskLaunch separates what needs attention from what can wait and gives you one achievable place to restart.",
   },
 ];
 
@@ -254,13 +275,13 @@ export default function Landing(props: LandingProps) {
         <section className={`landingV2Hero ${showHero ? "isVisible" : ""}`} aria-label="TaskLaunch landing hero">
           <div className="landingV2HeroMain">
             <h1 className="landingV2HeroTitle displayFont">
-              <span className="landingV2HeroTitleGradient">Break free</span> from guilt-driven productivity systems
+              Executive function support, built for neurodivergent minds.
             </h1>
 
             <p className="landingV2HeroCopy">
-              Designed for the neurodivergent, TaskLaunch uses non-traditional productivity methods to build
-              sustainable discipline over time, supporting inconsistency instead of punishing it, helping you rebuild
-              momentum quickly, and make progress without perfectionism.
+              TaskLaunch bridges the gap between <strong>knowing what needs to be done and actually getting started</strong> —
+              breaking down the overwhelming, finding your next move, keeping plans realistic, and helping you adapt
+              when life gets in the way.
             </p>
 
             <div className={`landingV2Actions ${showHeroActions ? "isVisible" : ""}`}>

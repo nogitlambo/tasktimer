@@ -159,6 +159,7 @@ describe("task list renderer", () => {
     expect(source).toContain("const isRecordedGoalCompleted = hasRecordedTaskGoalCompletion(task);");
     expect(source).toContain("const isCompletedForCurrentPeriod = isTaskTimeGoalStartLockedForPeriod(task, Date.now(), options.getWeekStarting?.() || \"mon\");");
     expect(source).toContain("isStaleRecordedGoalCompleted: isRecordedGoalCompleted && !isCompletedForCurrentPeriod,");
+    expect(source).toMatch(/isTimeGoalCompleted:\s*isHeldResetPrimaryAction\s*\|\|\s*isCompletedForCurrentPeriod,/);
     expect(source).toContain("applyXpAwardButtonLabelOverride(taskEl, taskId);");
   });
 
@@ -485,7 +486,7 @@ describe("task list renderer", () => {
     expect(renderedTask?.innerHTML).not.toContain("Done until tomorrow");
   });
 
-  it("renders an August 1, 2026 completed goal task as Completed on Sunday, August 2, 2026", () => {
+  it("renders an August 1, 2026 completed goal task as launchable on Sunday, August 2, 2026", () => {
     const completedAtMs = new Date(2026, 7, 1, 21, 0, 0).getTime();
     const originalDateNow = Date.now;
     Date.now = () => new Date(2026, 7, 2, 8, 0, 0).getTime();
@@ -512,11 +513,11 @@ describe("task list renderer", () => {
       harness.renderer.renderTasksPage();
 
       const renderedTask = harness.taskListEl.children[0];
-      expect(renderedTask?.className).toContain("taskCompleted");
-      expect(renderedTask?.innerHTML).toContain('data-action="reset" title="Completed" aria-label="Completed" type="button" disabled');
-      expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionDone");
-      expect(renderedTask?.innerHTML).toContain('<span class="taskPrimaryActionPrimary">Completed</span>');
-      expect(renderedTask?.innerHTML).not.toContain('data-action="start" title="Resume"');
+      expect(renderedTask?.className).not.toContain("taskCompleted");
+      expect(renderedTask?.innerHTML).toContain('data-action="start" title="Launch"');
+      expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionLaunch");
+      expect(renderedTask?.innerHTML).not.toContain("taskPrimaryAction taskPrimaryActionDone");
+      expect(renderedTask?.innerHTML).not.toContain('<span class="taskPrimaryActionPrimary">Completed</span>');
     } finally {
       Date.now = originalDateNow;
     }

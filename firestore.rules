@@ -1270,6 +1270,17 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // Proactive Executive Nudge preferences and delivery history are server-maintained.
+    match /users/{userId}/nudgePreferences/{docId} {
+      allow read: if isActiveOwner(userId) && docId == "current";
+      allow create, update, delete: if false;
+    }
+
+    match /users/{userId}/nudgeDeliveries/{deliveryId} {
+      allow read: if isActiveOwner(userId);
+      allow create, update, delete: if false;
+    }
+
     // Trusted Automation execution, audit, lock, and queue records are server-maintained.
     match /users/{userId}/automationExecutions/{executionId} {
       allow read: if isActiveOwner(userId)

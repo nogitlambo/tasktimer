@@ -1,10 +1,12 @@
 import { loadExecutiveData } from "./executive-data";
+import { EXECUTIVE_FUNCTION_DISABLED_MESSAGE } from "../lib/executiveFunctionAvailability";
 
 type Options = {
   documentRef?: Document;
   windowRef?: Window;
   getCurrentAppPage: () => string;
   canUseExecutiveFunction?: () => boolean;
+  getExecutiveFunctionUnavailableMessage?: () => string;
   getIdToken?: () => Promise<string | null>;
 };
 
@@ -33,6 +35,10 @@ function setExecutivePlanHealth(elementRef: HTMLElement | null, planHealth: stri
   elementRef.setAttribute("data-plan-health", normalizedPlanHealth);
 }
 
+function isDisabledBySettings(message: string | null | undefined) {
+  return String(message || "") === EXECUTIVE_FUNCTION_DISABLED_MESSAGE;
+}
+
 export function createExecutiveSurface(options: Options) {
   const documentRef = options.documentRef ?? document;
   const windowRef = options.windowRef ?? window;
@@ -40,6 +46,7 @@ export function createExecutiveSurface(options: Options) {
   let sequence = 0;
 
   function render(snapshot: Awaited<ReturnType<typeof loadExecutiveData>>) {
+    page?.classList.remove("isExecutiveFunctionDisabled");
     const brief = snapshot.brief.status === "ready" ? snapshot.brief.value : null;
     const capacity = snapshot.capacity.status === "ready" ? snapshot.capacity.value : null;
     const planHealth = element(documentRef, "executivePlanHealth");
@@ -56,13 +63,16 @@ export function createExecutiveSurface(options: Options) {
     if (!page || options.getCurrentAppPage() !== "executive") return;
     const current = ++sequence;
     if (options.canUseExecutiveFunction?.() === false) {
+      const unavailableMessage = options.getExecutiveFunctionUnavailableMessage?.() || "PLUS feature";
+      page.classList.toggle("isExecutiveFunctionDisabled", isDisabledBySettings(unavailableMessage));
       const planHealth = element(documentRef, "executivePlanHealth");
       if (planHealth) {
-        planHealth.textContent = "PLUS feature";
+        planHealth.textContent = unavailableMessage;
         planHealth.removeAttribute("data-plan-health");
       }
       return;
     }
+    page.classList.remove("isExecutiveFunctionDisabled");
     try {
       const snapshot = await loadExecutiveData({ getIdToken: options.getIdToken || (async () => null), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC" });
       if (current === sequence) render(snapshot);

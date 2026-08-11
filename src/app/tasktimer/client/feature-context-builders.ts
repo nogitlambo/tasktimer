@@ -119,6 +119,7 @@ type CreatePersistenceOptionsArgs = {
   };
   historyUiState: MutableStore;
   focusState: MutableStore;
+  preferencesState: MutableStore;
   rewardState: MutableStore;
   runtimeDestroyed: () => boolean;
   notifyTaskCompletionChanged?: (taskId: string) => void;
@@ -147,6 +148,7 @@ type CreatePersistenceOptionsArgs = {
   loadDashboardPreviousWeekSetting: () => void;
   loadDynamicColorsSetting: () => void;
   loadFullColorTaskCardsSetting: () => void;
+  loadExecutiveFunctionSetting: () => void;
   loadInteractionClickSoundSetting: () => void;
   loadAchievementSoundsSetting: () => void;
   loadInteractionHapticsSetting: () => void;
@@ -266,6 +268,7 @@ type CreateHistoryInlineOptionsArgs = {
   historyEntryColorForTaskMs: (task: Task, elapsedMs: number) => string;
   getModeColor: (mode: MainMode) => string;
   getDynamicColorsEnabled: () => boolean;
+  getExecutiveFunctionUnavailableMessage?: () => string;
   hasEntitlement: Parameters<typeof createTaskTimerHistoryInline>[0]["hasEntitlement"];
   showActionConfirmation: Parameters<typeof createTaskTimerHistoryInline>[0]["showActionConfirmation"];
   showUpgradePrompt: Parameters<typeof createTaskTimerHistoryInline>[0]["showUpgradePrompt"];
@@ -331,6 +334,7 @@ type CreateTasksOptionsArgs = {
   escapeHtmlUI: (value: unknown) => string;
   getModeColor: (mode: MainMode) => string;
   fillBackgroundForPct: (pct: number) => string;
+  getExecutiveFunctionUnavailableMessage?: () => string;
   historyEntryColorForTaskMs: (task: Task, elapsedMs: number) => string;
   formatMainTaskElapsedHtml: (elapsedMs: number, running: boolean) => string;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
@@ -942,6 +946,10 @@ export function createTaskTimerPreferencesContext(
     setFullColorTaskCardsEnabledState: (value) => {
       args.preferencesState.set("fullColorTaskCardsEnabled", value);
     },
+    getExecutiveFunctionEnabled: () => args.preferencesState.get("executiveFunctionEnabled") !== false,
+    setExecutiveFunctionEnabledState: (value) => {
+      args.preferencesState.set("executiveFunctionEnabled", value);
+    },
     getMobilePushAlertsEnabled: () => asType<boolean>(args.preferencesState.get("mobilePushAlertsEnabled")),
     setMobilePushAlertsEnabledState: (value) => {
       args.preferencesState.set("mobilePushAlertsEnabled", value);
@@ -1075,6 +1083,7 @@ export function createTaskTimerPersistenceContext(
     primeDashboardCacheFromShadow: args.primeDashboardCacheFromShadow,
     loadFocusSessionNotes: args.loadFocusSessionNotes,
     loadAddTaskCustomNames: args.loadAddTaskCustomNames,
+    getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
     loadWeekStartingPreference: args.loadWeekStartingPreference,
     loadStartupModulePreference: args.loadStartupModulePreference,
     loadTaskViewPreference: args.loadTaskViewPreference,
@@ -1084,6 +1093,7 @@ export function createTaskTimerPersistenceContext(
     loadDashboardPreviousWeekSetting: args.loadDashboardPreviousWeekSetting,
     loadDynamicColorsSetting: args.loadDynamicColorsSetting,
     loadFullColorTaskCardsSetting: args.loadFullColorTaskCardsSetting,
+    loadExecutiveFunctionSetting: args.loadExecutiveFunctionSetting,
     loadInteractionClickSoundSetting: args.loadInteractionClickSoundSetting,
     loadAchievementSoundsSetting: args.loadAchievementSoundsSetting,
     loadInteractionHapticsSetting: args.loadInteractionHapticsSetting,
@@ -1276,6 +1286,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
       args.preferencesState.get("checkpointAlertSoundMode") === "repeat" ? "repeat" : "once",
     getDynamicColorsEnabled: () => asType<boolean>(args.preferencesState.get("dynamicColorsEnabled")),
     getFullColorTaskCardsEnabled: () => args.preferencesState.get("fullColorTaskCardsEnabled") === true,
+    getExecutiveFunctionUnavailableMessage: args.getExecutiveFunctionUnavailableMessage,
     getRewardProgress: () => asType<RewardProgressV1>(args.rewardState.get("rewardProgress")),
     ...args.editStateBindings,
     getCheckpointAutoResetDirty: args.checkpointAutoResetDirty,

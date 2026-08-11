@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isDeletedAccountUid } from "@/app/api/account/deletedAccountUid";
 import { verifyFirebaseRequestUser } from "@/app/api/shared/auth";
-import { assertPlusPlanForExecutiveFunction } from "@/app/api/shared/plusEntitlement";
+import { assertExecutiveFunctionAvailableForUser } from "@/app/api/shared/plusEntitlement";
 import { authenticatedApiOptions, withAuthenticatedApiCors } from "@/app/api/shared/cors";
 import { createFirestoreScheduleRepairRepository } from "@/app/schedulerepair/lib/scheduleRepairRepository";
 import { applyScheduleRepairProposal } from "@/app/schedulerepair/lib/scheduleRepairService";
@@ -25,7 +25,7 @@ export async function POST(req: Request, context: RouteContext) {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const { uid } = await verifyFirebaseRequestUser(req, body);
     const db = getFirebaseAdminDb();
-    await assertPlusPlanForExecutiveFunction(uid, db);
+    await assertExecutiveFunctionAvailableForUser(uid, db);
     if (await isDeletedAccountUid(db, uid)) return withAuthenticatedApiCors(req, NextResponse.json({ error: "This account has been deleted.", code: "auth/account-deleted" }, { status: 410 }));
     await enforceUidRateLimit({ namespace: "schedule-repair/apply", uid, windowMs: 60_000, maxEvents: 6, code: "schedule-repair/rate-limited", message: "Please wait before applying another schedule repair." });
     const repairId = asString((await context.params).repairId);

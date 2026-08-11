@@ -7,6 +7,7 @@ import type { TaskOrderBy } from "./types";
 import type { StartupModulePreference } from "../lib/startupModule";
 import type { InteractionHapticsIntensity } from "../lib/interactionHapticsIntensity";
 import { buildDefaultUserPreferences } from "../lib/cloudStore";
+import { EXECUTIVE_FUNCTION_PREFERENCE_CHANGED_EVENT } from "../lib/executiveFunctionAvailability";
 import { normalizeRewardProgress } from "../lib/rewards";
 
 type Listener = (event: { target?: unknown; type?: string; detail?: unknown }) => void;
@@ -21,6 +22,7 @@ const storageKeys = {
   TIME_GOAL_COMPLETE_NEXT_TASKS_KEY: "taskticker_tasks_v1:timeGoalCompleteNextTasksEnabled",
   DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY: "taskticker_tasks_v1:dashboardPreviousWeekVisible",
   FULL_COLOR_TASK_CARDS_KEY: "taskticker_tasks_v1:fullColorTaskCardsEnabled",
+  EXECUTIVE_FUNCTION_ENABLED_KEY: "taskticker_tasks_v1:executiveFunctionEnabled",
   MOBILE_PUSH_ALERTS_KEY: "taskticker_tasks_v1:mobilePushAlertsEnabled",
   WEB_PUSH_ALERTS_KEY: "taskticker_tasks_v1:webPushAlertsEnabled",
   INTERACTION_CLICK_SOUND_KEY: "taskticker_tasks_v1:interactionClickSoundEnabled",
@@ -225,6 +227,7 @@ function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Par
     dashboardPreviousWeekVisible: boolean;
     dynamicColorsEnabled: boolean;
     fullColorTaskCardsEnabled: boolean;
+    executiveFunctionEnabled: boolean;
     mobilePushAlertsEnabled: boolean;
     webPushAlertsEnabled: boolean;
     interactionClickSoundEnabled: boolean;
@@ -249,6 +252,7 @@ function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Par
     dashboardPreviousWeekVisible: true,
     dynamicColorsEnabled: true,
     fullColorTaskCardsEnabled: false,
+    executiveFunctionEnabled: true,
     mobilePushAlertsEnabled: false,
     webPushAlertsEnabled: false,
     interactionClickSoundEnabled: true,
@@ -339,6 +343,10 @@ function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Par
     getFullColorTaskCardsEnabled: () => state.fullColorTaskCardsEnabled,
     setFullColorTaskCardsEnabledState: (value) => {
       state.fullColorTaskCardsEnabled = value;
+    },
+    getExecutiveFunctionEnabled: () => state.executiveFunctionEnabled,
+    setExecutiveFunctionEnabledState: (value) => {
+      state.executiveFunctionEnabled = value;
     },
     getMobilePushAlertsEnabled: () => state.mobilePushAlertsEnabled,
     setMobilePushAlertsEnabledState: (value) => {
@@ -563,6 +571,22 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
     expect(endValue.textContent).toBe("3:30 PM");
   });
 
+  it("persists executive function changes from the React settings event bridge", async () => {
+    const { localStorageStub, state, saveCloudPreferences, flushPendingCloudWrites } = createHarness({ currentUid: "uid-1" });
+
+    window.dispatchEvent(
+      new CustomEvent(EXECUTIVE_FUNCTION_PREFERENCE_CHANGED_EVENT, {
+        detail: { enabled: false },
+      })
+    );
+    await Promise.resolve();
+
+    expect(state.executiveFunctionEnabled).toBe(false);
+    expect(localStorageStub.get(storageKeys.EXECUTIVE_FUNCTION_ENABLED_KEY)).toBe("false");
+    expect(saveCloudPreferences).toHaveBeenLastCalledWith(expect.objectContaining({ executiveFunctionEnabled: false }));
+    expect(flushPendingCloudWrites).toHaveBeenCalledTimes(1);
+  });
+
   it("rejects unchecking the final productivity day", () => {
     const { fakeDocument, localStorageStub, preferences, state } = createHarness();
     const { dayInputs } = addOptimalProductivityControls(fakeDocument);
@@ -592,7 +616,7 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
   it("loads full color task cards as off by default and persists the toggle without changing dynamic colors", () => {
     let row: FakeElement | null = null;
     let toggle: FakeElement | null = null;
-    const { localStorageStub, preferences, saveCloudPreferences, flushPendingCloudWrites, state, render } = createHarness({
+    const { localStorageStub, preferences, saveCloudPreferences, flushPendingCloudWrites, state } = createHarness({
       setupEls: (fakeDocument) => {
         row = fakeDocument.addElement(new FakeElement("taskFullColorCardsToggleRow"));
         toggle = fakeDocument.addElement(new FakeElement("taskFullColorCardsToggle", ["switch"]));

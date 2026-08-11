@@ -140,6 +140,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     isCheckpointFlashActive: ctx.isCheckpointFlashActive,
     canUseAdvancedHistory,
     canUseExecutiveFunction,
+    getExecutiveFunctionUnavailableMessage: ctx.getExecutiveFunctionUnavailableMessage,
     canUseSocialFeatures,
     hasFriends: () => ctx.getGroupsFriendships().length > 0,
     isTaskSharedByOwner: ctx.isTaskSharedByOwner,

@@ -24,9 +24,9 @@ export default function ExecutivePageContent({ active }: Props) {
         </div>
 
         <div className="executiveDecisionFlow">
-          <section className="executiveCard executiveNbaCard dashboardNextBestActionCard" id="dashboardNextBestActionCard" aria-labelledby="executiveNbaHeading" data-next-best-action-state="loading">
+          <section className="executiveCard executiveNbaCard dashboardNextBestActionCard" id="dashboardNextBestActionCard" aria-label="Next best action" data-next-best-action-state="loading">
             <div className="executiveSectionHeading">
-              <div><p className="executiveEyebrow">Next best action</p><h2 id="executiveNbaHeading">Move the plan forward</h2></div>
+              <div><p className="executiveEyebrow">Next best action</p></div>
               <label className="dashboardNextBestActionTimeLabel" htmlFor="dashboardNextBestActionTimeSelect">Available time
                 <select id="dashboardNextBestActionTimeSelect" defaultValue="any" aria-label="Available time for next best action">
                   <option value="10">10m</option><option value="20">20m</option><option value="30">30m</option><option value="60">60m</option><option value="any">Any</option>

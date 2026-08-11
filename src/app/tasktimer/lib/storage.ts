@@ -75,6 +75,9 @@ const ACTIVE_UID_KEY = `${STORAGE_KEY}:activeUid`;
 const FULL_COLOR_TASK_CARDS_KEY = `${STORAGE_KEY}:fullColorTaskCardsEnabled`;
 const FULL_COLOR_TASK_CARDS_FALLBACK_UID_KEY = `${FULL_COLOR_TASK_CARDS_KEY}:uid`;
 const FULL_COLOR_TASK_CARDS_FALLBACK_UPDATED_AT_KEY = `${FULL_COLOR_TASK_CARDS_KEY}:updatedAtMs`;
+const EXECUTIVE_FUNCTION_ENABLED_KEY = `${STORAGE_KEY}:executiveFunctionEnabled`;
+const EXECUTIVE_FUNCTION_ENABLED_FALLBACK_UID_KEY = `${EXECUTIVE_FUNCTION_ENABLED_KEY}:uid`;
+const EXECUTIVE_FUNCTION_ENABLED_FALLBACK_UPDATED_AT_KEY = `${EXECUTIVE_FUNCTION_ENABLED_KEY}:updatedAtMs`;
 export const HISTORY_SAVE_WORKING_EVENT = "tasktimer:history-save-working";
 export type LeaderboardProfileSyncReason = "task-complete-xp-claim";
 export type SaveCloudPreferencesOptions = {
@@ -623,16 +626,23 @@ function saveShadowPreferences(uid: string, prefs: CachedPreferences): void {
   }
 }
 
-function preserveSignedOutPreferenceFallbacks(prefs: CachedPreferences): void {
+function preserveSignedOutBooleanPreferenceFallback(options: {
+  prefs: CachedPreferences;
+  field: keyof Pick<UserPreferencesV1, "fullColorTaskCardsEnabled" | "executiveFunctionEnabled">;
+  valueKey: string;
+  uidKey: string;
+  updatedAtKey: string;
+}): void {
+  const { field, prefs, uidKey, updatedAtKey, valueKey } = options;
   if (typeof window === "undefined" || !prefs) return;
   try {
-    if (typeof prefs.fullColorTaskCardsEnabled === "boolean") {
+    if (typeof prefs[field] === "boolean") {
       const fallbackUid = String(cachedPreferencesUid || scopedUid() || currentUid() || "").trim();
-      window.localStorage.setItem(FULL_COLOR_TASK_CARDS_KEY, prefs.fullColorTaskCardsEnabled ? "true" : "false");
-      if (fallbackUid) window.localStorage.setItem(FULL_COLOR_TASK_CARDS_FALLBACK_UID_KEY, fallbackUid);
-      else window.localStorage.removeItem(FULL_COLOR_TASK_CARDS_FALLBACK_UID_KEY);
+      window.localStorage.setItem(valueKey, prefs[field] ? "true" : "false");
+      if (fallbackUid) window.localStorage.setItem(uidKey, fallbackUid);
+      else window.localStorage.removeItem(uidKey);
       window.localStorage.setItem(
-        FULL_COLOR_TASK_CARDS_FALLBACK_UPDATED_AT_KEY,
+        updatedAtKey,
         String(Math.max(0, Math.floor(Number(prefs.updatedAtMs || 0))))
       );
     }
@@ -641,12 +651,35 @@ function preserveSignedOutPreferenceFallbacks(prefs: CachedPreferences): void {
   }
 }
 
-function loadSignedOutFullColorTaskCardsFallback(uid: string): { value: boolean; updatedAtMs: number } | null {
+function preserveSignedOutPreferenceFallbacks(prefs: CachedPreferences): void {
+  preserveSignedOutBooleanPreferenceFallback({
+    prefs,
+    field: "fullColorTaskCardsEnabled",
+    valueKey: FULL_COLOR_TASK_CARDS_KEY,
+    uidKey: FULL_COLOR_TASK_CARDS_FALLBACK_UID_KEY,
+    updatedAtKey: FULL_COLOR_TASK_CARDS_FALLBACK_UPDATED_AT_KEY,
+  });
+  preserveSignedOutBooleanPreferenceFallback({
+    prefs,
+    field: "executiveFunctionEnabled",
+    valueKey: EXECUTIVE_FUNCTION_ENABLED_KEY,
+    uidKey: EXECUTIVE_FUNCTION_ENABLED_FALLBACK_UID_KEY,
+    updatedAtKey: EXECUTIVE_FUNCTION_ENABLED_FALLBACK_UPDATED_AT_KEY,
+  });
+}
+
+function loadSignedOutBooleanPreferenceFallback(options: {
+  uid: string;
+  valueKey: string;
+  uidKey: string;
+  updatedAtKey: string;
+}): { value: boolean; updatedAtMs: number } | null {
+  const { uid, uidKey, updatedAtKey, valueKey } = options;
   if (typeof window === "undefined") return null;
   try {
-    const fallbackUid = String(window.localStorage.getItem(FULL_COLOR_TASK_CARDS_FALLBACK_UID_KEY) || "").trim();
+    const fallbackUid = String(window.localStorage.getItem(uidKey) || "").trim();
     if (!uid || fallbackUid !== uid) return null;
-    const rawValue = String(window.localStorage.getItem(FULL_COLOR_TASK_CARDS_KEY) || "").trim().toLowerCase();
+    const rawValue = String(window.localStorage.getItem(valueKey) || "").trim().toLowerCase();
     const value =
       rawValue === "true" || rawValue === "1" || rawValue === "on"
         ? true
@@ -656,13 +689,31 @@ function loadSignedOutFullColorTaskCardsFallback(uid: string): { value: boolean;
     if (typeof value !== "boolean") return null;
     const updatedAtMs = Math.max(
       0,
-      Math.floor(Number(window.localStorage.getItem(FULL_COLOR_TASK_CARDS_FALLBACK_UPDATED_AT_KEY) || 0))
+      Math.floor(Number(window.localStorage.getItem(updatedAtKey) || 0))
     );
     if (!updatedAtMs) return null;
     return { value, updatedAtMs };
   } catch {
     return null;
   }
+}
+
+function loadSignedOutFullColorTaskCardsFallback(uid: string): { value: boolean; updatedAtMs: number } | null {
+  return loadSignedOutBooleanPreferenceFallback({
+    uid,
+    valueKey: FULL_COLOR_TASK_CARDS_KEY,
+    uidKey: FULL_COLOR_TASK_CARDS_FALLBACK_UID_KEY,
+    updatedAtKey: FULL_COLOR_TASK_CARDS_FALLBACK_UPDATED_AT_KEY,
+  });
+}
+
+function loadSignedOutExecutiveFunctionEnabledFallback(uid: string): { value: boolean; updatedAtMs: number } | null {
+  return loadSignedOutBooleanPreferenceFallback({
+    uid,
+    valueKey: EXECUTIVE_FUNCTION_ENABLED_KEY,
+    uidKey: EXECUTIVE_FUNCTION_ENABLED_FALLBACK_UID_KEY,
+    updatedAtKey: EXECUTIVE_FUNCTION_ENABLED_FALLBACK_UPDATED_AT_KEY,
+  });
 }
 
 function saveShadowDashboard(dashboard: Awaited<ReturnType<typeof loadDashboard>>, uid = scopedUid()): void {
@@ -1180,7 +1231,9 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
         ? shadowPreferences
          : cloudPreferences || shadowPreferences || eligiblePendingPreferences || null;
   const signedOutFullColorTaskCardsFallback = loadSignedOutFullColorTaskCardsFallback(uid);
+  const signedOutExecutiveFunctionEnabledFallback = loadSignedOutExecutiveFunctionEnabledFallback(uid);
   let shouldReplaySignedOutFullColorTaskCardsFallback = false;
+  let shouldReplaySignedOutExecutiveFunctionEnabledFallback = false;
   if (signedOutFullColorTaskCardsFallback) {
     const cachedPreferenceUpdatedAtMs = Number(cachedPreferences?.updatedAtMs || 0);
     if (
@@ -1193,6 +1246,20 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
         updatedAtMs: Math.max(signedOutFullColorTaskCardsFallback.updatedAtMs, cachedPreferenceUpdatedAtMs + 1),
       });
       shouldReplaySignedOutFullColorTaskCardsFallback = true;
+    }
+  }
+  if (signedOutExecutiveFunctionEnabledFallback) {
+    const cachedPreferenceUpdatedAtMs = Number(cachedPreferences?.updatedAtMs || 0);
+    if (
+      signedOutExecutiveFunctionEnabledFallback.updatedAtMs >= cachedPreferenceUpdatedAtMs &&
+      cachedPreferences?.executiveFunctionEnabled !== signedOutExecutiveFunctionEnabledFallback.value
+    ) {
+      cachedPreferences = normalizePreferenceSnapshot({
+        ...(cachedPreferences || buildDefaultCloudPreferences()),
+        executiveFunctionEnabled: signedOutExecutiveFunctionEnabledFallback.value,
+        updatedAtMs: Math.max(signedOutExecutiveFunctionEnabledFallback.updatedAtMs, cachedPreferenceUpdatedAtMs + 1),
+      });
+      shouldReplaySignedOutExecutiveFunctionEnabledFallback = true;
     }
   }
   const weekStarting = normalizeDashboardWeekStart(cachedPreferences?.weekStarting);
@@ -1217,7 +1284,10 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   }
   cachedPreferencesUid = cachedPreferences ? uid : "";
   saveShadowPreferences(uid, cachedPreferences);
-  if (shouldReplaySignedOutFullColorTaskCardsFallback && cachedPreferences) {
+  if (
+    (shouldReplaySignedOutFullColorTaskCardsFallback || shouldReplaySignedOutExecutiveFunctionEnabledFallback) &&
+    cachedPreferences
+  ) {
     queuedPreferencesSyncSnapshot = cachedPreferences;
     queuedPreferencesSyncUid = uid;
     flushQueuedCloudPreferences(uid);

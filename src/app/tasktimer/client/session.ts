@@ -6,7 +6,6 @@ import { formatFocusElapsed } from "../lib/tasks";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import {
   hasTaskGoalHistoryEntryForPeriod,
-  hasRecordedTaskGoalCompletion,
   getTaskTimeGoalCompletionResolution,
   getTaskTimeGoalResetBoundaryMs,
   getTimeGoalCompletionElapsedMs as getSharedTimeGoalCompletionElapsedMs,
@@ -2974,7 +2973,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       soundMode: ctx.getCheckpointAlertSoundMode(),
       nowMs: nowMs(),
     })).catch(() => {});
-    const resumePendingResetResult = reconcileResumePendingTasks(tasks, nowMs());
+    const resumePendingResetResult = reconcileResumePendingTasks(tasks, nowMs(), ctx.getWeekStarting());
     if (resumePendingResetResult.changedTaskIds.length) {
       ctx.save();
       void ctx.syncSharedTaskSummariesForTasks(resumePendingResetResult.changedTaskIds).catch(() => {});
@@ -2990,9 +2989,8 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         if (!task) return;
         const isHeldResetPrimaryAction = getXpAwardButtonLabelOverride(task.id) === "Reset";
         const isCompletedForCurrentPeriod = isHeldResetPrimaryAction || isTaskTimeGoalLockedForCurrentPeriod(task);
-        const isRecordedGoalCompleted = hasRecordedTaskGoalCompletion(task);
         (node as HTMLElement).classList.toggle("taskRunning", !!task.running);
-        (node as HTMLElement).classList.toggle("taskCompleted", isCompletedForCurrentPeriod || isRecordedGoalCompleted);
+        (node as HTMLElement).classList.toggle("taskCompleted", isCompletedForCurrentPeriod);
         const timeEl = node.querySelector(".time");
         const elapsedMs = getElapsedMs(task);
         if (timeEl) (timeEl as HTMLElement).innerHTML = ctx.formatMainTaskElapsedHtml(elapsedMs, !!task.running);
@@ -3005,17 +3003,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
           let primaryActionState: TaskPrimaryActionState = "launch";
           if (isCompletedForCurrentPeriod) {
             primaryActionState = "reset";
-          } else if (isRecordedGoalCompleted) {
-            primaryActionState = "done";
           } else if (task.running) {
             primaryActionState = "stop";
           } else if (elapsedMs > 0) {
             primaryActionState = "resume";
           }
-          const primaryActionModel = getTaskPrimaryActionModel(
-            primaryActionState,
-            primaryActionState === "done" ? { doneTitle: "Completed", doneLabel: "Completed" } : undefined
-          );
+          const primaryActionModel = getTaskPrimaryActionModel(primaryActionState);
           const shouldRefreshPrimaryActionMarkup =
             primaryActionBtn.dataset.action !== primaryActionModel.dataAction ||
             primaryActionBtn.className !== primaryActionModel.className ||

@@ -11,6 +11,18 @@ class TestElement {
   id = "";
   textContent = "";
   private attrs = new Map<string, string>();
+  private classes = new Set<string>();
+  classList = {
+    add: (...tokens: string[]) => tokens.forEach((token) => this.classes.add(token)),
+    remove: (...tokens: string[]) => tokens.forEach((token) => this.classes.delete(token)),
+    contains: (token: string) => this.classes.has(token),
+    toggle: (token: string, force?: boolean) => {
+      const shouldAdd = force ?? !this.classes.has(token);
+      if (shouldAdd) this.classes.add(token);
+      else this.classes.delete(token);
+      return shouldAdd;
+    },
+  };
 
   setAttribute(name: string, value: string) {
     this.attrs.set(name, value);
@@ -111,5 +123,25 @@ describe("createExecutiveSurface", () => {
 
     expect(planHealth.textContent).toBe("PLUS feature");
     expect(planHealth.getAttribute("data-plan-health")).toBeNull();
+    expect(documentRef.elements.get("appPageExecutive")!.classList.contains("isExecutiveFunctionDisabled")).toBe(false);
+  });
+
+  it("marks the Executive page disabled when Executive Function is turned off in Settings", () => {
+    const documentRef = makeDocument();
+    const windowRef = {
+      addEventListener: vi.fn(),
+    } as unknown as Window;
+
+    const surface = createExecutiveSurface({
+      documentRef,
+      windowRef,
+      getCurrentAppPage: () => "executive",
+      canUseExecutiveFunction: () => false,
+      getExecutiveFunctionUnavailableMessage: () => "Executive Function is turned off in Settings.",
+    });
+
+    surface.register();
+
+    expect(documentRef.elements.get("appPageExecutive")!.classList.contains("isExecutiveFunctionDisabled")).toBe(true);
   });
 });

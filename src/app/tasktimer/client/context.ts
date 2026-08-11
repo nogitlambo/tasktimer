@@ -380,6 +380,7 @@ export type TaskTimerTasksContext = {
   getCheckpointAlertSoundMode: () => "once" | "repeat";
   getDynamicColorsEnabled: () => boolean;
   getFullColorTaskCardsEnabled: () => boolean;
+  getExecutiveFunctionUnavailableMessage?: () => string;
   getRewardProgress: () => RewardProgressV1;
   getEditIndex: () => number | null;
   setEditIndex: (value: number | null) => void;
@@ -904,6 +905,7 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
     TIME_GOAL_COMPLETE_NEXT_TASKS_KEY: string;
     DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY: string;
     FULL_COLOR_TASK_CARDS_KEY: string;
+    EXECUTIVE_FUNCTION_ENABLED_KEY: string;
     MOBILE_PUSH_ALERTS_KEY: string;
     WEB_PUSH_ALERTS_KEY: string;
     INTERACTION_CLICK_SOUND_KEY: string;
@@ -937,6 +939,8 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   setDynamicColorsEnabledState: (value: boolean) => void;
   getFullColorTaskCardsEnabled: () => boolean;
   setFullColorTaskCardsEnabledState: (value: boolean) => void;
+  getExecutiveFunctionEnabled: () => boolean;
+  setExecutiveFunctionEnabledState: (value: boolean) => void;
   getMobilePushAlertsEnabled: () => boolean;
   setMobilePushAlertsEnabledState: (value: boolean) => void;
   getWebPushAlertsEnabled: () => boolean;

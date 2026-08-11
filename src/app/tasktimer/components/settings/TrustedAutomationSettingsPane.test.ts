@@ -21,4 +21,13 @@ describe("TrustedAutomationSettingsPane helpers", () => {
     expect(source).toContain("Upgrade to PLUS to use executive function features.");
     expect(source.indexOf("if (!canUseExecutiveFunction)")).toBeLessThan(source.indexOf('fetch(getApiUrl("/api/automation/settings")'));
   });
+
+  it("uses a single OFF ASSISTED TRUSTED pill control for each rule", () => {
+    const source = readFileSync(resolve(__dirname, "TrustedAutomationSettingsPane.tsx"), "utf8");
+
+    expect(source).toContain('(["OFF", "ASSISTED", "TRUSTED"] as const)');
+    expect(source).toContain("settingsTrustedAutomationModePill");
+    expect(source).not.toContain("settingsTrustedAutomationTrustLabel");
+    expect(source).not.toContain('role="switch"\\n                    aria-label={`${rule.enabled ? "Disable" : "Enable"} ${getRuleLabel(rule.ruleId)}`');
+  });
 });

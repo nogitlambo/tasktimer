@@ -1,5 +1,6 @@
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getApiUrl } from "../lib/apiClient";
+import { getExecutiveFunctionLockedActionLabel } from "../lib/executiveFunctionAvailability";
 import { dispatchTaskClarificationStartTaskEvent } from "./task-clarification-events";
 import { TASK_COMPLETION_CHANGED_EVENT } from "./task-completion-events";
 
@@ -103,6 +104,7 @@ type CreateDashboardNextBestActionOptions = {
   fetchImpl?: typeof fetch;
   getCurrentAppPage: () => string;
   canUseExecutiveFunction?: () => boolean;
+  getExecutiveFunctionUnavailableMessage?: () => string;
   showUpgradePrompt?: (featureName: string, plan?: "plus") => void;
   getIdToken?: () => Promise<string | null>;
 };
@@ -118,7 +120,10 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
 
   function setStatus(message: string, state: "loading" | "empty" | "error" | "stale" | "ready" | "locked" | "started") {
     const status = getElement(documentRef, "dashboardNextBestActionStatus");
-    if (status) status.textContent = message;
+    if (status) {
+      status.textContent = message;
+      setHidden(status, state !== "loading");
+    }
     card?.setAttribute("data-next-best-action-state", state);
     setHidden(getElement(documentRef, "dashboardNextBestActionContent"), state !== "ready" && state !== "started");
     setHidden(getElement(documentRef, "dashboardNextBestActionEmpty"), state !== "empty");
@@ -127,7 +132,7 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
     if (retry) {
       retry.hidden = state !== "error" && state !== "stale" && state !== "locked";
       retry.disabled = false;
-      retry.textContent = state === "locked" ? "Upgrade to PLUS" : "Retry";
+      retry.textContent = state === "locked" ? getExecutiveFunctionLockedActionLabel(message, "Retry") : "Retry";
       retry.dataset.planLocked = state === "locked" ? "executiveFunction" : "";
     }
     const actionButtons = documentRef.querySelectorAll<HTMLButtonElement>("[data-next-best-action-action]");
@@ -142,7 +147,7 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
   function lockIfNeeded() {
     if (options.canUseExecutiveFunction?.() !== false) return false;
     abortController?.abort();
-    setStatus(PLUS_REQUIRED_MESSAGE, "locked");
+    setStatus(options.getExecutiveFunctionUnavailableMessage?.() || PLUS_REQUIRED_MESSAGE, "locked");
     return true;
   }
 

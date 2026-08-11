@@ -220,7 +220,7 @@ describe("task timer persistence resume-pending cleanup", () => {
     expect(harness.saveTasks).toHaveBeenCalledWith(harness.getTasks(), { forceCloudFlush: true });
   });
 
-  it("finalizes a closed-app daily time-goal live session during task snapshot load", () => {
+  it("finalizes a closed-app daily time-goal live session and unlocks the next day during task snapshot load", () => {
     const startedAtMs = new Date(2026, 4, 2, 22, 0, 0).getTime();
     const updatedAtMs = startedAtMs + 30 * 60_000;
     const nowValue = startedAtMs + 3 * 60 * 60_000;
@@ -251,7 +251,8 @@ describe("task timer persistence resume-pending cleanup", () => {
     harness.api.load();
 
     expect(harness.getTasks()[0]).toMatchObject({
-      accumulatedMs: 60 * 60_000,
+      accumulatedMs: 0,
+      hasStarted: false,
       running: false,
       startMs: null,
       timeGoalCompletedDayKey: "2026-05-02",
@@ -288,7 +289,7 @@ describe("task timer persistence resume-pending cleanup", () => {
     expect(harness.syncSharedTaskSummariesForTasks).toHaveBeenCalledWith(["task-1"]);
   });
 
-  it("finalizes a 10-minute closed-app daily goal with a goal-length history row", () => {
+  it("finalizes a 10-minute same-day closed-app daily goal with a goal-length history row", () => {
     const startedAtMs = new Date(2026, 4, 2, 9, 0, 0).getTime();
     const updatedAtMs = startedAtMs + 7 * 60_000;
     const nowValue = startedAtMs + 15 * 60_000;
@@ -320,6 +321,7 @@ describe("task timer persistence resume-pending cleanup", () => {
 
     expect(harness.getTasks()[0]).toMatchObject({
       accumulatedMs: goalMs,
+      hasStarted: true,
       running: false,
       startMs: null,
       timeGoalCompletedDayKey: "2026-05-02",
@@ -341,14 +343,16 @@ describe("task timer persistence resume-pending cleanup", () => {
     });
   });
 
-  it("keeps an August 1, 2026 completed goal task completed when loading on August 2, 2026", () => {
+  it("resets an August 1, 2026 completed recurring goal task runtime when loading on August 2, 2026", () => {
     const completedAtMs = new Date(2026, 7, 1, 21, 0, 0).getTime();
     const harness = createHarness(
       [
         task({
           accumulatedMs: 60 * 60_000,
+          elapsed: 60 * 60_000,
           hasStarted: true,
           resumePendingSinceDayKey: "2026-08-01",
+          taskType: "recurring",
           timeGoalEnabled: true,
           timeGoalPeriod: "day",
           timeGoalMinutes: 60,
@@ -364,9 +368,11 @@ describe("task timer persistence resume-pending cleanup", () => {
     harness.api.load();
 
     expect(harness.getTasks()[0]).toMatchObject({
-      accumulatedMs: 60 * 60_000,
-      hasStarted: true,
+      accumulatedMs: 0,
+      elapsed: 0,
+      hasStarted: false,
       running: false,
+      startMs: null,
       resumePendingSinceDayKey: null,
       timeGoalCompletedDayKey: "2026-08-01",
       timeGoalCompletedAtMs: completedAtMs,

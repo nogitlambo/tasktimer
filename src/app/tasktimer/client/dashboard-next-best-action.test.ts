@@ -7,6 +7,7 @@ import {
   parseNextBestActionDashboardResponse,
 } from "./dashboard-next-best-action";
 import { TASK_COMPLETION_CHANGED_EVENT } from "./task-completion-events";
+import { EXECUTIVE_FUNCTION_DISABLED_MESSAGE } from "../lib/executiveFunctionAvailability";
 
 describe("dashboard Next Best Action contract", () => {
   it("accepts a safe recommendation response and formats its duration", () => {
@@ -53,7 +54,8 @@ describe("dashboard Next Best Action contract", () => {
 
   it("renders a locked state without fetching when executive function is unavailable", async () => {
     const attrs = new Map<string, string>();
-    const status = { textContent: "" };
+    const statusAttrs = new Map<string, string>();
+    const status = { textContent: "", hidden: false, setAttribute: (key: string, value: string) => statusAttrs.set(key, value) };
     const card = {
       classList: { toggle: vi.fn() },
       setAttribute: (key: string, value: string) => attrs.set(key, value),
@@ -78,8 +80,101 @@ describe("dashboard Next Best Action contract", () => {
 
     expect(fetchImpl).not.toHaveBeenCalled();
     expect(status.textContent).toBe("Upgrade to PLUS to use executive function features.");
+    expect(status.hidden).toBe(true);
+    expect(statusAttrs.get("aria-hidden")).toBe("true");
     expect(attrs.get("data-next-best-action-state")).toBe("locked");
     expect(attrs.get("data-plan-locked")).toBe("executiveFunction");
+  });
+
+  it("does not show an upgrade button label when a PLUS user has executive function disabled", async () => {
+    const retry = { textContent: "", hidden: false, disabled: true, dataset: {} as Record<string, string> };
+    const status = { textContent: "", hidden: false, setAttribute: vi.fn() };
+    const card = {
+      classList: { toggle: vi.fn() },
+      setAttribute: vi.fn(),
+      removeAttribute: vi.fn(),
+      querySelector: () => null,
+    };
+    const documentRef = {
+      getElementById: (id: string) => (
+        id === "dashboardNextBestActionCard" ? card :
+        id === "dashboardNextBestActionStatus" ? status :
+        id === "dashboardNextBestActionRetry" ? retry :
+        null
+      ),
+      querySelectorAll: () => [],
+      addEventListener: vi.fn(),
+    } as unknown as Document;
+    const fetchImpl = vi.fn();
+    const api = createDashboardNextBestAction({
+      documentRef,
+      windowRef: { fetch: fetchImpl, addEventListener: vi.fn() } as unknown as Window,
+      fetchImpl,
+      getCurrentAppPage: () => "executive",
+      canUseExecutiveFunction: () => false,
+      getExecutiveFunctionUnavailableMessage: () => EXECUTIVE_FUNCTION_DISABLED_MESSAGE,
+    });
+
+    await api.refresh();
+
+    expect(status.textContent).toBe(EXECUTIVE_FUNCTION_DISABLED_MESSAGE);
+    expect(retry.textContent).toBe("Retry");
+    expect(retry.textContent).not.toBe("Upgrade to PLUS");
+  });
+
+  it("shows the status text while loading and hides it when a recommendation is ready", async () => {
+    const elements = new Map<string, { textContent: string; hidden: boolean; dataset: Record<string, string>; setAttribute: (key: string, value: string) => void; addEventListener: () => void }>();
+    const attrs = new Map<string, string>();
+    const card = {
+      classList: { toggle: vi.fn() },
+      setAttribute: (key: string, value: string) => attrs.set(key, value),
+      removeAttribute: (key: string) => attrs.delete(key),
+    };
+    const getOrCreateElement = (id: string) => {
+      if (!elements.has(id)) {
+        elements.set(id, {
+          textContent: "",
+          hidden: false,
+          dataset: {},
+          setAttribute(key, value) {
+            if (key === "aria-hidden") this.dataset.ariaHidden = value;
+          },
+          addEventListener: vi.fn(),
+        });
+      }
+      return elements.get(id);
+    };
+    const documentRef = {
+      getElementById: (id: string) => id === "dashboardNextBestActionCard" ? card : getOrCreateElement(id),
+      querySelectorAll: () => [],
+      addEventListener: vi.fn(),
+    } as unknown as Document;
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({
+      ok: true,
+      recommendation: {
+        recommendationId: "recommendation-1",
+        type: "NEXT_BEST_ACTION",
+        taskId: "task-1",
+        title: "Prepare launch notes",
+        estimatedMinutes: 20,
+        expiresAt: "2099-08-07T09:30:00.000Z",
+      },
+    }), { status: 200 }));
+    const api = createDashboardNextBestAction({
+      documentRef,
+      windowRef: { fetch: fetchImpl, addEventListener: vi.fn() } as unknown as Window,
+      fetchImpl,
+      getCurrentAppPage: () => "executive",
+      getIdToken: async () => "token",
+    });
+
+    const refreshPromise = api.refresh();
+    expect(elements.get("dashboardNextBestActionStatus")).toMatchObject({ textContent: "Loading your next best action...", hidden: false });
+    await refreshPromise;
+
+    expect(elements.get("dashboardNextBestActionStatus")).toMatchObject({ textContent: "Recommendation ready", hidden: true });
+    expect(elements.get("dashboardNextBestActionStatus")?.dataset.ariaHidden).toBe("true");
+    expect(attrs.get("data-next-best-action-state")).toBe("ready");
   });
 
   it("marks the started recommendation in progress and hides sibling actions", async () => {

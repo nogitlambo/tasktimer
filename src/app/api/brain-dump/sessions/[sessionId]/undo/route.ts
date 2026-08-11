@@ -4,7 +4,7 @@ import { createFirestoreBrainDumpSessionStore } from "@/app/brain-dump/lib/brain
 import { undoBrainDumpCreationBatch } from "@/app/brain-dump/lib/brainDumpUndo";
 import { createFirestoreBrainDumpWorkspaceRepository } from "@/app/brain-dump/lib/brainDumpWorkspaceStore";
 import { verifyFirebaseRequestUser } from "../../../../shared/auth";
-import { assertPlusPlanForExecutiveFunction } from "@/app/api/shared/plusEntitlement";
+import { assertExecutiveFunctionAvailableForUser } from "@/app/api/shared/plusEntitlement";
 import { withAuthenticatedApiCors } from "../../../../shared/cors";
 
 type RouteContext = {
@@ -32,7 +32,7 @@ export async function POST(req: Request, context: RouteContext) {
     const body = (await req.json()) as Record<string, unknown>;
     const params = await context.params;
     const { uid } = await verifyFirebaseRequestUser(req, body);
-    await assertPlusPlanForExecutiveFunction(uid);
+    await assertExecutiveFunctionAvailableForUser(uid);
     const undo = await undoBrainDumpCreationBatch({
       uid,
       sessionId: String(params.sessionId || ""),

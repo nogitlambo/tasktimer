@@ -70,6 +70,7 @@ type RenderTaskCardOptions = {
   isHistoryPinned: boolean;
   canUseAdvancedHistory: boolean;
   canUseExecutiveFunction?: boolean;
+  executiveFunctionUnavailableMessage?: string;
   canUseSocialFeatures: boolean;
   hasFriends: boolean;
   isSharedByOwner: boolean;
@@ -548,8 +549,16 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
   const destructiveTitle = hasTaskHistory && task.running ? "Stop task to archive" : destructiveLabel;
   const destructiveDisabled = hasTaskHistory && task.running;
   const destructiveIconSrc = hasTaskHistory ? "/icons/icons_default/archive.webp" : "/icons/icons_default/trash.webp";
-  const clarificationLabel = canUseExecutiveFunction ? "Make easier to start" : "Make easier to start (PLUS)";
-  const clarificationTitle = canUseExecutiveFunction ? "Make this easier to start" : "PLUS feature: Make this easier to start";
+  const clarificationUnavailableMessage = String(options.executiveFunctionUnavailableMessage || "").trim();
+  const clarificationIsDisabledBySettings = clarificationUnavailableMessage.toLowerCase().includes("turned off");
+  const clarificationLabel = canUseExecutiveFunction
+    ? "Make easier to start"
+    : clarificationIsDisabledBySettings
+    ? "Make easier to start (Off)"
+    : "Make easier to start (PLUS)";
+  const clarificationTitle = canUseExecutiveFunction
+    ? "Make this easier to start"
+    : clarificationUnavailableMessage || "PLUS feature: Make this easier to start";
   const clarificationActionHtml = task.sharedSourceOwnerUid
     ? ""
     : `<button class="taskMenuItem" data-action="clarify" title="${clarificationTitle}" type="button" ${canUseExecutiveFunction ? "" : 'data-plan-locked="executiveFunction"'}>${renderTaskBackActionTile(clarificationLabel, escapeHtml)}</button>`;

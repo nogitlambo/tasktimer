@@ -226,3 +226,15 @@ describe("firestore Trusted Automation rules", () => {
     expect(rules).toContain('allow read, create, update, delete: if false;');
   });
 });
+
+describe("firestore Proactive Executive Nudge rules", () => {
+  it("keeps preferences and delivery history active-owner readable and server-maintained", () => {
+    const rules = readRules();
+
+    expect(rules).toContain('match /users/{userId}/nudgePreferences/{docId}');
+    expect(rules).toContain('allow read: if isActiveOwner(userId) && docId == "current";');
+    expect(rules).toContain('match /users/{userId}/nudgeDeliveries/{deliveryId}');
+    expect(rules).toContain('allow read: if isActiveOwner(userId);');
+    expect(rules).toContain('allow create, update, delete: if false;');
+  });
+});

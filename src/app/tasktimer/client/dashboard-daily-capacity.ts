@@ -2,6 +2,7 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { trackDailyCapacity } from "@/app/adaptivecapacity/lib/dailyCapacityTelemetry";
 
 import { getApiUrl } from "../lib/apiClient";
+import { getExecutiveFunctionLockedActionLabel } from "../lib/executiveFunctionAvailability";
 
 const PLUS_REQUIRED_MESSAGE = "Upgrade to PLUS to use executive function features.";
 
@@ -94,7 +95,7 @@ function element(documentRef: Document, id: string) {
   return documentRef.getElementById(id) as HTMLElement | null;
 }
 
-type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; getCurrentAppPage: () => string; canUseExecutiveFunction?: () => boolean; showUpgradePrompt?: (featureName: string, plan?: "plus") => void; getIdToken?: () => Promise<string | null> };
+type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; getCurrentAppPage: () => string; canUseExecutiveFunction?: () => boolean; getExecutiveFunctionUnavailableMessage?: () => string; showUpgradePrompt?: (featureName: string, plan?: "plus") => void; getIdToken?: () => Promise<string | null> };
 
 export function createDashboardDailyCapacity(options: Options) {
   const documentRef = options.documentRef ?? document;
@@ -131,7 +132,7 @@ export function createDashboardDailyCapacity(options: Options) {
     if (retry) {
       retry.hidden = state !== "error" && state !== "locked";
       retry.disabled = false;
-      retry.textContent = state === "locked" ? "Upgrade to PLUS" : "Retry";
+      retry.textContent = state === "locked" ? getExecutiveFunctionLockedActionLabel(message, "Retry") : "Retry";
     }
     const adjust = documentRef.querySelector<HTMLButtonElement>('[data-daily-capacity="adjust"]');
     if (adjust) adjust.disabled = state === "locked";
@@ -144,7 +145,7 @@ export function createDashboardDailyCapacity(options: Options) {
     if (options.canUseExecutiveFunction?.() !== false) return false;
     currentCapacity = null;
     abortController?.abort();
-    setState("locked", PLUS_REQUIRED_MESSAGE);
+    setState("locked", options.getExecutiveFunctionUnavailableMessage?.() || PLUS_REQUIRED_MESSAGE);
     return true;
   }
 

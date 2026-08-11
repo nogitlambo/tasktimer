@@ -24,6 +24,7 @@ type TaskTimerPreferenceStorageKeys = {
   TASK_VIEW_KEY: string;
   TASK_ORDER_BY_KEY: string;
   FULL_COLOR_TASK_CARDS_KEY: string;
+  EXECUTIVE_FUNCTION_ENABLED_KEY: string;
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
   TIME_GOAL_COMPLETE_NEXT_TASKS_KEY: string;
   DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY: string;
@@ -49,6 +50,7 @@ type PreferencesStateSnapshot = {
   dashboardPreviousWeekVisible: boolean;
   dynamicColorsEnabled: boolean;
   fullColorTaskCardsEnabled: boolean;
+  executiveFunctionEnabled: boolean;
   mobilePushAlertsEnabled: boolean;
   webPushAlertsEnabled: boolean;
   interactionClickSoundEnabled: boolean;
@@ -162,6 +164,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       dashboardPreviousWeekVisible: state.dashboardPreviousWeekVisible !== false,
       dynamicColorsEnabled: state.dynamicColorsEnabled,
       fullColorTaskCardsEnabled: state.fullColorTaskCardsEnabled,
+      executiveFunctionEnabled: state.executiveFunctionEnabled !== false,
       mobilePushAlertsEnabled: state.mobilePushAlertsEnabled,
       webPushAlertsEnabled: state.webPushAlertsEnabled,
       interactionClickSoundEnabled: state.interactionClickSoundEnabled,
@@ -204,6 +207,10 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     safeWriteLocalStorage(
       storageKeys.FULL_COLOR_TASK_CARDS_KEY,
       snapshot.fullColorTaskCardsEnabled ? "true" : "false",
+    );
+    safeWriteLocalStorage(
+      storageKeys.EXECUTIVE_FUNCTION_ENABLED_KEY,
+      snapshot.executiveFunctionEnabled !== false ? "true" : "false",
     );
     safeWriteLocalStorage(
       storageKeys.MOBILE_PUSH_ALERTS_KEY,
@@ -327,6 +334,15 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     return localValue === true;
   }
 
+  function loadExecutiveFunctionEnabled(): boolean {
+    const cloudValue = getStoredPreferencesWithoutDefaults()?.executiveFunctionEnabled;
+    if (typeof cloudValue === "boolean") return cloudValue;
+    const localValue = canUseLocalPreferenceFallback()
+      ? parseStoredBoolean(safeReadLocalStorage(storageKeys.EXECUTIVE_FUNCTION_ENABLED_KEY))
+      : null;
+    return localValue !== false;
+  }
+
   function loadMobilePushAlertsEnabled(): boolean {
     const localValue = canUseLocalPreferenceFallback()
       ? parseStoredBoolean(safeReadLocalStorage(storageKeys.MOBILE_PUSH_ALERTS_KEY))
@@ -425,6 +441,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     loadDashboardPreviousWeekVisible,
     loadDynamicColorsEnabled,
     loadFullColorTaskCardsEnabled,
+    loadExecutiveFunctionEnabled,
     loadMobilePushAlertsEnabled,
     loadWebPushAlertsEnabled,
     loadInteractionClickSoundEnabled,

@@ -7,7 +7,7 @@ import {
 } from "@/app/brain-dump/lib/brainDumpProcessing";
 import { createFirestoreBrainDumpSessionStore } from "@/app/brain-dump/lib/brainDumpSessionStore";
 import { verifyFirebaseRequestUser } from "../../../shared/auth";
-import { assertPlusPlanForExecutiveFunction } from "@/app/api/shared/plusEntitlement";
+import { assertExecutiveFunctionAvailableForUser } from "@/app/api/shared/plusEntitlement";
 import { withAuthenticatedApiCors } from "../../../shared/cors";
 
 type RouteContext = {
@@ -33,7 +33,7 @@ function hasStatus(error: unknown) {
 export async function GET(req: Request, context: RouteContext) {
   try {
     const { uid } = await verifyFirebaseRequestUser(req);
-    await assertPlusPlanForExecutiveFunction(uid);
+    await assertExecutiveFunctionAvailableForUser(uid);
     const params = await context.params;
     const session = await getBrainDumpReviewSessionForUser({
       uid,
@@ -75,7 +75,7 @@ export async function PATCH(req: Request, context: RouteContext) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
     const { uid } = await verifyFirebaseRequestUser(req, body);
-    await assertPlusPlanForExecutiveFunction(uid);
+    await assertExecutiveFunctionAvailableForUser(uid);
     const params = await context.params;
     const session = await updateBrainDumpReviewSession({
       uid,

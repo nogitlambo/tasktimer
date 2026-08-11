@@ -37,6 +37,7 @@ export function safeAutomationError(error: unknown, fallbackCode = "AUTOMATION_I
     "AUTOMATION_OWNERSHIP_FAILED": "Automation ownership could not be verified.",
     "automation/rate-limited": "Please wait before trying Trusted Automation again.",
     "plan/plus-required": "Upgrade to PLUS to use executive function features.",
+    "executive-function/disabled": "Executive Function is turned off in Settings.",
   };
   return {
     status: safeStatus,

@@ -4,6 +4,7 @@ import { dispatchTaskClarificationOpenEvent } from "./task-clarification-events"
 import { trackRecovery } from "@/app/recovery/lib/recoveryTelemetry";
 
 import { getApiUrl } from "../lib/apiClient";
+import { getExecutiveFunctionLockedActionLabel } from "../lib/executiveFunctionAvailability";
 
 const PLUS_REQUIRED_MESSAGE = "Upgrade to PLUS to use executive function features.";
 
@@ -44,6 +45,7 @@ type Options = {
   fetchImpl?: typeof fetch;
   getCurrentAppPage: () => string;
   canUseExecutiveFunction?: () => boolean;
+  getExecutiveFunctionUnavailableMessage?: () => string;
   showUpgradePrompt?: (featureName: string, plan?: "plus") => void;
   getTasks: () => Task[];
   jumpToTaskById?: (taskId: string) => void;
@@ -138,7 +140,7 @@ export function createDashboardRecovery(options: Options) {
     const retry = card?.querySelector<HTMLButtonElement>('[data-recovery="refresh"]');
     if (retry) {
       retry.disabled = state === "loading";
-      retry.textContent = state === "locked" ? "Upgrade to PLUS" : "Refresh";
+      retry.textContent = state === "locked" ? getExecutiveFunctionLockedActionLabel(message, "Refresh") : "Refresh";
     }
     const retryButton = element(documentRef, "dashboardRecoveryRetry");
     if (retryButton) retryButton.hidden = state !== "error" && state !== "locked";
@@ -154,7 +156,7 @@ export function createDashboardRecovery(options: Options) {
     session = null;
     abortController?.abort();
     setOverlay(false);
-    setState("locked", PLUS_REQUIRED_MESSAGE);
+    setState("locked", options.getExecutiveFunctionUnavailableMessage?.() || PLUS_REQUIRED_MESSAGE);
     return true;
   }
 

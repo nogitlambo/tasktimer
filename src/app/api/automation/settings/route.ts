@@ -1,5 +1,5 @@
 import { verifyFirebaseRequestUser } from "@/app/api/shared/auth";
-import { assertPlusPlanForExecutiveFunction } from "@/app/api/shared/plusEntitlement";
+import { assertExecutiveFunctionAvailableForUser, assertPlusPlanForExecutiveFunction } from "@/app/api/shared/plusEntitlement";
 import { authenticatedApiOptions } from "@/app/api/shared/cors";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { enforceUidRateLimit } from "@/app/api/shared/rateLimit";
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
 export async function PUT(req: Request) {
   try {
     const { uid } = await verifyFirebaseRequestUser(req);
-    await assertPlusPlanForExecutiveFunction(uid);
+    await assertExecutiveFunctionAvailableForUser(uid);
     await assertTrustedAutomationAccountActive(uid);
     const repository = createFirestoreAutomationSettingsRepository(getFirebaseAdminDb());
     const current = await repository.loadOrCreate(uid);

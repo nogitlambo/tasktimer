@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import AppImg from "@/components/AppImg";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getApiUrl } from "../../lib/apiClient";
 import {
@@ -21,6 +22,8 @@ import { TrustRecommendationSchema, type TrustRecommendation } from "@/app/trust
 import { SettingsDetailPane } from "./SettingsShared";
 import { hasTaskTimerEntitlement, readTaskTimerPlanFromStorage, TASKTIMER_PLAN_CHANGED_EVENT } from "../../lib/entitlements";
 import { resolveTaskTimerRouteHref } from "../../lib/routeHref";
+import { createTaskTimerWorkspacePreferencesPersistence, createTaskTimerWorkspaceRepository } from "../../lib/workspaceRepository";
+import { EXECUTIVE_FUNCTION_PREFERENCE_CHANGED_EVENT } from "../../lib/executiveFunctionAvailability";
 
 const RULE_LABELS: Record<AutomationRuleType, string> = {
   REFRESH_DAILY_BRIEF: "Refresh Daily Executive Brief",
@@ -33,6 +36,17 @@ const RULE_LABELS: Record<AutomationRuleType, string> = {
   REFRESH_TASK_CLARIFICATION: "Request Task Clarification",
 };
 
+const RULE_HELP_TEXT: Record<AutomationRuleType, string> = {
+  REFRESH_DAILY_BRIEF: "Updates today's Executive Brief so the plan summary, workload, risks, and suggested first action reflect current tasks and capacity.",
+  REFRESH_CAPACITY_SNAPSHOT: "Recalculates today's adaptive capacity range from your availability and recent focus history so planning uses a current time budget.",
+  REFRESH_NEXT_BEST_ACTION: "Chooses a current task recommendation from eligible work, using timing, urgency, focus windows, and available minutes.",
+  EXPIRE_RECOMMENDATIONS: "Marks old Next Best Action and related recommendations as expired so stale choices are not reused after tasks or timing change.",
+  REFRESH_SCHEDULE_REPAIR: "Checks today's schedule for overloads, missed windows, or deadline risk and prepares repair suggestions for review.",
+  REFRESH_RECOVERY_MODE: "Refreshes Recovery Mode recommendations for what to restart, defer, or ignore when the current plan needs a reset.",
+  MAINTAIN_BRAIN_DUMP: "Keeps Brain Dump sessions current by maintaining extracted ideas and follow-up candidates without directly changing tasks.",
+  REFRESH_TASK_CLARIFICATION: "Requests clearer next steps for tasks that appear hard to start, incomplete, or too vague to act on confidently.",
+};
+
 type AutomationHistoryPayload = { success?: boolean; data?: { items?: unknown[] }; error?: { code?: unknown } };
 type AutomationSettingsPayload = { success?: boolean; data?: { settings?: unknown }; error?: { code?: unknown } };
 type TrustRecommendationPayload = { success?: boolean; data?: { recommendations?: unknown[] }; error?: { code?: unknown } };
@@ -40,6 +54,19 @@ const PLUS_REQUIRED_MESSAGE = "Upgrade to PLUS to use executive function feature
 
 function getRuleLabel(ruleId: AutomationRuleType) {
   return RULE_LABELS[ruleId];
+}
+
+function getRuleMode(rule: Pick<AutomationRulePolicy, "enabled" | "trustLevel">) {
+  return rule.enabled ? rule.trustLevel : "OFF";
+}
+
+function getRuleHelpText(rule: Pick<AutomationRulePolicy, "ruleId" | "enabled" | "trustLevel">) {
+  const trustText = !rule.enabled
+    ? "Off means this rule will not run, even when consent and automation processing are enabled."
+    : rule.trustLevel === "TRUSTED"
+    ? "Trusted mode can run after consent when automation processing is enabled."
+    : "Assisted mode prepares the work but still requires your confirmation before applying it.";
+  return `${RULE_HELP_TEXT[rule.ruleId]} ${trustText}`;
 }
 
 function getSafeAutomationError(payload: { error?: { code?: unknown } } | null, fallback: string) {
@@ -99,9 +126,8 @@ export function TrustedAutomationSettingsPane({ active, exiting = false }: { act
   const [trustRecommendations, setTrustRecommendations] = useState<TrustRecommendation[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [status, setStatus] = useState("");
   const [canUseExecutiveFunction, setCanUseExecutiveFunction] = useState(true);
+  const [executiveFunctionEnabled, setExecutiveFunctionEnabled] = useState(true);
 
   useEffect(() => {
     const syncPlan = () => {
@@ -112,17 +138,39 @@ export function TrustedAutomationSettingsPane({ active, exiting = false }: { act
     return () => window.removeEventListener(TASKTIMER_PLAN_CHANGED_EVENT, syncPlan);
   }, []);
 
+  useEffect(() => {
+    const persistence = createTaskTimerWorkspacePreferencesPersistence(createTaskTimerWorkspaceRepository());
+    const syncPreference = () => {
+      setExecutiveFunctionEnabled(persistence.loadResolved().executiveFunctionEnabled !== false);
+    };
+    syncPreference();
+    const unsubscribe = persistence.subscribe((prefs) => {
+      setExecutiveFunctionEnabled((prefs || persistence.loadResolved()).executiveFunctionEnabled !== false);
+    });
+    window.addEventListener(EXECUTIVE_FUNCTION_PREFERENCE_CHANGED_EVENT, syncPreference);
+    return () => {
+      unsubscribe();
+      window.removeEventListener(EXECUTIVE_FUNCTION_PREFERENCE_CHANGED_EVENT, syncPreference);
+    };
+  }, []);
+
+  const saveExecutiveFunctionEnabled = useCallback((nextEnabled: boolean) => {
+    const persistence = createTaskTimerWorkspacePreferencesPersistence(createTaskTimerWorkspaceRepository());
+    const next = persistence.update({ executiveFunctionEnabled: nextEnabled });
+    setExecutiveFunctionEnabled(next.executiveFunctionEnabled !== false);
+    window.dispatchEvent(new CustomEvent(EXECUTIVE_FUNCTION_PREFERENCE_CHANGED_EVENT, {
+      detail: { enabled: next.executiveFunctionEnabled !== false },
+    }));
+  }, []);
+
   const loadData = useCallback(async () => {
-    if (!canUseExecutiveFunction) {
-      setSettings(null);
-      setHistory([]);
-      setTrustRecommendations([]);
-      setStatus("");
-      setError(PLUS_REQUIRED_MESSAGE);
-      return;
-    }
+      if (!canUseExecutiveFunction) {
+        setSettings(null);
+        setHistory([]);
+        setTrustRecommendations([]);
+        return;
+      }
     setLoading(true);
-    setError("");
     try {
       const headers = await getAuthHeaders();
       const [settingsResponse, historyResponse] = await Promise.all([
@@ -133,6 +181,10 @@ export function TrustedAutomationSettingsPane({ active, exiting = false }: { act
       const historyPayload = await readAutomationResponse<AutomationHistoryPayload>(historyResponse, "Automation history could not be loaded.");
       setSettings(parseSettings(settingsPayload));
       setHistory(parseHistory(historyPayload));
+      if (!executiveFunctionEnabled) {
+        setTrustRecommendations([]);
+        return;
+      }
       try {
         const trustResponse = await fetch(getApiUrl("/api/automation/trust"), { headers });
         if (trustResponse.ok) {
@@ -147,13 +199,12 @@ export function TrustedAutomationSettingsPane({ active, exiting = false }: { act
       } catch {
         setTrustRecommendations([]);
       }
-      setStatus("Trusted Automation settings refreshed.");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Trusted Automation could not be loaded.");
+      console.error("[TrustedAutomationSettingsPane] load failed", cause);
     } finally {
       setLoading(false);
     }
-  }, [canUseExecutiveFunction]);
+  }, [canUseExecutiveFunction, executiveFunctionEnabled]);
 
   useEffect(() => {
     if (!active) return;
@@ -162,14 +213,9 @@ export function TrustedAutomationSettingsPane({ active, exiting = false }: { act
   }, [active, loadData]);
 
   const savePatch = useCallback(async (patch: AutomationSettingsPatch) => {
-    if (!canUseExecutiveFunction) {
-      setError(PLUS_REQUIRED_MESSAGE);
-      return;
-    }
+    if (!canUseExecutiveFunction || !executiveFunctionEnabled) return;
     if (!settings || saving) return;
     setSaving(true);
-    setError("");
-    setStatus("");
     try {
       const headers = await getAuthHeaders();
       const response = await fetch(getApiUrl("/api/automation/settings"), {
@@ -179,18 +225,21 @@ export function TrustedAutomationSettingsPane({ active, exiting = false }: { act
       });
       const payload = await readAutomationResponse<AutomationSettingsPayload>(response, "Trusted Automation settings could not be saved.");
       setSettings(parseSettings(payload));
-      setStatus("Trusted Automation settings saved.");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Trusted Automation settings could not be saved.");
+      console.error("[TrustedAutomationSettingsPane] save failed", cause);
     } finally {
       setSaving(false);
     }
-  }, [canUseExecutiveFunction, saving, settings]);
+  }, [canUseExecutiveFunction, executiveFunctionEnabled, saving, settings]);
 
   function updateRule(ruleId: AutomationRuleType, update: Partial<AutomationRulePolicy>) {
     if (!settings) return;
     const rules = settings.rules.map((rule) => rule.ruleId === ruleId ? { ...rule, ...update } : rule);
     void savePatch({ rules });
+  }
+
+  function updateRuleMode(ruleId: AutomationRuleType, mode: "OFF" | AutomationRulePolicy["trustLevel"]) {
+    updateRule(ruleId, mode === "OFF" ? { enabled: false } : { enabled: true, trustLevel: mode });
   }
 
   const controlsDisabled = loading || saving || !settings;
@@ -201,7 +250,7 @@ export function TrustedAutomationSettingsPane({ active, exiting = false }: { act
         active={active}
         exiting={exiting}
         paneClassName="settingsTrustedAutomationPane isPlanLocked"
-        title="Trusted Automation"
+        title="Executive Function"
         subtitle={PLUS_REQUIRED_MESSAGE}
       >
         <div className="settingsInlineStack" data-plan-locked="executiveFunction">
@@ -209,7 +258,7 @@ export function TrustedAutomationSettingsPane({ active, exiting = false }: { act
             <div className="settingsInlineSectionHead">
               <div>
                 <div className="settingsInlineSectionTitle" id="trustedAutomationLockedHeading">PLUS required</div>
-                <div className="settingsPreferenceControlHelp">Trusted Automation can refresh executive briefs, capacity, recovery, schedule repair, Brain Dump maintenance, and task clarification for PLUS users.</div>
+                <div className="settingsPreferenceControlHelp">Executive Function can refresh executive briefs, capacity, recovery, schedule repair, Brain Dump maintenance, task clarification, and Trusted Automation for PLUS users.</div>
               </div>
               <a className="btn btn-accent small" href={resolveTaskTimerRouteHref("/account")}>Upgrade to PLUS</a>
             </div>
@@ -224,27 +273,44 @@ export function TrustedAutomationSettingsPane({ active, exiting = false }: { act
       active={active}
       exiting={exiting}
       paneClassName="settingsTrustedAutomationPane"
-      title="Trusted Automation"
-      subtitle="Control consent, rule permissions, pause state, and read-only automation history."
+      title="Executive Function"
+      subtitle="Control Executive Function features and Trusted Automation permissions."
     >
       <div className="settingsInlineStack">
-        <div className="settingsTrustedAutomationStatus" aria-live="polite">
-          {loading ? "Loading Trusted Automation settings..." : null}
-          {!loading && error ? error : null}
-          {!loading && !error && status ? status : null}
-        </div>
-
-        <section className="settingsInlineSection" aria-labelledby="trustedAutomationControlHeading">
+        <section className="settingsInlineSection" aria-labelledby="executiveFunctionMasterHeading">
           <div className="settingsInlineSectionHead">
+            <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/executive.webp" alt="" aria-hidden="true" />
             <div>
-              <div className="settingsInlineSectionTitle" id="trustedAutomationControlHeading">Consent and availability</div>
-              <div className="settingsPreferenceControlHelp">The server remains authoritative. Consent withdrawal disables new automation work and preserves completed history.</div>
+              <div className="settingsInlineSectionTitle" id="executiveFunctionMasterHeading">Executive Function</div>
+            </div>
+          </div>
+          <div className="toggleRow settingsTrustedAutomationToggleRow">
+            <div className="settingsPreferenceControlCopy">
+              <span className="settingsPreferenceControlLabel">Enable Executive Function</span>
+              <span className="settingsPreferenceControlHelp">Turns Executive Summary, Daily Executive Brief, Next Best Action, Adaptive Capacity, Schedule Repair, Recovery Mode, Brain Dump executive actions, task clarification, and Trusted Automation on or off.</span>
+            </div>
+            <button
+              className={`switch${executiveFunctionEnabled ? " on" : ""}`}
+              type="button"
+              role="switch"
+              aria-label="Enable Executive Function"
+              aria-checked={executiveFunctionEnabled}
+              onClick={() => saveExecutiveFunctionEnabled(!executiveFunctionEnabled)}
+            />
+          </div>
+        </section>
+
+        <section className={`settingsInlineSection${executiveFunctionEnabled ? "" : " isDisabled"}`} aria-labelledby="trustedAutomationSectionHeading">
+          <div className="settingsInlineSectionHead">
+            <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/automation.webp" alt="" aria-hidden="true" />
+            <div>
+              <div className="settingsInlineSectionTitle" id="trustedAutomationSectionHeading">Trusted Automation</div>
             </div>
           </div>
           <div className="toggleRow settingsTrustedAutomationToggleRow">
             <div className="settingsPreferenceControlCopy">
               <span className="settingsPreferenceControlLabel">Allow Trusted Automation</span>
-              <span className="settingsPreferenceControlHelp">Grant consent before enabling supported rules.</span>
+              <span className="settingsPreferenceControlHelp">Gives server-side consent for Trusted Automation. Turning this off blocks trusted rule execution and prevents new automation work from starting.</span>
             </div>
             <button
               className={`switch${settings?.consentGranted ? " on" : ""}`}
@@ -252,14 +318,14 @@ export function TrustedAutomationSettingsPane({ active, exiting = false }: { act
               role="switch"
               aria-label="Allow Trusted Automation"
               aria-checked={settings?.consentGranted ?? false}
-              disabled={controlsDisabled}
+              disabled={controlsDisabled || !executiveFunctionEnabled}
               onClick={() => settings && void savePatch({ consentGranted: !settings.consentGranted, automationEnabled: settings.consentGranted ? false : settings.automationEnabled })}
             />
           </div>
           <div className="toggleRow settingsTrustedAutomationToggleRow">
             <div className="settingsPreferenceControlCopy">
               <span className="settingsPreferenceControlLabel">Enable automation processing</span>
-              <span className="settingsPreferenceControlHelp">When disabled, no new rule execution is started.</span>
+              <span className="settingsPreferenceControlHelp">Master run switch for automation jobs. When off, enabled rules stay configured but no new scheduled, event, or system-triggered work begins.</span>
             </div>
             <button
               className={`switch${settings?.automationEnabled ? " on" : ""}`}
@@ -267,14 +333,14 @@ export function TrustedAutomationSettingsPane({ active, exiting = false }: { act
               role="switch"
               aria-label="Enable automation processing"
               aria-checked={settings?.automationEnabled ?? false}
-              disabled={controlsDisabled || !settings?.consentGranted}
+              disabled={controlsDisabled || !executiveFunctionEnabled || !settings?.consentGranted}
               onClick={() => settings && void savePatch({ automationEnabled: !settings.automationEnabled })}
             />
           </div>
           <div className="toggleRow settingsTrustedAutomationToggleRow">
             <div className="settingsPreferenceControlCopy">
               <span className="settingsPreferenceControlLabel">Pause All</span>
-              <span className="settingsPreferenceControlHelp">Stops new automation work. Already completed history is preserved; queued work remains safely recorded.</span>
+              <span className="settingsPreferenceControlHelp">Temporarily stops all automation without changing consent or rule settings. Use this to freeze new work while preserving completed history and queued records.</span>
             </div>
             <button
               className={`switch${settings?.pauseAll ? " on" : ""}`}
@@ -282,17 +348,17 @@ export function TrustedAutomationSettingsPane({ active, exiting = false }: { act
               role="switch"
               aria-label="Pause all Trusted Automation"
               aria-checked={settings?.pauseAll ?? false}
-              disabled={controlsDisabled}
+              disabled={controlsDisabled || !executiveFunctionEnabled}
               onClick={() => settings && void savePatch({ pauseAll: !settings.pauseAll })}
             />
           </div>
         </section>
 
-        <section className="settingsInlineSection" aria-labelledby="trustedAutomationRulesHeading">
+        <section className={`settingsInlineSection${executiveFunctionEnabled ? "" : " isDisabled"}`} aria-labelledby="trustedAutomationRulesHeading">
           <div className="settingsInlineSectionHead">
+            <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/permissions.webp" alt="" aria-hidden="true" />
             <div>
               <div className="settingsInlineSectionTitle" id="trustedAutomationRulesHeading">Rule permissions</div>
-              <div className="settingsPreferenceControlHelp">Each rule can be enabled independently. Assisted work requires confirmation; Trusted work uses the consented server policy.</div>
             </div>
           </div>
           <div className="settingsTrustedAutomationRuleList">
@@ -300,30 +366,24 @@ export function TrustedAutomationSettingsPane({ active, exiting = false }: { act
               <div className="settingsTrustedAutomationRule" key={rule.ruleId}>
                 <div className="settingsPreferenceControlCopy">
                   <span className="settingsPreferenceControlLabel">{getRuleLabel(rule.ruleId)}</span>
-                  <span className="settingsPreferenceControlHelp">{rule.trustLevel === "TRUSTED" ? "Trusted: eligible for consented automation." : "Assisted: confirmation remains required."}</span>
+                  <span className="settingsPreferenceControlHelp">{getRuleHelpText(rule)}</span>
                 </div>
-                <div className="settingsTrustedAutomationRuleControls">
-                  <button
-                    className={`switch${rule.enabled ? " on" : ""}`}
-                    type="button"
-                    role="switch"
-                    aria-label={`${rule.enabled ? "Disable" : "Enable"} ${getRuleLabel(rule.ruleId)}`}
-                    aria-checked={rule.enabled}
-                    disabled={controlsDisabled}
-                    onClick={() => updateRule(rule.ruleId, { enabled: !rule.enabled })}
-                  />
-                  <label className="settingsTrustedAutomationTrustLabel">
-                    <span className="srOnly">Trust level for {getRuleLabel(rule.ruleId)}</span>
-                    <select
-                      aria-label={`Trust level for ${getRuleLabel(rule.ruleId)}`}
-                      value={rule.trustLevel}
-                      disabled={controlsDisabled}
-                      onChange={(event) => updateRule(rule.ruleId, { trustLevel: event.currentTarget.value as AutomationRulePolicy["trustLevel"] })}
-                    >
-                      <option value="ASSISTED">Assisted</option>
-                      <option value="TRUSTED">Trusted</option>
-                    </select>
-                  </label>
+                <div className="settingsTrustedAutomationRuleControls" role="group" aria-label={`Automation mode for ${getRuleLabel(rule.ruleId)}`}>
+                  {(["OFF", "ASSISTED", "TRUSTED"] as const).map((mode) => {
+                    const isSelected = getRuleMode(rule) === mode;
+                    return (
+                      <button
+                        className={`settingsTrustedAutomationModePill${isSelected ? " isSelected" : ""}`}
+                        type="button"
+                        aria-pressed={isSelected}
+                        disabled={controlsDisabled || !executiveFunctionEnabled}
+                        key={mode}
+                        onClick={() => updateRuleMode(rule.ruleId, mode)}
+                      >
+                        {mode}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ))}

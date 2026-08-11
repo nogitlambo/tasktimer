@@ -55,6 +55,8 @@
 .executiveAttentionStack .executiveAttentionCard[data-schedule-repair-state="ready"],.executiveAttentionStack .executiveAttentionCard[data-schedule-repair-state="error"],.executiveAttentionStack .executiveAttentionCard[data-schedule-repair-state="locked"],.executiveAttentionStack .executiveRecoveryCard[data-recovery-state="ready"],.executiveAttentionStack .executiveRecoveryCard[data-recovery-state="error"],.executiveAttentionStack .executiveRecoveryCard[data-recovery-state="locked"]{display:block}
 .executiveTools{align-items:center}
 .executiveToolLinks{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+#appPageExecutive.isExecutiveFunctionDisabled button,
+#appPageExecutive.isExecutiveFunctionDisabled .executiveToolLinks .btn{display:none}
 .dashboardExecutiveSummary{grid-column:1/-1;margin-bottom:16px;cursor:pointer}
 .dashboardExecutiveSummaryTitle{margin:0;font-size:18px}
 .dashboardExecutiveSummaryStatus{margin:12px 0;color:var(--text-secondary,#aeb9cc);font:13px var(--font-readable,inherit)}

@@ -9,6 +9,7 @@ type Options = {
   windowRef?: Window;
   getCurrentAppPage: () => string;
   canUseExecutiveFunction?: () => boolean;
+  getExecutiveFunctionUnavailableMessage?: () => string;
   showUpgradePrompt?: (featureName: string, plan?: "plus") => void;
   getIdToken?: () => Promise<string | null>;
 };
@@ -106,7 +107,7 @@ export function createDashboardExecutiveSummary(options: Options) {
     if (!card || options.getCurrentAppPage() !== "dashboard") return;
     if (options.canUseExecutiveFunction?.() === false) {
       const status = getElement(documentRef, "dashboardExecutiveSummaryStatus");
-      setPlainStatus(status, "Upgrade to PLUS to use Executive Function features.");
+      setPlainStatus(status, options.getExecutiveFunctionUnavailableMessage?.() || "Upgrade to PLUS to use Executive Function features.");
       card.setAttribute("data-executive-summary-state", "locked");
       return;
     }
@@ -132,7 +133,12 @@ export function createDashboardExecutiveSummary(options: Options) {
     const taskId = button?.dataset.taskId;
     if (!recommendationId || !taskId) return;
     if (options.canUseExecutiveFunction?.() === false) {
-      options.showUpgradePrompt?.("Next Best Action", "plus");
+      if (options.getExecutiveFunctionUnavailableMessage) {
+        const status = getElement(documentRef, "dashboardExecutiveSummaryStatus");
+        setPlainStatus(status, options.getExecutiveFunctionUnavailableMessage());
+      } else {
+        options.showUpgradePrompt?.("Next Best Action", "plus");
+      }
       return;
     }
     button.disabled = true;

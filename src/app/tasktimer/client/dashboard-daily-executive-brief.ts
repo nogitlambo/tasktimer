@@ -1,5 +1,6 @@
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getApiUrl } from "../lib/apiClient";
+import { getExecutiveFunctionLockedActionLabel } from "../lib/executiveFunctionAvailability";
 import { dispatchTaskClarificationOpenEvent, dispatchTaskClarificationStartTaskEvent } from "./task-clarification-events";
 import { trackDailyExecutiveBrief } from "@/app/dailyexecutivebrief/lib/dailyExecutiveBriefTelemetry";
 
@@ -80,7 +81,7 @@ function element(documentRef: Document, id: string) {
   return documentRef.getElementById(id) as HTMLElement | null;
 }
 
-type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; getCurrentAppPage: () => string; canUseExecutiveFunction?: () => boolean; showUpgradePrompt?: (featureName: string, plan?: "plus") => void; getIdToken?: () => Promise<string | null> };
+type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; getCurrentAppPage: () => string; canUseExecutiveFunction?: () => boolean; getExecutiveFunctionUnavailableMessage?: () => string; showUpgradePrompt?: (featureName: string, plan?: "plus") => void; getIdToken?: () => Promise<string | null> };
 
 export function createDashboardDailyExecutiveBrief(options: Options) {
   const documentRef = options.documentRef ?? document;
@@ -100,7 +101,7 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
     if (retry) {
       retry.hidden = !["error", "stale", "locked"].includes(state);
       retry.disabled = false;
-      retry.textContent = state === "locked" ? "Upgrade to PLUS" : "Retry";
+      retry.textContent = state === "locked" ? getExecutiveFunctionLockedActionLabel(message, "Retry") : "Retry";
     }
     const start = documentRef.querySelector<HTMLButtonElement>('[data-daily-executive-brief="start"]');
     if (start) start.disabled = state !== "ready";
@@ -114,7 +115,7 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
     if (options.canUseExecutiveFunction?.() !== false) return false;
     currentBrief = null;
     abortController?.abort();
-    setState("locked", PLUS_REQUIRED_MESSAGE);
+    setState("locked", options.getExecutiveFunctionUnavailableMessage?.() || PLUS_REQUIRED_MESSAGE);
     return true;
   }
 

@@ -80,6 +80,12 @@ describe("startupModule", () => {
     expect(startupModuleToRoute("notes")).toBe("/notes");
   });
 
+  it("accepts Executive as a startup module", () => {
+    expect(normalizeStartupModule("executive")).toBe("executive");
+    expect(startupModuleToAppPage("executive")).toBe("executive");
+    expect(startupModuleToRoute("executive")).toBe("/executive");
+  });
+
   it("does not preserve the legacy Session Notes startup module value", () => {
     expect(normalizeStartupModule("session-notes")).toBe("dashboard");
   });

@@ -6009,14 +6009,6 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 }
 
 /* Trusted Automation controls remain structured, keyboard reachable settings rows. */
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationStatus{
-  min-height:18px;
-  color:#a8a7a7;
-  font-family:var(--font-readable);
-  font-size:13px;
-  line-height:1.35;
-}
-
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationRuleList,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationRecommendationList,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationHistory{
@@ -6042,12 +6034,51 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationRuleControls{
   display:flex;
   align-items:center;
-  gap:10px;
+  gap:0;
   flex:0 0 auto;
+  min-width:252px;
+  overflow:hidden;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.04);
 }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationTrustLabel select{
-  min-width:104px;
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationModePill{
+  flex:1 1 0;
+  min-width:0;
+  height:32px;
+  padding:0 10px;
+  border:0;
+  border-left:1px solid rgba(255,255,255,.12);
+  background:transparent;
+  color:#a8a7a7;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size:10px;
+  font-weight:800;
+  line-height:1;
+  text-align:center;
+  cursor:pointer;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationModePill:first-child{
+  border-left:0;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationModePill:hover,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationModePill:focus-visible{
+  color:var(--text);
+  background:rgba(198,255,0,.1);
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationModePill.isSelected{
+  color:#101410;
+  background:#b6ff00;
+  box-shadow:0 0 16px rgba(182,255,0,.26);
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationModePill:disabled{
+  cursor:not-allowed;
+  opacity:.55;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationHistoryItem{
@@ -6117,7 +6148,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsTrustedAutomationPane .settingsTrustedAutomationRuleControls{
     width:100%;
-    justify-content:space-between;
+    min-width:0;
   }
 }
 

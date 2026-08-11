@@ -1,5 +1,5 @@
 import { verifyFirebaseRequestUser } from "@/app/api/shared/auth";
-import { assertPlusPlanForExecutiveFunction } from "@/app/api/shared/plusEntitlement";
+import { assertExecutiveFunctionAvailableForUser } from "@/app/api/shared/plusEntitlement";
 import { enforceUidRateLimit } from "@/app/api/shared/rateLimit";
 import { authenticatedApiOptions } from "@/app/api/shared/cors";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     await assertTrustedAutomationAccountActive(uid);
     await enforceUidRateLimit({ namespace: "trusted-automation/trust", uid, windowMs: 60_000, maxEvents: 20, code: "automation/rate-limited", message: "Please wait before trying Trusted Automation again." });
     const db = getFirebaseAdminDb();
-    await assertPlusPlanForExecutiveFunction(uid, db);
+    await assertExecutiveFunctionAvailableForUser(uid, db);
     const [settings, history] = await Promise.all([
       createFirestoreAutomationSettingsRepository(db).loadOrCreate(uid),
       createFirestoreAutomationHistoryRepository(db).list(uid, { limit: 50 }),

@@ -3,6 +3,7 @@ import { dispatchTaskClarificationOpenEvent } from "./task-clarification-events"
 import { trackScheduleRepair } from "@/app/schedulerepair/lib/scheduleRepairTelemetry";
 
 import { getApiUrl } from "../lib/apiClient";
+import { getExecutiveFunctionLockedActionLabel } from "../lib/executiveFunctionAvailability";
 
 const PLUS_REQUIRED_MESSAGE = "Upgrade to PLUS to use executive function features.";
 
@@ -97,7 +98,7 @@ function element(documentRef: Document, id: string) {
   return documentRef.getElementById(id) as HTMLElement | null;
 }
 
-type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; getCurrentAppPage: () => string; canUseExecutiveFunction?: () => boolean; showUpgradePrompt?: (featureName: string, plan?: "plus") => void; getIdToken?: () => Promise<string | null> };
+type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; getCurrentAppPage: () => string; canUseExecutiveFunction?: () => boolean; getExecutiveFunctionUnavailableMessage?: () => string; showUpgradePrompt?: (featureName: string, plan?: "plus") => void; getIdToken?: () => Promise<string | null> };
 
 function actionLabel(action: RepairAction) {
   if (action.type === "MOVE_TO_LATER_DAY") return `Move task ${action.taskId} to ${action.toDate || "a later day"}`;
@@ -125,7 +126,7 @@ export function createDashboardScheduleRepair(options: Options) {
     const retry = documentRef.querySelector<HTMLButtonElement>('[data-schedule-repair="refresh"]');
     if (retry) {
       retry.disabled = state === "loading";
-      retry.textContent = state === "locked" ? "Upgrade to PLUS" : "Refresh";
+      retry.textContent = state === "locked" ? getExecutiveFunctionLockedActionLabel(message, "Refresh") : "Refresh";
     }
     const review = documentRef.querySelector<HTMLButtonElement>('[data-schedule-repair="review"]');
     if (review) review.hidden = state !== "ready";
@@ -143,7 +144,7 @@ export function createDashboardScheduleRepair(options: Options) {
     proposal = null;
     abortController?.abort();
     setOverlay(false);
-    setState("locked", PLUS_REQUIRED_MESSAGE);
+    setState("locked", options.getExecutiveFunctionUnavailableMessage?.() || PLUS_REQUIRED_MESSAGE);
     return true;
   }
 

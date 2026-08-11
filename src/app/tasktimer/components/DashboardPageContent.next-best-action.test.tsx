@@ -14,7 +14,8 @@ describe("Dashboard Next Best Action card", () => {
     expect(dashboardHtml).toContain('id="dashboardExecutiveSummary"');
     expect(dashboardHtml).not.toContain('id="dashboardNextBestActionCard"');
     expect(html).toContain('id="dashboardNextBestActionCard"');
-    expect(html).toContain('aria-labelledby="executiveNbaHeading"');
+    expect(html).toContain('aria-label="Next best action"');
+    expect(html).not.toContain("Move the plan forward");
     expect(html).toContain('id="dashboardNextBestActionTimeSelect"');
     expect(html).toContain('<option value="10">10m</option>');
     expect(html).toContain('<option value="20">20m</option>');

@@ -33,6 +33,11 @@ import {
   type TaskTimerEntitlement,
   type TaskTimerPlan,
 } from "./lib/entitlements";
+import {
+  EXECUTIVE_FUNCTION_DISABLED_MESSAGE,
+  EXECUTIVE_FUNCTION_PREFERENCE_CHANGED_EVENT,
+  type ExecutiveFunctionAvailability,
+} from "./lib/executiveFunctionAvailability";
 import type {
   AppPage,
   DashboardRenderOptions,
@@ -219,6 +224,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       TIME_GOAL_COMPLETE_NEXT_TASKS_KEY,
       DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY,
       FULL_COLOR_TASK_CARDS_KEY,
+      EXECUTIVE_FUNCTION_ENABLED_KEY,
       MOBILE_PUSH_ALERTS_KEY,
       WEB_PUSH_ALERTS_KEY,
       INTERACTION_CLICK_SOUND_KEY,
@@ -285,12 +291,28 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return readTaskTimerPlanFromStorage();
   }
 
-  function hasEntitlement(entitlement: TaskTimerEntitlement) {
+  function hasPlanEntitlement(entitlement: TaskTimerEntitlement) {
     return hasTaskTimerEntitlement(getCurrentPlan(), entitlement);
   }
 
+  function hasEntitlement(entitlement: TaskTimerEntitlement) {
+    if (entitlement === "executiveFunction") return hasPlanEntitlement(entitlement) && preferencesState.get("executiveFunctionEnabled") !== false;
+    return hasPlanEntitlement(entitlement);
+  }
+
   function canUseExecutiveFunction() {
-    return hasEntitlement("executiveFunction");
+    return getExecutiveFunctionAvailability() === "available";
+  }
+
+  function getExecutiveFunctionAvailability(): ExecutiveFunctionAvailability {
+    if (!hasPlanEntitlement("executiveFunction")) return "plus-required";
+    return preferencesState.get("executiveFunctionEnabled") === false ? "disabled" : "available";
+  }
+
+  function getExecutiveFunctionUnavailableMessage() {
+    return getExecutiveFunctionAvailability() === "disabled"
+      ? EXECUTIVE_FUNCTION_DISABLED_MESSAGE
+      : "Upgrade to PLUS to use Executive Function features.";
   }
 
   let actionConfirmationTimer: number | null = null;
@@ -827,6 +849,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
     canUseExecutiveFunction,
+    getExecutiveFunctionUnavailableMessage,
     showUpgradePrompt,
   });
   dashboardDailyExecutiveBriefApi = createDashboardDailyExecutiveBrief({
@@ -834,6 +857,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
     canUseExecutiveFunction,
+    getExecutiveFunctionUnavailableMessage,
     showUpgradePrompt,
   });
   dashboardDailyCapacityApi = createDashboardDailyCapacity({
@@ -841,6 +865,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
     canUseExecutiveFunction,
+    getExecutiveFunctionUnavailableMessage,
     showUpgradePrompt,
   });
   dashboardScheduleRepairApi = createDashboardScheduleRepair({
@@ -848,6 +873,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
     canUseExecutiveFunction,
+    getExecutiveFunctionUnavailableMessage,
     showUpgradePrompt,
   });
   dashboardRecoveryApi = createDashboardRecovery({
@@ -855,6 +881,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
     canUseExecutiveFunction,
+    getExecutiveFunctionUnavailableMessage,
     showUpgradePrompt,
     getTasks: () => taskCollectionBindings.getTasks(),
     jumpToTaskById: (taskId) => runtimeActions.jumpToTaskById(taskId),
@@ -864,6 +891,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
     canUseExecutiveFunction,
+    getExecutiveFunctionUnavailableMessage,
     showUpgradePrompt,
   });
   executiveSurfaceApi = createExecutiveSurface({
@@ -871,7 +899,24 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
     canUseExecutiveFunction,
+    getExecutiveFunctionUnavailableMessage,
     getIdToken: () => getFirebaseAuthClient()?.currentUser?.getIdToken() ?? Promise.resolve(null),
+  });
+  on(window, EXECUTIVE_FUNCTION_PREFERENCE_CHANGED_EVENT, (event) => {
+    const detail = (event as CustomEvent<{ enabled?: unknown }>).detail || {};
+    const enabled = detail.enabled !== false;
+    preferencesState.set("executiveFunctionEnabled", enabled);
+    render();
+    if (appRuntimeState.get("currentAppPage") === "dashboard") {
+      renderBindings.renderDashboardWidgets();
+      void dashboardExecutiveSummaryApi?.refresh();
+      void dashboardNextBestActionApi?.refresh();
+      void dashboardDailyExecutiveBriefApi?.refresh();
+      void dashboardDailyCapacityApi?.refresh();
+      void dashboardScheduleRepairApi?.refresh();
+      void dashboardRecoveryApi?.refresh();
+    }
+    if (appRuntimeState.get("currentAppPage") === "executive") void executiveSurfaceApi?.refresh();
   });
   const {
     dashboardBusyApi,
@@ -1009,6 +1054,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       escapeHtmlUI,
       getModeColor: (mode) => getModeColor(mode),
       fillBackgroundForPct,
+      getExecutiveFunctionUnavailableMessage,
       historyEntryColorForTaskMs,
       formatMainTaskElapsedHtml,
       sortMilestones,
@@ -1578,6 +1624,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         TIME_GOAL_COMPLETE_NEXT_TASKS_KEY,
         DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY,
         FULL_COLOR_TASK_CARDS_KEY,
+        EXECUTIVE_FUNCTION_ENABLED_KEY,
         MOBILE_PUSH_ALERTS_KEY,
         WEB_PUSH_ALERTS_KEY,
         INTERACTION_CLICK_SOUND_KEY,
@@ -1636,6 +1683,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     syncTaskSettingsUi,
     loadDynamicColorsSetting,
     loadFullColorTaskCardsSetting,
+    loadExecutiveFunctionSetting,
     loadInteractionClickSoundSetting,
     loadAchievementSoundsSetting,
     loadInteractionHapticsSetting,
@@ -1743,6 +1791,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       taskCollectionBindings,
       historyUiState,
       focusState,
+      preferencesState,
       rewardState,
       runtimeDestroyed: () => runtime.destroyed,
       notifyTaskCompletionChanged,
@@ -1781,6 +1830,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       loadDashboardPreviousWeekSetting,
       loadDynamicColorsSetting,
       loadFullColorTaskCardsSetting,
+      loadExecutiveFunctionSetting,
       loadInteractionClickSoundSetting,
       loadAchievementSoundsSetting,
       loadInteractionHapticsSetting,

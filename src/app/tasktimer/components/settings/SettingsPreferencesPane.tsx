@@ -117,6 +117,7 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
               <option value="dashboard">Dashboard (default)</option>
               <option value="tasks">Tasks</option>
               <option value="notes">Notes</option>
+              <option value="executive">Executive</option>
               <option value="friends">Friends</option>
               <option value="leaderboard">Leaderboards</option>
             </SettingsDownwardSelect>

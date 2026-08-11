@@ -1,5 +1,6 @@
 import type { HistoryByTaskId, LiveSessionsByTaskId, Task, DeletedTaskMeta } from "../lib/types";
 import type { TaskTimerHistorySnapshot, TaskTimerWorkspaceHistoryPersistence, TaskTimerWorkspaceRepository, TaskTimerWorkspaceSnapshot } from "../lib/workspaceRepository";
+import type { DashboardWeekStart } from "../lib/historyChart";
 import type { AppPage, DashboardRenderOptions, MainMode } from "./types";
 import type { TaskTimerAppPageOptions } from "./context";
 import { applyLiveSessionsToTasksWithCompletions } from "./live-session-task-state";
@@ -81,6 +82,7 @@ type CreateTaskTimerPersistenceOptions = {
   primeDashboardCacheFromShadow: () => void;
   loadFocusSessionNotes: () => Record<string, string>;
   loadAddTaskCustomNames: () => void;
+  getWeekStarting?: () => DashboardWeekStart;
   loadWeekStartingPreference: () => void;
   loadStartupModulePreference: () => void;
   loadTaskViewPreference: () => void;
@@ -90,6 +92,7 @@ type CreateTaskTimerPersistenceOptions = {
   loadDashboardPreviousWeekSetting: () => void;
   loadDynamicColorsSetting: () => void;
   loadFullColorTaskCardsSetting: () => void;
+  loadExecutiveFunctionSetting?: () => void;
   loadInteractionClickSoundSetting: () => void;
   loadAchievementSoundsSetting: () => void;
   loadInteractionHapticsSetting: () => void;
@@ -152,7 +155,7 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
       .map((task) => preserveLocalRunningTimerIfAhead(task, currentTasksById.get(normalizeTaskId(task)), nowValue));
     const liveSessionResult = applyLiveSessionsToTasksWithCompletions(migratedTasks, liveSessionsByTaskId, () => nowValue);
     const tasksWithLiveSessions = liveSessionResult.tasks;
-    const resetResult = reconcileResumePendingTasks(tasksWithLiveSessions, nowValue);
+    const resetResult = reconcileResumePendingTasks(tasksWithLiveSessions, nowValue, options.getWeekStarting?.() || "mon");
     options.setTasks(tasksWithLiveSessions);
     liveSessionResult.closedAppDailyTimeGoalCompletions.forEach((completion) => {
       const completedTask = tasksWithLiveSessions.find((row) => String(row.id || "").trim() === completion.taskId);
@@ -354,6 +357,7 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     options.loadDashboardPreviousWeekSetting();
     options.loadDynamicColorsSetting();
     options.loadFullColorTaskCardsSetting();
+    options.loadExecutiveFunctionSetting?.();
     options.loadInteractionClickSoundSetting();
     options.loadAchievementSoundsSetting();
     options.loadInteractionHapticsSetting();

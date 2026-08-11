@@ -1,4 +1,6 @@
 import { localDayKey } from "../lib/history";
+import type { DashboardWeekStart } from "../lib/historyChart";
+import { isTaskTimeGoalCompletedForPeriod } from "../lib/timeGoalCompletion";
 import type { Task } from "../lib/types";
 
 export type ResumePendingResetResult = {
@@ -17,7 +19,40 @@ function hasGoalCompletedTaskRun(task: Task | null | undefined): boolean {
   return String(task.timeGoalCompletedDayKey || "").trim() === localDayKey(completedAtMs);
 }
 
-export function reconcileResumePendingTasks(tasks: Task[], nowValue = Date.now()): ResumePendingResetResult {
+function isRecurringTask(task: Task | null | undefined): boolean {
+  return task?.taskType !== "once-off";
+}
+
+function resetCompletedRecurringTaskForNewPeriod(task: Task): boolean {
+  let changed = false;
+  if (Math.max(0, Math.floor(Number(task.accumulatedMs || 0) || 0)) !== 0) {
+    task.accumulatedMs = 0;
+    changed = true;
+  }
+  if (Number((task as Task & { elapsed?: unknown }).elapsed || 0) !== 0) {
+    task.elapsed = 0;
+    changed = true;
+  }
+  if (task.running) {
+    task.running = false;
+    changed = true;
+  }
+  if (task.startMs !== null) {
+    task.startMs = null;
+    changed = true;
+  }
+  if (task.hasStarted) {
+    task.hasStarted = false;
+    changed = true;
+  }
+  if (task.resumePendingSinceDayKey !== null) {
+    task.resumePendingSinceDayKey = null;
+    changed = true;
+  }
+  return changed;
+}
+
+export function reconcileResumePendingTasks(tasks: Task[], nowValue = Date.now(), weekStarting: DashboardWeekStart = "mon"): ResumePendingResetResult {
   const todayKey = localDayKey(nowValue);
   const changedTaskIds: string[] = [];
   if (!Array.isArray(tasks) || !todayKey) return { changedTaskIds };
@@ -28,6 +63,12 @@ export function reconcileResumePendingTasks(tasks: Task[], nowValue = Date.now()
     const elapsedMs = Math.max(0, Math.floor(Number(task.accumulatedMs || 0) || 0));
     const marker = normalizeResumePendingSinceDayKey(task.resumePendingSinceDayKey);
     const hasCompletedGoalRun = hasGoalCompletedTaskRun(task);
+    const completedForCurrentPeriod = isTaskTimeGoalCompletedForPeriod(task, nowValue, weekStarting);
+
+    if (hasCompletedGoalRun && isRecurringTask(task) && !completedForCurrentPeriod) {
+      if (resetCompletedRecurringTaskForNewPeriod(task) && taskId) changedTaskIds.push(taskId);
+      return;
+    }
 
     if (task.running || elapsedMs <= 0) {
       if (task.resumePendingSinceDayKey != null) {

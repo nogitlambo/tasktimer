@@ -22,6 +22,7 @@ import {
   type TaskTimerOnboardingPreferencePayload,
 } from "./onboarding-events";
 import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "../lib/interactionHapticsIntensity";
+import { EXECUTIVE_FUNCTION_PREFERENCE_CHANGED_EVENT } from "../lib/executiveFunctionAvailability";
 import { bindToggleRow } from "./control-helpers";
 import { isInteractionHapticsRuntimeAvailable } from "./interaction-haptics";
 import { PushNotifications } from "@capacitor/push-notifications";
@@ -154,6 +155,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       dashboardPreviousWeekVisible: ctx.getDashboardPreviousWeekVisible(),
       dynamicColorsEnabled: ctx.getDynamicColorsEnabled(),
       fullColorTaskCardsEnabled: ctx.getFullColorTaskCardsEnabled(),
+      executiveFunctionEnabled: ctx.getExecutiveFunctionEnabled(),
       mobilePushAlertsEnabled: ctx.getMobilePushAlertsEnabled(),
       webPushAlertsEnabled: ctx.getWebPushAlertsEnabled(),
       interactionClickSoundEnabled: ctx.getInteractionClickSoundEnabled(),
@@ -505,6 +507,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.setFullColorTaskCardsEnabledState(preferenceService.loadFullColorTaskCardsEnabled());
   }
 
+  function loadExecutiveFunctionSetting() {
+    ctx.setExecutiveFunctionEnabledState(preferenceService.loadExecutiveFunctionEnabled());
+  }
+
   function loadInteractionClickSoundSetting() {
     ctx.setInteractionClickSoundEnabledState(preferenceService.loadInteractionClickSoundEnabled());
   }
@@ -660,6 +666,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function saveFullColorTaskCardsSetting() {
+    persistPreferencesToCloud();
+  }
+
+  function saveExecutiveFunctionSetting() {
     persistPreferencesToCloud();
   }
 
@@ -1146,6 +1156,12 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         detail.field === "end" ? getOptimalProductivityEndTimeInput() : getOptimalProductivityStartTimeInput()
       );
     });
+    ctx.on(window, EXECUTIVE_FUNCTION_PREFERENCE_CHANGED_EVENT, (event) => {
+      const detail = (event as CustomEvent<{ enabled?: unknown }>).detail || {};
+      ctx.setExecutiveFunctionEnabledState(detail.enabled !== false);
+      syncTaskSettingsUi();
+      void persistPreferencesToCloudImmediately();
+    });
     ctx.on(window, TASKTIMER_ONBOARDING_PREFERENCES_EVENT, (event) => {
       const detail = (event as CustomEvent<TaskTimerOnboardingPreferenceEventDetail>).detail;
       void applyOnboardingPreferences(detail?.payload || {})
@@ -1443,6 +1459,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       saveDashboardPreviousWeekSetting();
       saveDynamicColorsSetting();
       saveFullColorTaskCardsSetting();
+      saveExecutiveFunctionSetting();
       saveMobilePushAlertsSetting();
       saveInteractionClickSoundSetting();
       saveInteractionHapticsSetting();
@@ -1490,12 +1507,14 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     syncTaskSettingsUi,
     loadDynamicColorsSetting,
     loadFullColorTaskCardsSetting,
+    loadExecutiveFunctionSetting,
     loadInteractionClickSoundSetting,
     loadAchievementSoundsSetting,
     loadInteractionHapticsSetting,
     loadMobilePushAlertsSetting,
     saveDynamicColorsSetting,
     saveFullColorTaskCardsSetting,
+    saveExecutiveFunctionSetting,
     saveInteractionClickSoundSetting,
     saveAchievementSoundsSetting,
     saveInteractionHapticsSetting,

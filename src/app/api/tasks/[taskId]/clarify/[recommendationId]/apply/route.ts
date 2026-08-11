@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { assertPlusPlanForExecutiveFunction } from "@/app/api/shared/plusEntitlement";
+import { assertExecutiveFunctionAvailableForUser } from "@/app/api/shared/plusEntitlement";
 import { ZodError } from "zod";
 
 import { isDeletedAccountUid } from "@/app/api/account/deletedAccountUid";
@@ -41,7 +41,7 @@ export async function POST(req: Request, context: RouteContext) {
 
     const applyRequest = parseTaskClarificationApplyRequest(body);
     const db = getFirebaseAdminDb();
-    await assertPlusPlanForExecutiveFunction(uid, db);
+    await assertExecutiveFunctionAvailableForUser(uid, db);
     if (await isDeletedAccountUid(db, uid)) {
       return withAuthenticatedApiCors(req, NextResponse.json({ error: "This account has been deleted.", code: "auth/account-deleted" }, { status: 410 }));
     }

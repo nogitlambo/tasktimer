@@ -1,10 +1,10 @@
 import type { AppPage } from "../client/types";
 
-export type StartupModulePreference = "dashboard" | "tasks" | "notes" | "friends" | "leaderboard";
+export type StartupModulePreference = "dashboard" | "tasks" | "notes" | "executive" | "friends" | "leaderboard";
 
 export function normalizeStartupModule(raw: unknown): StartupModulePreference {
   const value = String(raw || "").trim().toLowerCase();
-  if (value === "tasks" || value === "notes" || value === "friends" || value === "leaderboard") return value;
+  if (value === "tasks" || value === "notes" || value === "executive" || value === "friends" || value === "leaderboard") return value;
   if (value === "dashboard") return value;
   return "dashboard";
 }
@@ -12,6 +12,7 @@ export function normalizeStartupModule(raw: unknown): StartupModulePreference {
 export function startupModuleToAppPage(startupModule: StartupModulePreference): AppPage {
   if (startupModule === "tasks") return "tasks";
   if (startupModule === "notes") return "notes";
+  if (startupModule === "executive") return "executive";
   if (startupModule === "friends") return "friends";
   if (startupModule === "leaderboard") return "leaderboard";
   return "dashboard";
@@ -20,6 +21,7 @@ export function startupModuleToAppPage(startupModule: StartupModulePreference): 
 export function startupModuleToRoute(startupModule: StartupModulePreference): string {
   if (startupModule === "tasks") return "/tasklaunch";
   if (startupModule === "notes") return "/notes";
+  if (startupModule === "executive") return "/executive";
   if (startupModule === "friends") return "/friends";
   if (startupModule === "leaderboard") return "/leaderboards";
   return "/dashboard";

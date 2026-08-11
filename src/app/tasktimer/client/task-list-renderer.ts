@@ -38,6 +38,7 @@ type TaskListRendererOptions = {
   isCheckpointFlashActive: (taskId: string) => boolean;
   canUseAdvancedHistory: () => boolean;
   canUseExecutiveFunction?: () => boolean;
+  getExecutiveFunctionUnavailableMessage?: () => string;
   canUseSocialFeatures: () => boolean;
   hasFriends: () => boolean;
   isTaskSharedByOwner: (taskId: string) => boolean;
@@ -229,16 +230,16 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
         historyRangeMode: historyState?.rangeMode,
         showHistory,
         isHistoryPinned,
-        canUseAdvancedHistory: options.canUseAdvancedHistory(),
-        canUseExecutiveFunction: options.canUseExecutiveFunction?.() ?? true,
-        canUseSocialFeatures: options.canUseSocialFeatures(),
+      canUseAdvancedHistory: options.canUseAdvancedHistory(),
+      canUseExecutiveFunction: options.canUseExecutiveFunction?.() ?? true,
+      executiveFunctionUnavailableMessage: options.getExecutiveFunctionUnavailableMessage?.(),
+      canUseSocialFeatures: options.canUseSocialFeatures(),
         hasFriends: options.hasFriends(),
         isSharedByOwner: options.isTaskSharedByOwner(taskId),
         isStaleRecordedGoalCompleted: isRecordedGoalCompleted && !isCompletedForCurrentPeriod,
         isTimeGoalCompleted:
           isHeldResetPrimaryAction ||
-          isCompletedForCurrentPeriod ||
-          isRecordedGoalCompleted,
+          isCompletedForCurrentPeriod,
         hasTaskHistory,
         dynamicColorsEnabled: options.getDynamicColorsEnabled(),
         fullColorTaskCardsEnabled: options.getFullColorTaskCardsEnabled(),

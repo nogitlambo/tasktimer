@@ -24,6 +24,11 @@ vi.mock("../../shared/auth", async (importOriginal) => {
   };
 });
 
+vi.mock("@/app/api/shared/plusEntitlement", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/app/api/shared/plusEntitlement")>();
+  return { ...actual, assertExecutiveFunctionAvailableForUser: vi.fn(async () => "plus") };
+});
+
 vi.mock("@/app/brain-dump/lib/brainDumpProvider", () => ({
   getBrainDumpAiProvider: () => mocks.provider,
 }));

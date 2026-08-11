@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   accountActive: vi.fn(),
   rateLimit: vi.fn(),
   getUserDoc: vi.fn(),
+  getPreferencesDoc: vi.fn(),
 }));
 
 vi.mock("@/app/api/shared/auth", () => ({ verifyFirebaseRequestUser: mocks.verify }));
@@ -37,9 +38,23 @@ describe("/api/automation/settings", () => {
     mocks.accountActive.mockResolvedValue(undefined);
     mocks.rateLimit.mockResolvedValue(undefined);
     mocks.getUserDoc.mockResolvedValue({ exists: true, get: (field: string) => (field === "plan" ? "plus" : undefined) });
+    mocks.getPreferencesDoc.mockResolvedValue({ exists: true, get: (field: string) => (field === "executiveFunctionEnabled" ? true : undefined) });
     mocks.db.mockReturnValue({
       collection: vi.fn((name: string) => ({
-        doc: vi.fn((id: string) => (name === "users" && id === "user-1" ? { get: mocks.getUserDoc } : { get: vi.fn() })),
+        doc: vi.fn((id: string) => (
+          name === "users" && id === "user-1"
+            ? {
+                get: mocks.getUserDoc,
+                collection: vi.fn((collectionName: string) => ({
+                  doc: vi.fn((docId: string) => (
+                    collectionName === "preferences" && docId === "v1"
+                      ? { get: mocks.getPreferencesDoc }
+                      : { get: vi.fn() }
+                  )),
+                })),
+              }
+            : { get: vi.fn() }
+        )),
       })),
     });
     mocks.repositoryFactory.mockReturnValue({ loadOrCreate: mocks.loadOrCreate, save: mocks.save });
