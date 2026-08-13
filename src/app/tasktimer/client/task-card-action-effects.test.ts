@@ -101,7 +101,7 @@ describe("task card action effects", () => {
 
     expect(harness.effects.handleAction({ action: "clarify", taskIndex: 4, taskId: "task-1" })).toBe(true);
 
-    expect(harness.calls).toEqual(["upgrade:Make easier to start"]);
+    expect(harness.calls).toEqual(["upgrade:Optimiise"]);
   });
 
   it("gates locked actions before side effects run", () => {

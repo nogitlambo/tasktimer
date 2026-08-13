@@ -381,6 +381,8 @@ export function createRecommendationForRanking(input: {
     reasonCodes: Parameters<typeof createNextBestActionRecommendation>[0]["reasonCodes"];
     durationMinutes: number;
     durationSource: Parameters<typeof createNextBestActionRecommendation>[0]["durationSource"];
+    timeGoalMinutes?: number | null;
+    latestHistoryEntry?: { ts: number; ms: number } | null;
     firstAction: string | null;
     focusWindowMatched: boolean;
   };

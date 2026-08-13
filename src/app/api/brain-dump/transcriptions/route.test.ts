@@ -5,6 +5,11 @@ const mocks = vi.hoisted(() => ({
     transcribeVoice: vi.fn(),
   },
   verifyFirebaseRequestUser: vi.fn(),
+  enforceUidRateLimit: vi.fn(),
+  saveSession: vi.fn(),
+  getSession: vi.fn(),
+  getObject: vi.fn(),
+  deleteObject: vi.fn(),
 }));
 
 vi.mock("../../shared/auth", async (importOriginal) => {
@@ -22,6 +27,16 @@ vi.mock("@/app/api/shared/plusEntitlement", async (importOriginal) => {
 
 vi.mock("@/app/brain-dump/lib/brainDumpProvider", () => ({
   getBrainDumpAiProvider: () => mocks.provider,
+}));
+
+vi.mock("@/app/api/shared/rateLimit", () => ({ enforceUidRateLimit: mocks.enforceUidRateLimit }));
+
+vi.mock("@/app/brain-dump/lib/brainDumpSessionStore", () => ({
+  createFirestoreBrainDumpSessionStore: () => ({ saveSession: mocks.saveSession, getSession: mocks.getSession }),
+}));
+
+vi.mock("@/app/brain-dump/lib/brainDumpVoiceStorage", () => ({
+  createFirebaseBrainDumpVoiceSourceStorage: () => ({ getObject: mocks.getObject, deleteObject: mocks.deleteObject }),
 }));
 
 import { OPTIONS, POST } from "./route";
@@ -48,7 +63,18 @@ describe("POST /api/brain-dump/transcriptions", () => {
     });
     mocks.provider.transcribeVoice.mockResolvedValue({
       transcript: "Finish screenshots and call the dentist tomorrow.",
+      model: "gpt-4o-mini-transcribe",
     });
+    mocks.getSession.mockResolvedValue(null);
+    mocks.getObject.mockResolvedValue({
+      bytes: new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0, 0, 0, 0]),
+      contentType: "audio/webm",
+      sizeBytes: 8,
+      createdAtMs: 1_000,
+    });
+    mocks.saveSession.mockResolvedValue(undefined);
+    mocks.deleteObject.mockResolvedValue(undefined);
+    mocks.enforceUidRateLimit.mockResolvedValue(undefined);
   });
 
   it("allows native preflight requests with microphone transcription auth headers", () => {
@@ -67,13 +93,12 @@ describe("POST /api/brain-dump/transcriptions", () => {
     expect(response.headers.get("access-control-allow-headers")).toContain("X-Firebase-Auth");
   });
 
-  it("transcribes a user-owned audio recording without creating a review session", async () => {
+  it("transcribes a user-owned Storage recording into a transcript-stage session", async () => {
     const response = await POST(
       transcriptionRequest({
-        audioBase64: "UklGRmQAAABXQVZF",
-        mimeType: "audio/webm",
+        brainDumpId: "voice-1",
+        storagePath: "users/uid-1/brain-dump-sources/voice-1/recording.webm",
         durationMs: 42_000,
-        timezone: "Australia/Sydney",
       })
     );
     const payload = await response.json();
@@ -82,25 +107,28 @@ describe("POST /api/brain-dump/transcriptions", () => {
     expect(mocks.verifyFirebaseRequestUser).toHaveBeenCalled();
     expect(mocks.provider.transcribeVoice).toHaveBeenCalledWith({
       promptId: "brain-dump-voice-transcription-v1",
-      audioBase64: "UklGRmQAAABXQVZF",
+      audioBytes: expect.any(Uint8Array),
       mimeType: "audio/webm",
-      timezone: "Australia/Sydney",
-      uid: "uid-1",
+      fileName: "recording.webm",
     });
-    expect(payload).toEqual({
+    expect(payload).toMatchObject({
       ok: true,
+      brainDumpId: "voice-1",
       transcript: "Finish screenshots and call the dentist tomorrow.",
+      model: "gpt-4o-mini-transcribe",
       mimeType: "audio/webm",
       durationMs: 42_000,
     });
-    expect(JSON.stringify(payload)).not.toContain("UklGRmQ");
+    expect(mocks.saveSession).toHaveBeenCalledWith(expect.objectContaining({ state: "transcript", mode: "voice" }));
+    expect(mocks.deleteObject).toHaveBeenCalled();
+    expect(JSON.stringify(payload)).not.toContain("audioBytes");
   });
 
   it("rejects recordings over five minutes before calling the provider", async () => {
     const response = await POST(
       transcriptionRequest({
-        audioBase64: "UklGRmQAAABXQVZF",
-        mimeType: "audio/webm",
+        brainDumpId: "voice-1",
+        storagePath: "users/uid-1/brain-dump-sources/voice-1/recording.webm",
         durationMs: 300_001,
       })
     );
@@ -112,5 +140,34 @@ describe("POST /api/brain-dump/transcriptions", () => {
       code: "brain-dump/invalid-input",
     });
     expect(mocks.provider.transcribeVoice).not.toHaveBeenCalled();
+  });
+
+  it("rejects another user's Storage path without reading the object", async () => {
+    const response = await POST(
+      transcriptionRequest({
+        brainDumpId: "voice-1",
+        storagePath: "users/uid-2/brain-dump-sources/voice-1/recording.webm",
+        durationMs: 10_000,
+      })
+    );
+
+    expect(response.status).toBe(400);
+    expect(mocks.getObject).not.toHaveBeenCalled();
+    expect(mocks.provider.transcribeVoice).not.toHaveBeenCalled();
+  });
+
+  it("enforces the existing entitlement and transcription rate-limit boundary", async () => {
+    await POST(
+      transcriptionRequest({
+        brainDumpId: "voice-1",
+        storagePath: "users/uid-1/brain-dump-sources/voice-1/recording.webm",
+        durationMs: 10_000,
+      })
+    );
+
+    expect(mocks.enforceUidRateLimit).toHaveBeenCalledWith(expect.objectContaining({
+      namespace: "brain-dump-transcription",
+      uid: "uid-1",
+    }));
   });
 });

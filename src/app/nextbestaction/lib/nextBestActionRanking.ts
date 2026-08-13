@@ -102,6 +102,8 @@ export type RankedNextBestActionCandidate = {
   focusWindowMatched: boolean;
   dueDate: string | null;
   explicitPriority: NextBestActionPriority | null;
+  timeGoalMinutes: number | null;
+  latestHistoryEntry: { ts: number; ms: number } | null;
 };
 
 export type NextBestActionRankingResult = {
@@ -151,6 +153,14 @@ function selectDuration(candidate: NextBestActionCandidate, config: NextBestActi
   if (taskGoal) return { minutes: taskGoal, source: "TASK_GOAL" as const };
 
   return { minutes: Math.max(1, Math.floor(config.defaultDurationMinutes)), source: "DEFAULT" as const };
+}
+
+function latestHistoryEntry(candidate: NextBestActionCandidate) {
+  const entries = (candidate.history || [])
+    .filter((entry) => Number.isFinite(Number(entry.ts)) && Number(entry.ts) > 0 && Number.isFinite(Number(entry.ms)) && Number(entry.ms) > 0)
+    .sort((a, b) => Number(b.ts) - Number(a.ts));
+  const latest = entries[0];
+  return latest ? { ts: Math.floor(Number(latest.ts)), ms: Math.floor(Number(latest.ms)) } : null;
 }
 
 function isEligible(candidate: NextBestActionCandidate, context: NextBestActionRankingContext) {
@@ -246,6 +256,8 @@ function rankCandidate(candidate: NextBestActionCandidate, context: NextBestActi
     focusWindowMatched: candidate.focusWindowMatched === true,
     dueDate,
     explicitPriority: candidate.explicitPriority || null,
+    timeGoalMinutes: asPositiveMinutes(candidate.task.timeGoalMinutes),
+    latestHistoryEntry: latestHistoryEntry(candidate),
   };
 }
 

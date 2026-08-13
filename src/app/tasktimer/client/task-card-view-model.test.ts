@@ -100,13 +100,14 @@ describe("task card view model", () => {
     expect(clarificationIndex).toBeLessThan(manualEntryIndex);
     expect(editIndex).toBeLessThan(manualEntryIndex);
     expectTaskMenuLabel(rendered.html, "Edit");
-    expectTaskMenuLabel(rendered.html, "Make easier to start");
+    expectTaskMenuLabel(rendered.html, "Optimiise");
     expectTaskMenuLabel(rendered.html, "Add Entry");
     expectTaskMenuLabel(rendered.html, "Share");
     expectTaskMenuLabel(rendered.html, "Reset");
     expectTaskMenuLabel(rendered.html, "Export");
     expectTaskMenuLabel(rendered.html, "Delete");
     expect(rendered.html).toContain('src="/icons/icons_default/settings.webp"');
+    expect(rendered.html).toContain('src="/icons/icons_default/optimise.webp"');
     expect(rendered.html).toContain('src="/icons/icons_default/notes.webp"');
     expect(rendered.html).toContain('src="/icons/icons_default/share.webp"');
     expect(rendered.html).toContain('src="/icons/icons_default/history.webp"');
@@ -124,7 +125,7 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('data-action="clarify"');
     expect(rendered.html).toContain('data-plan-locked="executiveFunction"');
     expect(rendered.html).toContain('title="PLUS feature: Make this easier to start"');
-    expectTaskMenuLabel(rendered.html, "Make easier to start (PLUS)");
+    expectTaskMenuLabel(rendered.html, "Optimiise (PLUS)");
   });
 
   it("renders Archive instead of Delete when the task has history entries", () => {
@@ -902,6 +903,6 @@ describe("task card view model", () => {
     });
 
     expect(handled).toBe(true);
-    expect(calls).toEqual(["upgrade:Make easier to start"]);
+    expect(calls).toEqual(["upgrade:Optimiise"]);
   });
 });

@@ -46,6 +46,10 @@ export const DurationEstimateSourceSchema = z.enum([
 export type DurationEstimateSource = z.infer<typeof DurationEstimateSourceSchema>;
 
 const nullableText = (maxLength: number) => z.string().trim().max(maxLength).nullable();
+const LatestHistoryEntrySchema = z.object({
+  ts: z.number().int().positive(),
+  ms: z.number().int().positive(),
+}).strict();
 
 export const NextBestActionPayloadSchema = z
   .object({
@@ -61,6 +65,8 @@ export const NextBestActionPayloadSchema = z
     focusWindowMatched: z.boolean(),
     durationMinutes: z.number().int().min(1).max(1440).nullable(),
     durationSource: DurationEstimateSourceSchema.nullable(),
+    timeGoalMinutes: z.number().int().min(1).max(1440).nullable().optional(),
+    latestHistoryEntry: LatestHistoryEntrySchema.nullable().optional(),
     alternativeIndex: z.number().int().min(0).max(3),
     explanation: nullableText(500),
   })
@@ -88,6 +94,8 @@ export function createNextBestActionRecommendation(input: {
   focusWindowMatched: boolean;
   durationMinutes: number;
   durationSource: DurationEstimateSource;
+  timeGoalMinutes?: number | null;
+  latestHistoryEntry?: { ts: number; ms: number } | null;
   alternativeIndex?: number;
   explanation: string;
   nowMs: number;
@@ -114,6 +122,8 @@ export function createNextBestActionRecommendation(input: {
       focusWindowMatched: input.focusWindowMatched,
       durationMinutes: input.durationMinutes,
       durationSource: input.durationSource,
+      timeGoalMinutes: input.timeGoalMinutes ?? null,
+      latestHistoryEntry: input.latestHistoryEntry ?? null,
       alternativeIndex: input.alternativeIndex || 0,
       explanation: input.explanation.trim(),
     },

@@ -5,13 +5,28 @@ import { useRouter } from "next/navigation";
 import { readApiJson } from "@/lib/apiJson";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
+import type { TaskTimerPaidOffer } from "../tasktimer/lib/entitlements";
 
-const pricingTiers = [
+type PricingTier = {
+  name: string;
+  price: string;
+  cta: string;
+  href: string | null;
+  checkoutOffer: TaskTimerPaidOffer | null;
+  badge: string | null;
+  description: string;
+  billingLabel: string;
+  features: string[];
+  finePrint: string | null;
+};
+
+const pricingTiers: PricingTier[] = [
   {
     name: "Free",
     price: "$0",
     cta: "Get Started",
     href: null,
+    checkoutOffer: null,
     badge: null,
     description: "Complete solo tracking essentials",
     billingLabel: "Per month",
@@ -28,6 +43,7 @@ const pricingTiers = [
     price: "$6.99",
     cta: "14-Day Free Trial",
     href: "/login?checkout=pro",
+    checkoutOffer: "plus_monthly",
     badge: "14-Day Free Trial",
     description: "Advanced tools for power users",
     billingLabel: "Per month",
@@ -38,6 +54,27 @@ const pricingTiers = [
       "XP award boosters",
       "Unlimited session history",
       "Manual history entry",
+      "Add Friends and task sharing",
+      "Backup Import/Export",
+    ],
+    finePrint: null,
+  },
+  {
+    name: "PLUS Lifetime",
+    price: "$99.00",
+    cta: "Get PLUS Lifetime",
+    href: "/login?checkout=plus_lifetime",
+    checkoutOffer: "plus_lifetime",
+    badge: "One-time",
+    description: "All PLUS features without a renewal",
+    billingLabel: "One-off payment",
+    features: [
+      "Everything in PLUS",
+      "Lifetime access to PLUS features",
+      "No monthly renewal",
+      "Unlock AI-guided workflow optimisation",
+      "Richer dashboard analytics and insights",
+      "Unlimited session history",
       "Add Friends and task sharing",
       "Backup Import/Export",
     ],
@@ -56,7 +93,7 @@ export default function PricingSection({ mode = "landing" }: PricingSectionProps
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
 
-  const handleStartProCheckout = async () => {
+  const handleStartProCheckout = async (offer: TaskTimerPaidOffer) => {
     if (checkoutBusy) return;
     setCheckoutError("");
 
@@ -64,7 +101,7 @@ export default function PricingSection({ mode = "landing" }: PricingSectionProps
     const user = auth?.currentUser || null;
     const uid = String(user?.uid || "").trim();
     if (!uid || !user) {
-      router.push("/login?checkout=pro");
+      router.push(offer === "plus_lifetime" ? "/login?checkout=plus_lifetime" : "/login?checkout=pro");
       return;
     }
 
@@ -80,7 +117,7 @@ export default function PricingSection({ mode = "landing" }: PricingSectionProps
           "Content-Type": "application/json",
           "x-firebase-auth": idToken,
         },
-        body: JSON.stringify({ uid }),
+        body: JSON.stringify({ uid, offer }),
       });
       const data = await readApiJson<{ url?: string; error?: string }>(res, "Could not start checkout.");
       if (!res.ok || !data.url) {
@@ -107,6 +144,7 @@ export default function PricingSection({ mode = "landing" }: PricingSectionProps
 
         <div className="pricingV2CardGrid">
           {pricingTiers.map((tier) => {
+            const checkoutOffer = tier.checkoutOffer;
             return (
               <article
                 key={tier.name}
@@ -118,7 +156,7 @@ export default function PricingSection({ mode = "landing" }: PricingSectionProps
                     {tier.badge ? <span className="pricingV2Badge displayFont">{tier.badge}</span> : null}
                   </div>
                   <p className="pricingV2PlanDescription">{tier.description}</p>
-                  <div className={`pricingV2PriceRow${tier.name === "PLUS" ? "" : " isHidden"}`} aria-hidden={tier.name === "PLUS" ? undefined : "true"}>
+                  <div className={`pricingV2PriceRow${tier.checkoutOffer ? "" : " isHidden"}`} aria-hidden={tier.checkoutOffer ? undefined : "true"}>
                     <strong className="pricingV2Price displayFont">{tier.price}</strong>
                     <span className="pricingV2Billing">{tier.billingLabel}</span>
                   </div>
@@ -137,10 +175,10 @@ export default function PricingSection({ mode = "landing" }: PricingSectionProps
                 </ul>
 
                 <div className="pricingV2ActionRow">
-                  {tier.name === "PLUS" ? (
+                  {checkoutOffer ? (
                     <button
                       type="button"
-                      onClick={() => void handleStartProCheckout()}
+                      onClick={() => void handleStartProCheckout(checkoutOffer)}
                       disabled={checkoutBusy}
                       className={`landingV2PrimaryBtn displayFont pricingV2Button pricingV2ProButton${checkoutBusy ? " isBusy" : ""}`}
                     >

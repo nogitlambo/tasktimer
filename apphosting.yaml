@@ -114,6 +114,26 @@ env:
     value: "support@tasklaunch.app"
     availability:
       - RUNTIME
+  - variable: BRAIN_DUMP_OPENAI_MODEL
+    value: "gpt-5.6"
+    availability:
+      - RUNTIME
+  - variable: OPENAI_TRANSCRIPTION_MODEL
+    value: "gpt-4o-mini-transcribe"
+    availability:
+      - RUNTIME
+  - variable: BRAIN_DUMP_MAX_AUDIO_SECONDS
+    value: "300"
+    availability:
+      - RUNTIME
+  - variable: BRAIN_DUMP_MAX_AUDIO_BYTES
+    value: "10485760"
+    availability:
+      - RUNTIME
+  - variable: BRAIN_DUMP_TRANSCRIPTION_LANGUAGE
+    value: "en"
+    availability:
+      - RUNTIME
 
   # Grant access to secrets in Cloud Secret Manager.
   # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters
@@ -135,5 +155,9 @@ env:
       - RUNTIME
   - variable: EARLY_ACCESS_UNSUBSCRIBE_SECRET
     secret: EARLY_ACCESS_UNSUBSCRIBE_SECRET
+    availability:
+      - RUNTIME
+  - variable: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
     availability:
       - RUNTIME

@@ -12,6 +12,8 @@ export type NextBestActionDashboardRecommendation = {
   firstAction?: string;
   estimatedMinutes: number;
   durationSource?: string;
+  timeGoalMinutes?: number;
+  latestHistoryEntry?: { ts: number; ms: number };
   confidence?: string;
   reasonCodes?: string[];
   focusWindowMatched?: boolean | null;
@@ -37,6 +39,11 @@ function asPositiveMinutes(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) && value > 0 && value <= 1440 ? Math.round(value) : null;
 }
 
+function asPositiveMillis(value: unknown) {
+  const millis = Math.floor(Number(value));
+  return Number.isFinite(millis) && millis > 0 ? millis : null;
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
@@ -60,6 +67,9 @@ export function parseNextBestActionDashboardResponse(value: unknown, nowMs = Dat
   if (!recommendationId || !taskId || !title || !estimatedMinutes || !expiresAt || !Number.isFinite(expiresAtMs)) return { kind: "invalid" };
   if (expiresAtMs <= nowMs) return { kind: "stale" };
   const reasonCodes = Array.isArray(raw.reasonCodes) ? raw.reasonCodes.filter((reason): reason is string => typeof reason === "string").slice(0, 8) : [];
+  const latestHistory = asRecord(raw.latestHistoryEntry);
+  const latestHistoryTs = asPositiveMillis(latestHistory?.ts);
+  const latestHistoryMs = asPositiveMillis(latestHistory?.ms);
   return {
     kind: "recommendation",
     recommendation: {
@@ -70,6 +80,8 @@ export function parseNextBestActionDashboardResponse(value: unknown, nowMs = Dat
       firstAction: asString(raw.firstAction, 320) || undefined,
       estimatedMinutes,
       durationSource: asString(raw.durationSource, 80) || undefined,
+      timeGoalMinutes: asPositiveMinutes(raw.timeGoalMinutes) || undefined,
+      latestHistoryEntry: latestHistoryTs && latestHistoryMs ? { ts: latestHistoryTs, ms: latestHistoryMs } : undefined,
       confidence: asString(raw.confidence, 40) || undefined,
       reasonCodes,
       focusWindowMatched: typeof raw.focusWindowMatched === "boolean" ? raw.focusWindowMatched : null,
@@ -88,6 +100,35 @@ export function formatNextBestActionDuration(recommendation: Pick<NextBestAction
   return `${recommendation.estimatedMinutes}m · ${durationSourceLabel(recommendation.durationSource)}`;
 }
 
+function formatMinutesDetail(minutes: number) {
+  return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+}
+
+function formatHistoryDuration(ms: number) {
+  const minutes = Math.max(1, Math.round(ms / 60000));
+  return formatMinutesDetail(minutes);
+}
+
+function formatHistoryDate(ts: number) {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(ts));
+}
+
+export function formatNextBestActionExplanation(recommendation: Pick<NextBestActionDashboardRecommendation, "estimatedMinutes" | "durationSource" | "timeGoalMinutes" | "latestHistoryEntry" | "confidence" | "explanation">) {
+  const summary = recommendation.explanation || "This is the most useful next step for right now.";
+  const duration = `${recommendation.estimatedMinutes} minutes, ${durationSourceLabel(recommendation.durationSource)} duration`;
+  const confidence = recommendation.confidence ? `${recommendation.confidence.toLowerCase()} confidence` : "confidence available";
+  const timeGoal = recommendation.timeGoalMinutes ? ` Current time goal: ${formatMinutesDetail(recommendation.timeGoalMinutes)}.` : "";
+  const latestHistory = recommendation.latestHistoryEntry
+    ? ` Last history entry: ${formatHistoryDuration(recommendation.latestHistoryEntry.ms)} on ${formatHistoryDate(recommendation.latestHistoryEntry.ts)}.`
+    : "";
+  return `${summary} Estimated effort: ${duration}.${timeGoal}${latestHistory} Recommendation confidence: ${confidence}.`;
+}
+
 function setHidden(element: HTMLElement | null, hidden: boolean) {
   if (!element) return;
   element.hidden = hidden;
@@ -96,6 +137,12 @@ function setHidden(element: HTMLElement | null, hidden: boolean) {
 
 function getElement(documentRef: Document, id: string) {
   return documentRef.getElementById(id) as HTMLElement | null;
+}
+
+function setStartNowButtonLabel(button: HTMLButtonElement, label: string) {
+  const labelElement = button.querySelector?.(".dashboardStartNowButtonLabel");
+  if (labelElement) labelElement.textContent = label;
+  else button.textContent = label;
 }
 
 type CreateDashboardNextBestActionOptions = {
@@ -155,28 +202,18 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
     shownTaskIds.add(recommendation.taskId);
     const title = getElement(documentRef, "dashboardNextBestActionTitle");
     const firstAction = getElement(documentRef, "dashboardNextBestActionFirstAction");
-    const duration = getElement(documentRef, "dashboardNextBestActionDuration");
-    const confidence = getElement(documentRef, "dashboardNextBestActionConfidence");
     const explanation = getElement(documentRef, "dashboardNextBestActionExplanation");
-    const why = getElement(documentRef, "dashboardNextBestActionWhy");
     if (title) title.textContent = recommendation.title;
     if (firstAction) {
       firstAction.textContent = recommendation.firstAction || "Start with the smallest visible step.";
       firstAction.hidden = !recommendation.firstAction;
     }
-    if (duration) duration.textContent = formatNextBestActionDuration(recommendation);
-    if (confidence) confidence.textContent = recommendation.confidence ? `${recommendation.confidence} confidence` : "Confidence available";
-    if (explanation) explanation.textContent = recommendation.explanation || "This is the most useful next step for right now.";
-    if (why) {
-      why.textContent = recommendation.reasonCodes?.length
-        ? `Signals: ${recommendation.reasonCodes.map((reason) => durationSourceLabel(reason)).join(", ")}.`
-        : "The ranking service selected this task from your current eligible work.";
-    }
+    if (explanation) explanation.textContent = formatNextBestActionExplanation(recommendation);
     const actionButtons = documentRef.querySelectorAll<HTMLButtonElement>("[data-next-best-action-action]");
     actionButtons.forEach((button) => {
       button.hidden = false;
       button.disabled = false;
-      if (button.getAttribute("data-next-best-action-action") === "start") button.textContent = "Start now";
+      if (button.getAttribute("data-next-best-action-action") === "start") setStartNowButtonLabel(button, "LAUNCH");
       button.setAttribute("data-next-best-action-task-id", recommendation.taskId);
       button.setAttribute("data-next-best-action-recommendation-id", recommendation.recommendationId);
     });
@@ -190,7 +227,7 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
       const action = button.getAttribute("data-next-best-action-action");
       button.disabled = true;
       if (action === "start") {
-        button.textContent = "In Progress";
+        setStartNowButtonLabel(button, "In Progress");
         button.hidden = false;
       } else {
         button.hidden = true;
@@ -328,13 +365,6 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
       void dismissRecommendation(target);
       return;
     }
-    if (action === "why") {
-      const why = getElement(documentRef, "dashboardNextBestActionWhy");
-      const expanded = target.getAttribute("aria-expanded") === "true";
-      target.setAttribute("aria-expanded", expanded ? "false" : "true");
-      setHidden(why, expanded);
-      return;
-    }
     windowRef.dispatchEvent(new CustomEvent("tasklaunch:next-best-action", {
       detail: {
         action,
@@ -355,11 +385,30 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
     return value && value !== "any" ? Number(value) : null;
   }
 
+  function setSelectedTime(value: string) {
+    const normalized = TIME_OPTIONS.some((option) => String(option ?? "any") === value) ? value : "any";
+    const select = getElement(documentRef, "dashboardNextBestActionTimeSelect") as HTMLSelectElement | null;
+    if (select) select.value = normalized;
+    documentRef.querySelectorAll<HTMLButtonElement>("[data-next-best-action-time]").forEach((button) => {
+      button.setAttribute("aria-pressed", button.getAttribute("data-next-best-action-time") === normalized ? "true" : "false");
+    });
+  }
+
   function register() {
     if (!card) return;
+    setSelectedTime((getElement(documentRef, "dashboardNextBestActionTimeSelect") as HTMLSelectElement | null)?.value || "any");
     documentRef.addEventListener("change", (event) => {
       const target = event.target as HTMLSelectElement | null;
-      if (target?.id === "dashboardNextBestActionTimeSelect") void refresh(getSelectedMinutes());
+      if (target?.id === "dashboardNextBestActionTimeSelect") {
+        setSelectedTime(target.value);
+        void refresh(getSelectedMinutes());
+      }
+    });
+    documentRef.addEventListener("click", (event) => {
+      const target = (event.target as HTMLElement | null)?.closest?.("[data-next-best-action-time]") as HTMLElement | null;
+      if (!target) return;
+      setSelectedTime(target.getAttribute("data-next-best-action-time") || "any");
+      void refresh(getSelectedMinutes());
     });
     documentRef.addEventListener("click", handleAction);
     windowRef.addEventListener("tasklaunch:app-page-changed", handlePageChange);

@@ -23,6 +23,7 @@ import { readApiJson } from "@/lib/apiJson";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { ensureUserProfileIndex } from "../tasktimer/lib/cloudStore";
+import type { TaskTimerPaidOffer } from "../tasktimer/lib/entitlements";
 import { resolveTaskTimerRouteHref } from "../tasktimer/lib/routeHref";
 import {
   clearPendingEmailLinkOnboardingHint,
@@ -45,6 +46,7 @@ const workspaceRepository = createTaskTimerWorkspaceRepository();
 type SharedWebSignInClientProps = {
   redirectOnSuccess?: string | null;
   shouldStartProCheckout?: boolean;
+  checkoutOffer?: TaskTimerPaidOffer | null;
   telemetrySource?: string;
 };
 
@@ -121,6 +123,7 @@ async function resolveAuthUser(auth: Auth): Promise<User | null> {
 export default function SharedWebSignInClient({
   redirectOnSuccess,
   shouldStartProCheckout = false,
+  checkoutOffer = null,
   telemetrySource = "web_sign_in",
 }: SharedWebSignInClientProps) {
   const router = useRouter();
@@ -140,13 +143,14 @@ export default function SharedWebSignInClient({
   const hasRedirectedRef = useRef(false);
   const anonymousCleanupPendingRef = useRef(false);
   const emailLinkCompletionPendingRef = useRef(false);
+  const selectedCheckoutOffer = checkoutOffer || (shouldStartProCheckout ? "plus_monthly" : null);
 
   const isValidAuthEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail.trim());
 
   const redirectAfterAuthSuccess = useCallback(() => {
     return runAuthSuccessRedirect({
       hasRedirected: hasRedirectedRef.current,
-      shouldStartProCheckout,
+      shouldStartProCheckout: !!selectedCheckoutOffer,
       bypassAutoRedirect: false,
       redirectOnSuccess,
       markRedirected: () => {
@@ -161,7 +165,7 @@ export default function SharedWebSignInClient({
       },
       resolveRoute: resolveTaskTimerRouteHref,
     });
-  }, [redirectOnSuccess, router, shouldStartProCheckout]);
+  }, [redirectOnSuccess, router, selectedCheckoutOffer]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -325,7 +329,7 @@ export default function SharedWebSignInClient({
   }, [completeEmailLinkSignIn]);
 
   useEffect(() => {
-    if (!shouldStartProCheckout || checkoutBusy || hasRedirected) return;
+    if (!selectedCheckoutOffer || checkoutBusy || hasRedirected) return;
     const auth = getFirebaseAuthClient();
     const user = auth?.currentUser;
     const uid = String(user?.uid || authUserUid || "").trim();
@@ -344,6 +348,7 @@ export default function SharedWebSignInClient({
           headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
           body: JSON.stringify({
             uid,
+            offer: selectedCheckoutOffer,
           }),
         });
         const data = await readApiJson<{ url?: string; error?: string }>(res, "Could not start checkout.");
@@ -368,7 +373,7 @@ export default function SharedWebSignInClient({
     return () => {
       cancelled = true;
     };
-  }, [authUserUid, checkoutBusy, hasRedirected, shouldStartProCheckout, telemetrySource]);
+  }, [authUserUid, checkoutBusy, hasRedirected, selectedCheckoutOffer, telemetrySource]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !isNativeOrFileRuntime()) return;
@@ -641,7 +646,7 @@ export default function SharedWebSignInClient({
       }}
       showLaunchingScreen={
         isNativeLaunchRuntime &&
-        (isResolvingNativeLaunchAuth || (!!authUserEmail && !hasRedirected && !shouldStartProCheckout))
+        (isResolvingNativeLaunchAuth || (!!authUserEmail && !hasRedirected && !selectedCheckoutOffer))
       }
     />
   );

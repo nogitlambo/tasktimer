@@ -30,7 +30,7 @@ export function createFirestoreBrainDumpSessionStore(): BrainDumpSessionStore {
         stripUndefinedValues({
           ...session,
           schemaVersion: 1,
-          ttlExpiresAt: session.state === "review" ? new Date(session.expiresAtMs) : null,
+          ttlExpiresAt: session.state !== "completed" && session.state !== "expired" ? new Date(session.expiresAtMs) : null,
         }),
         { merge: false }
       );
@@ -43,7 +43,13 @@ export function createFirestoreBrainDumpSessionStore(): BrainDumpSessionStore {
       if (!snap.exists) return null;
       const data = snap.data() as BrainDumpReviewSession | undefined;
       if (!data || data.ownerUid !== safeUid || data.id !== safeSessionId) return null;
-      if (data.state !== "review" && data.state !== "completed" && data.state !== "expired") return null;
+      if (
+        data.state !== "transcribing" &&
+        data.state !== "transcript" &&
+        data.state !== "review" &&
+        data.state !== "completed" &&
+        data.state !== "expired"
+      ) return null;
       return data;
     },
   };

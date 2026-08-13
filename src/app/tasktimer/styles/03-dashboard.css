@@ -1,41 +1,37 @@
 /* Generated from tasktimer.css split. */
 /* Executive experience and compact Dashboard summary */
-.executiveShell{width:min(1040px,100%);margin:0 auto;padding:16px;color:var(--text-primary,#f1f7ff)}
+.executiveShell{--executive-accent:#c9ff24;--executive-panel:#111216;--executive-line:#1a1b20;--executive-status-good:var(--executive-accent);--executive-status-warning:#ffd84d;--executive-status-danger:#ff7462;width:min(1560px,100%);margin:0 auto;padding:20px 24px 28px;color:#f5f7fb}
 .executiveHeader,.executiveSectionHeading,.executiveTools,.dashboardExecutiveSummary .dashboardPanelLabelRow{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
-.executiveHeader{padding-bottom:16px;border-bottom:1px solid rgba(121,226,255,.16)}
-.executiveHeader h1,.executiveSectionHeading h2,.executiveSectionHeading h3,.executiveTools h2,.executiveCompactHeading h3,.executiveAttentionStack>h2{margin:0;color:var(--text-primary,#f1f7ff)}
-.executiveHeader h1{font-size:clamp(24px,3.4vw,34px);letter-spacing:.02em}
-.executiveHeaderSummary{margin:6px 0 0;color:var(--text-secondary,#aeb9cc);max-width:520px;font:13px var(--font-readable,inherit)}
-.executiveEyebrow{margin:0 0 7px;color:var(--accent,#a9d65f);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
-.executiveTodayMarker{display:grid;gap:5px;text-align:right;color:var(--text-secondary,#aeb9cc);font-size:12px;text-transform:uppercase;letter-spacing:.1em}
-.executiveTodayMarker strong{color:var(--text-primary,#f1f7ff);font-size:14px;letter-spacing:.04em}
-.executiveTodayHealth{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin:12px 0 14px;background:rgba(121,226,255,.14)}
-.executiveTodayHealth div{display:grid;gap:5px;padding:12px 14px;background:#0d0f13}
-#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveTodayHealth{gap:8px;background:transparent}
-#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveTodayHealth div{border:1px solid #2a2f38;border-radius:8px}
-.executiveTodayHealth span{color:var(--text-secondary,#aeb9cc);font-size:11px;text-transform:uppercase;letter-spacing:.1em}
-.executiveTodayHealth strong{font-size:16px;color:var(--text-primary,#f1f7ff)}
-#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health]{color:#ff9f43}
-#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="REALISTIC"]{color:#92e35b}
-#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="SLIGHTLY_OVERLOADED"]{color:#ffd84d}
-#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="SIGNIFICANTLY_OVERLOADED"]{color:#ff7462}
-.executiveDecisionFlow{display:grid;gap:12px}
-.executiveCard,.executiveTools,.dashboardExecutiveSummary{border:1px solid rgba(121,226,255,.18);background:rgba(13,15,19,.92);padding:16px;box-shadow:0 10px 26px rgba(0,0,0,.18)}
-.executiveNbaCard.dashboardNextBestActionCard{min-height:260px;border-color:rgba(169,214,95,.34)}
+.executiveHeader{padding:2px 2px 18px;border-bottom:1px solid rgba(111,131,171,.22)}
+.executiveHeader h1,.executiveSectionHeading h2,.executiveSectionHeading h3,.executiveTools h2,.executiveCompactHeading h3,.executiveAttentionStack>h2{margin:0;color:#f7f9ff}
+.executiveHeader h1{font-family:var(--font-readable,inherit);font-size:clamp(26px,3.4vw,38px);letter-spacing:-.04em}
+.executiveHeaderSummary{margin:7px 0 0;color:#aeb6c7;max-width:620px;font:15px/1.5 var(--font-readable,inherit)}
+.executiveEyebrow{margin:0 0 8px;color:var(--executive-accent);font-size:12px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}
+.executiveTodayMarker{display:grid;flex:0 0 auto;gap:3px;padding:7px 0;text-align:right;color:#98a3b7;font:700 10px var(--font-readable,inherit);letter-spacing:.12em;text-transform:uppercase}.executiveTodayMarker strong{color:#f5f7fb;font:700 13px var(--font-readable,inherit);letter-spacing:.02em;text-transform:none}
+.executiveTodayHealth{position:relative;z-index:5;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:0 0 20px;overflow:visible;background:transparent}
+.executiveMetricCard{display:flex !important;align-items:center;gap:18px;min-height:102px;padding:16px 18px !important;border:1px solid var(--executive-line) !important;border-radius:16px !important;background:var(--executive-panel) !important;box-shadow:inset 0 1px rgba(255,255,255,.035),0 12px 30px rgba(0,0,0,.2)}
+.executiveMetricCard{position:relative;cursor:help;isolation:isolate}.executiveMetricCard:focus-visible{outline:1px solid var(--executive-accent);outline-offset:2px}.executiveMetricHelper{position:absolute;z-index:4;left:50%;top:calc(100% + 9px);width:min(360px,calc(100vw - 32px));padding:10px 12px;border:1px solid var(--executive-line);border-radius:8px;background:#111216;color:#c3cada;font:13px/1.4 var(--font-readable,inherit);text-align:left;box-shadow:0 12px 26px rgba(0,0,0,.34);opacity:0;pointer-events:none;transform:translate(-50%,-4px);transition:opacity .14s ease,transform .14s ease}.executiveMetricHelper strong,.executiveMetricHelper>span{display:block}.executiveMetricHelper strong{margin-bottom:6px;color:#f5f7fb;font-weight:700}.executiveMetricHelper ul{margin:6px 0 0;padding-left:18px}.executiveMetricHelper li+li{margin-top:4px}.executiveMetricHelper b{color:#f5f7fb}.executiveMetricHelper .executivePlanHealthRealistic,.executiveMetricHelper .executiveCapacityConfidenceHigh{color:var(--executive-status-good)}.executiveMetricHelper .executivePlanHealthSlightlyOverloaded,.executiveMetricHelper .executiveCapacityConfidenceMedium{color:var(--executive-status-warning)}.executiveMetricHelper .executivePlanHealthSignificantlyOverloaded,.executiveMetricHelper .executiveCapacityConfidenceLow{color:var(--executive-status-danger)}.executiveMetricHelper::before{content:"";position:absolute;top:-5px;left:50%;width:8px;height:8px;border-top:1px solid var(--executive-line);border-left:1px solid var(--executive-line);background:#111216;transform:translateX(-50%) rotate(45deg)}.executiveMetricCard.isHelperVisible .executiveMetricHelper{opacity:1;transform:translate(-50%,0)}
+.executiveMetricIcon{display:grid;place-items:center;flex:0 0 58px;width:58px;height:58px;border:1px solid var(--executive-line);border-radius:50%;background:var(--executive-panel);box-shadow:0 5px 12px rgba(0,0,0,.45),inset 0 1px rgba(255,255,255,.09)}
+.executiveMetricIcon img{width:29px;height:29px;object-fit:contain;filter:sepia(1) saturate(3) hue-rotate(30deg) brightness(1.35)}
+.executiveMetricPlanHealth .executiveMetricIcon img{filter:none}
+.executiveMetricCopy{display:grid;min-width:0;gap:5px}.executiveMetricCopy>span{color:#c3cada;font:700 11px var(--font-readable,inherit);letter-spacing:.04em;text-transform:uppercase}.executiveMetricCopy strong{font:700 clamp(20px,2vw,29px) var(--font-readable,inherit);color:#f8f9fc;white-space:nowrap}.executiveMetricCopy i{display:block;width:min(224px,100%);height:6px;border-radius:99px;background:linear-gradient(90deg,var(--executive-accent) 0 62%,#39435b 62%);box-shadow:0 0 9px rgba(201,255,36,.45)}
+.executiveMetricCard:nth-child(2) i{background:repeating-linear-gradient(90deg,var(--executive-accent) 0 25px,transparent 25px 34px),#3a4357;box-shadow:none}.executiveMetricCard:nth-child(3) i{width:118px;background:radial-gradient(circle,var(--executive-accent) 0 4px,transparent 5px) 0 50%/24px 8px repeat-x;box-shadow:none}.executiveMetricCard:nth-child(4) i{background:linear-gradient(90deg,var(--executive-accent) 0 55%,#39435b 55%)}
+#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health]{color:#ffb867}#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="REALISTIC"]{color:var(--executive-status-good)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="SLIGHTLY_OVERLOADED"]{color:var(--executive-status-warning)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="SIGNIFICANTLY_OVERLOADED"]{color:var(--executive-status-danger)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executiveCapacityConfidence[data-capacity-confidence="HIGH"]{color:var(--executive-status-good)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executiveCapacityConfidence[data-capacity-confidence="MEDIUM"]{color:var(--executive-status-warning)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executiveCapacityConfidence[data-capacity-confidence="LOW"]{color:var(--executive-status-danger)}
+.executiveDecisionFlow{display:grid;grid-template-columns:minmax(290px,.76fr) minmax(0,1.7fr);grid-template-areas:"nba nba" "attention tools";gap:20px}
+.executiveCard,.executiveTools,.dashboardExecutiveSummary{border:1px solid var(--executive-line);border-radius:16px;background:var(--executive-panel);padding:20px;box-shadow:inset 0 1px rgba(255,255,255,.035),0 14px 34px rgba(0,0,0,.2)}
+.executiveNbaCard.dashboardNextBestActionCard{grid-area:nba;position:relative;min-height:300px;overflow:hidden;border-color:var(--executive-line);background:var(--executive-panel)}
 #app[aria-label="TaskLaunch App"] #appPageExecutive .executiveNbaCard.dashboardNextBestActionCard,
 #app[aria-label="TaskLaunch App"] #appPageExecutive .executivePlanCard.dashboardDailyExecutiveBriefCard{
   border-color:#2a2f38;
   border-radius:8px;
 }
-.executiveSectionHeading h2{font-size:17px}
-.executiveSectionHeading h3,.executiveCompactHeading h3,.executiveAttentionStack>h2{font-size:15px}
-.executiveStatus{margin:10px 0;color:var(--text-secondary,#aeb9cc);font:13px var(--font-readable,inherit)}
+.executiveNbaCard .executiveSectionHeading{position:relative;z-index:1}.executiveSectionHeading h2{font-size:17px}.executiveSectionHeading h3,.executiveCompactHeading h3,.executiveAttentionStack>h2{font-size:15px}.executiveStatus{position:relative;z-index:1;margin:12px 0;color:#aeb6c7;font:14px var(--font-readable,inherit)}
+.executiveNbaOrb{position:absolute;right:9%;bottom:24px;display:grid;place-items:center;width:150px;height:150px;border:2px solid rgba(201,255,36,.78);border-radius:50%;background:radial-gradient(circle,rgba(201,255,36,.22),rgba(201,255,36,.04) 48%,transparent 67%);box-shadow:0 0 0 10px rgba(201,255,36,.04),0 0 0 22px rgba(111,156,208,.035),0 0 35px rgba(201,255,36,.28)}.executiveNbaOrb::before,.executiveNbaOrb::after{content:"";position:absolute;border:1px solid rgba(114,143,203,.22);border-radius:50%}.executiveNbaOrb::before{inset:-38px}.executiveNbaOrb::after{inset:-76px}.executiveNbaOrb span{width:37px;height:37px;background:var(--executive-accent);clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);filter:drop-shadow(0 0 7px var(--executive-accent))}
 .executiveNbaContent,.executivePlanCard .dashboardDailyExecutiveBriefContent,.executiveCapacityContent{display:grid;gap:13px}
-.executiveNbaContent .dashboardNextBestActionTitle{font-size:clamp(22px,3vw,30px);margin:8px 0 0}
-.executiveNbaContent .dashboardNextBestActionFirstAction{font-size:16px;color:var(--text-primary,#f1f7ff)}
+.executiveNbaContent{position:relative;z-index:1;max-width:64%}.executiveNbaContent .dashboardNextBestActionTitle{font-size:clamp(30px,4vw,48px);line-height:1.04;letter-spacing:-.045em;margin:8px 0 0}.executiveNbaContent .dashboardNextBestActionFirstAction{font-size:16px;color:#f1f4fa}
 .executiveNbaContent .dashboardNextBestActionExplanation,.executivePlanCard .dashboardDailyExecutiveBriefSummary,.dashboardDailyCapacityExplanation{color:var(--text-secondary,#aeb9cc);font:13px var(--font-readable,inherit);line-height:1.5}
-.executiveFacts,.dashboardNextBestActionMeta{display:flex;flex-wrap:wrap;gap:8px;color:var(--text-secondary,#aeb9cc);font-size:12px}
-.executiveFacts span,.dashboardNextBestActionMeta span{padding:6px 8px;border:1px solid rgba(121,226,255,.16)}
+.executiveFacts{display:flex;flex-wrap:wrap;gap:8px;color:var(--text-secondary,#aeb9cc);font-size:12px}
+.executiveFacts span{padding:6px 8px;border:1px solid rgba(121,226,255,.16)}
 .executivePlanHealth{min-height:4px;border-left:3px solid var(--accent,#a9d65f);padding-left:10px;color:var(--text-primary,#f1f7ff);font-weight:700}
 .executivePlanBody{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,.38fr);gap:18px;align-items:start}
 .executivePlanMain{min-width:0}
@@ -49,12 +45,11 @@
 .executiveDisclosure{display:grid;gap:6px;color:rgba(225,231,244,.62);font:11px var(--font-readable,inherit)}
 .executiveDisclosure summary{cursor:pointer;color:rgba(225,231,244,.62)}
 .executiveDisclosure .dashboardDailyCapacityExplanation{margin:0}
-.executiveAttentionStack{display:none;gap:8px}
+.executiveAttentionStack{grid-area:attention;display:none;gap:10px}.executiveAttentionStack>h2{padding-left:14px;font-size:17px}
 .executiveAttentionStack:has(.executiveAttentionCard[data-schedule-repair-state="ready"]),.executiveAttentionStack:has(.executiveAttentionCard[data-schedule-repair-state="error"]),.executiveAttentionStack:has(.executiveAttentionCard[data-schedule-repair-state="locked"]),.executiveAttentionStack:has(.executiveRecoveryCard[data-recovery-state="ready"]),.executiveAttentionStack:has(.executiveRecoveryCard[data-recovery-state="error"]),.executiveAttentionStack:has(.executiveRecoveryCard[data-recovery-state="locked"]){display:grid}
 .executiveAttentionStack .executiveAttentionCard,.executiveAttentionStack .executiveRecoveryCard{display:none}
 .executiveAttentionStack .executiveAttentionCard[data-schedule-repair-state="ready"],.executiveAttentionStack .executiveAttentionCard[data-schedule-repair-state="error"],.executiveAttentionStack .executiveAttentionCard[data-schedule-repair-state="locked"],.executiveAttentionStack .executiveRecoveryCard[data-recovery-state="ready"],.executiveAttentionStack .executiveRecoveryCard[data-recovery-state="error"],.executiveAttentionStack .executiveRecoveryCard[data-recovery-state="locked"]{display:block}
-.executiveTools{align-items:center}
-.executiveToolLinks{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.executiveAttentionStack .executiveCard{padding:16px}.executiveAttentionStack .executiveSectionHeading{gap:12px}.executiveAttentionStack .executiveEyebrow{margin-bottom:4px;font-size:10px}.executiveAttentionStack .executiveSectionHeading h3{font-size:17px}.executiveTools{grid-area:tools;display:grid;align-content:center;gap:18px}.executiveToolsHeading>p:last-child{margin:7px 0 0;color:#aeb6c7;font:14px var(--font-readable,inherit)}.executiveToolLinks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.executiveToolLink{display:grid !important;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:104px;padding:14px !important;border:1px solid var(--executive-line) !important;border-radius:12px !important;background:var(--executive-panel) !important;text-align:left !important;text-decoration:none}.executiveToolLink img{width:32px;height:32px;object-fit:contain;filter:sepia(1) saturate(3) hue-rotate(30deg) brightness(1.35)}.executiveToolLink span{color:#f3f5fa;font:700 14px var(--font-readable,inherit)}.executiveToolLink i{color:#c4cee0;font-size:23px;font-style:normal}.executiveToolLink:hover,.executiveToolLink:focus-visible{border-color:var(--executive-accent)!important;color:var(--executive-accent)!important}
 #appPageExecutive.isExecutiveFunctionDisabled button,
 #appPageExecutive.isExecutiveFunctionDisabled .executiveToolLinks .btn{display:none}
 .dashboardExecutiveSummary{grid-column:1/-1;margin-bottom:16px;cursor:pointer}
@@ -594,21 +589,46 @@
 }
 
 .dashboardNextBestActionTimeLabel{
-  display:flex;
-  align-items:center;
-  gap:8px;
+  display:block;
+  margin-top:8px;
   color:rgba(225,231,244,.7);
   font:11px var(--font-readable);
+  line-height:1.2;
 }
 
-.dashboardNextBestActionTimeLabel select{
-  min-height:32px;
-  padding:4px 28px 4px 8px;
-  border:1px solid rgba(154,168,199,.38);
-  border-radius:0;
-  background:#1a1b20;
-  color:#edf2ff;
-  font:11px var(--font-readable);
+.dashboardNextBestActionTimePills{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:7px;
+}
+
+.dashboardNextBestActionTimePill{
+  min-height:30px;
+  min-width:44px;
+  padding:0 10px;
+  border:1px solid rgba(154,168,199,.28);
+  border-radius:999px;
+  background:rgba(26,27,32,.74);
+  color:rgba(237,242,255,.76);
+  font:11px var(--font-orbitron), var(--font-readable), sans-serif;
+  letter-spacing:0;
+  line-height:1;
+  cursor:pointer;
+  transition:border-color .16s ease, color .16s ease, background .16s ease;
+}
+
+.dashboardNextBestActionTimePill:hover,
+.dashboardNextBestActionTimePill:focus-visible{
+  border-color:rgba(166,255,0,.62);
+  color:#f4ffd6;
+  outline:none;
+}
+
+.dashboardNextBestActionTimePill[aria-pressed="true"]{
+  border-color:#c9ff24;
+  background:#c9ff24;
+  color:#000;
 }
 
 .dashboardNextBestActionStatus,
@@ -638,13 +658,13 @@
   font:13px var(--font-readable);
 }
 
-.dashboardNextBestActionMeta{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px 16px;
-  color:rgba(225,231,244,.58);
-  font:11px var(--font-readable);
-  text-transform:capitalize;
+.dashboardNextBestActionExplanation strong{
+  display:inline;
+  margin-right:4px;
+  color:#f2f5ff;
+  font:700 11px var(--font-readable);
+  letter-spacing:0;
+  text-transform:none;
 }
 
 .dashboardNextBestActionActions{
@@ -652,6 +672,25 @@
   flex-wrap:wrap;
   gap:8px;
   margin-top:2px;
+}
+
+.dashboardStartNowButton{
+  display:inline-flex !important;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+
+.dashboardStartNowButtonIcon{
+  width:26px;
+  height:26px;
+  flex:0 0 26px;
+  object-fit:contain;
+}
+
+.dashboardStartNowButtonLabel{
+  font-weight:800;
+  text-transform:uppercase;
 }
 
 .dashboardNextBestActionRetry{
@@ -665,12 +704,16 @@
 
   .dashboardNextBestActionTimeLabel{
     width:100%;
-    justify-content:space-between;
   }
 
-  .dashboardNextBestActionTimeLabel select{
-    flex:1;
-    max-width:160px;
+  .dashboardNextBestActionTimePills{
+    display:grid;
+    grid-template-columns:repeat(5, minmax(0, 1fr));
+  }
+
+  .dashboardNextBestActionTimePill{
+    min-width:0;
+    padding:0 6px;
   }
 
   .dashboardNextBestActionActions .btn{
@@ -9314,8 +9357,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   line-height:1.2 !important;
 }
 
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefTimeLabel select,
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimeLabel select{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefTimeLabel select{
   min-height:32px !important;
   border:1px solid var(--dashboard-reference-border) !important;
   border-radius:0 !important;
@@ -9323,6 +9365,48 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   color:var(--dashboard-reference-text) !important;
   font-family:var(--font-readable) !important;
   font-size:12px !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimePills{
+  gap:6px !important;
+  margin-top:7px !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimePill{
+  min-height:30px !important;
+  border:1px solid var(--dashboard-reference-border) !important;
+  border-radius:999px !important;
+  background:rgba(8,12,18,.72) !important;
+  color:var(--dashboard-reference-text) !important;
+  font-family:var(--font-orbitron), var(--font-readable), sans-serif !important;
+  font-size:11px !important;
+  letter-spacing:0 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimePill:hover,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimePill:focus-visible{
+  border-color:var(--dashboard-reference-green) !important;
+  color:var(--dashboard-reference-green) !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimePill[aria-pressed="true"]{
+  border-color:#c9ff24 !important;
+  background:#c9ff24 !important;
+  color:#000 !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageExecutive .dashboardNextBestActionTimePill,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimePill{
+  border-radius:999px !important;
+  appearance:none;
+  overflow:hidden;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageExecutive .dashboardNextBestActionTimePill[aria-pressed="true"],
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimePill[aria-pressed="true"]{
+  border-color:#c9ff24 !important;
+  background:#c9ff24 !important;
+  color:#000 !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyCapacityStatus,

@@ -6,8 +6,11 @@ import {
   BrainDumpProviderValidationError,
   transcribeVoiceBrainDump,
 } from "@/app/brain-dump/lib/brainDumpProcessing";
+import { createFirestoreBrainDumpSessionStore } from "@/app/brain-dump/lib/brainDumpSessionStore";
+import { createFirebaseBrainDumpVoiceSourceStorage } from "@/app/brain-dump/lib/brainDumpVoiceStorage";
 import { verifyFirebaseRequestUser } from "../../shared/auth";
 import { assertExecutiveFunctionAvailableForUser } from "@/app/api/shared/plusEntitlement";
+import { enforceUidRateLimit } from "@/app/api/shared/rateLimit";
 import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
 
 function errorStatus(error: unknown) {
@@ -35,13 +38,22 @@ export async function POST(req: Request) {
     const body = (await req.json()) as Record<string, unknown>;
     const { uid } = await verifyFirebaseRequestUser(req, body);
     await assertExecutiveFunctionAvailableForUser(uid);
+    await enforceUidRateLimit({
+      namespace: "brain-dump-transcription",
+      uid,
+      windowMs: 15 * 60 * 1000,
+      maxEvents: 10,
+      code: "brain-dump/transcription-rate-limited",
+      message: "Too many Brain Dump transcription attempts. Please wait and try again.",
+    });
     const transcription = await transcribeVoiceBrainDump({
       uid,
-      audioBase64: String(body.audioBase64 || ""),
-      mimeType: String(body.mimeType || ""),
+      brainDumpId: String(body.brainDumpId || ""),
+      storagePath: String(body.storagePath || ""),
       durationMs: Number(body.durationMs || 0),
-      timezone: typeof body.timezone === "string" ? body.timezone : undefined,
       provider: getBrainDumpAiProvider(),
+      store: createFirestoreBrainDumpSessionStore(),
+      storage: createFirebaseBrainDumpVoiceSourceStorage(),
     });
 
     return withAuthenticatedApiCors(req, NextResponse.json({ ok: true, ...transcription }));

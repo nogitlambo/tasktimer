@@ -552,16 +552,16 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
   const clarificationUnavailableMessage = String(options.executiveFunctionUnavailableMessage || "").trim();
   const clarificationIsDisabledBySettings = clarificationUnavailableMessage.toLowerCase().includes("turned off");
   const clarificationLabel = canUseExecutiveFunction
-    ? "Make easier to start"
+    ? "Optimiise"
     : clarificationIsDisabledBySettings
-    ? "Make easier to start (Off)"
-    : "Make easier to start (PLUS)";
+    ? "Optimiise (Off)"
+    : "Optimiise (PLUS)";
   const clarificationTitle = canUseExecutiveFunction
     ? "Make this easier to start"
     : clarificationUnavailableMessage || "PLUS feature: Make this easier to start";
   const clarificationActionHtml = task.sharedSourceOwnerUid
     ? ""
-    : `<button class="taskMenuItem" data-action="clarify" title="${clarificationTitle}" type="button" ${canUseExecutiveFunction ? "" : 'data-plan-locked="executiveFunction"'}>${renderTaskBackActionTile(clarificationLabel, escapeHtml)}</button>`;
+    : `<button class="taskMenuItem" data-action="clarify" title="${clarificationTitle}" type="button" ${canUseExecutiveFunction ? "" : 'data-plan-locked="executiveFunction"'}>${renderTaskBackActionTile(clarificationLabel, escapeHtml, "/icons/icons_default/optimise.webp")}</button>`;
   return {
     className,
     html: `
@@ -624,7 +624,7 @@ export function dispatchTaskCardAction(options: DispatchTaskCardActionOptions) {
     return true;
   }
   if (action === "clarify" && canUseExecutiveFunction === false) {
-    showUpgradePrompt("Make easier to start", "plus");
+    showUpgradePrompt("Optimiise", "plus");
     return true;
   }
   const handler = handlers[action];

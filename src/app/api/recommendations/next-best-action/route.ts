@@ -57,6 +57,8 @@ function safeResponseRecommendation(recommendation: ReturnType<typeof createReco
     title: recommendation.payload.title,
     estimatedMinutes: recommendation.payload.durationMinutes,
     durationSource: recommendation.payload.durationSource,
+    timeGoalMinutes: recommendation.payload.timeGoalMinutes,
+    latestHistoryEntry: recommendation.payload.latestHistoryEntry,
     score: recommendation.payload.score,
     confidence: recommendation.payload.confidence,
     reasonCodes: recommendation.payload.reasonCodes,

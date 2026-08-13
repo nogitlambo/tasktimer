@@ -5,6 +5,7 @@ import type { DeletedTaskMeta, Task } from "@/app/tasktimer/lib/types";
 export const BRAIN_DUMP_TYPED_PROMPT_ID = "brain-dump-v1";
 export const BRAIN_DUMP_VOICE_TRANSCRIPTION_PROMPT_ID = "brain-dump-voice-transcription-v1";
 export const BRAIN_DUMP_VOICE_MAX_MS = 5 * 60 * 1000;
+export const BRAIN_DUMP_VOICE_MAX_BYTES = 10 * 1024 * 1024;
 export const BRAIN_DUMP_IMAGE_INTERPRETATION_PROMPT_ID = "brain-dump-image-interpretation-v1";
 export const BRAIN_DUMP_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 export const BRAIN_DUMP_SOURCE_COMPLETED_DELETE_AFTER_MS = 24 * 60 * 60 * 1000;
@@ -54,6 +55,8 @@ const providerResponseSchema = z
 const voiceTranscriptionResponseSchema = z
   .object({
     transcript: z.string().trim().min(1).max(20_000),
+    model: z.string().trim().min(1).max(160),
+    detectedLanguage: z.string().trim().min(1).max(80).optional(),
   })
   .strict();
 
@@ -144,7 +147,7 @@ export type BrainDumpReviewItemUpdate = {
   duplicateDecision?: BrainDumpDuplicateDecision;
 };
 
-export type BrainDumpSessionState = "review" | "completed" | "expired";
+export type BrainDumpSessionState = "transcribing" | "transcript" | "review" | "completed" | "expired";
 
 export type BrainDumpCreationBatchResult = {
   sessionId: string;
@@ -205,14 +208,14 @@ export type BrainDumpCreationReceipt = {
 export type BrainDumpReviewSession = {
   id: string;
   ownerUid: string;
-  mode: "typed";
+  mode: "typed" | "voice";
   state: BrainDumpSessionState;
-  promptId: typeof BRAIN_DUMP_TYPED_PROMPT_ID;
+  promptId: typeof BRAIN_DUMP_TYPED_PROMPT_ID | typeof BRAIN_DUMP_VOICE_TRANSCRIPTION_PROMPT_ID;
   createdAtMs: number;
   expiresAtMs: number;
   expiredAtMs?: number;
   source: {
-    kind: "typed";
+    kind: "typed" | "voice";
     rawText: string;
     files?: BrainDumpSourceFile[];
   };
@@ -223,16 +226,33 @@ export type BrainDumpReviewSession = {
   batchResult?: BrainDumpCreationBatchResult;
   undoResult?: BrainDumpUndoBatchResult;
   creationReceipts?: Record<string, BrainDumpCreationReceipt>;
+  transcription?: {
+    model: string;
+    detectedLanguage?: string;
+    durationMs: number;
+    completedAtMs: number;
+  };
+};
+
+export type BrainDumpVoiceSource = {
+  bytes: Uint8Array;
+  contentType: string;
+  sizeBytes: number;
+  createdAtMs: number;
+};
+
+export type BrainDumpVoiceSourceStorage = {
+  getObject(path: string): Promise<BrainDumpVoiceSource | null>;
+  deleteObject(path: string): Promise<void>;
 };
 
 export type BrainDumpAiProvider = {
   extractTyped(input: { promptId: typeof BRAIN_DUMP_TYPED_PROMPT_ID; text: string; timezone: string }): Promise<unknown>;
   transcribeVoice?(input: {
     promptId: typeof BRAIN_DUMP_VOICE_TRANSCRIPTION_PROMPT_ID;
-    audioBase64: string;
+    audioBytes: Uint8Array;
     mimeType: string;
-    timezone: string;
-    uid: string;
+    fileName: string;
   }): Promise<unknown>;
   interpretImage?(input: {
     promptId: typeof BRAIN_DUMP_IMAGE_INTERPRETATION_PROMPT_ID;
@@ -296,7 +316,7 @@ function currentTimeMs(now?: () => number) {
 
 function sessionIsExpired(session: BrainDumpReviewSession, nowMs: number) {
   if (session.state === "expired") return true;
-  return session.state === "review" && Number(session.expiresAtMs || 0) > 0 && Number(session.expiresAtMs || 0) <= nowMs;
+  return session.state !== "completed" && Number(session.expiresAtMs || 0) > 0 && Number(session.expiresAtMs || 0) <= nowMs;
 }
 
 export function redactExpiredBrainDumpSession(session: BrainDumpReviewSession, nowMs: number): BrainDumpReviewSession {
@@ -363,13 +383,6 @@ function normalizeTimezone(timezone: unknown) {
   return asTrimmedString(timezone, 120) || "UTC";
 }
 
-function normalizeVoiceAudioBase64(value: unknown) {
-  const audioBase64 = asTrimmedString(value);
-  if (!audioBase64) throw new BrainDumpInputError("Record audio before transcribing.");
-  if (!/^[a-zA-Z0-9+/=_-]+$/.test(audioBase64)) throw new BrainDumpInputError("Voice recording data is invalid.");
-  return audioBase64;
-}
-
 function normalizeVoiceMimeType(value: unknown) {
   const mimeType = asTrimmedString(value, 80).toLowerCase();
   if (mimeType !== "audio/webm") throw new BrainDumpInputError("Brain Dump voice recording must use audio/webm.");
@@ -379,10 +392,51 @@ function normalizeVoiceMimeType(value: unknown) {
 function normalizeVoiceDurationMs(value: unknown) {
   const durationMs = Math.max(0, Math.floor(Number(value) || 0));
   if (!durationMs) throw new BrainDumpInputError("Voice recording duration is required.");
-  if (durationMs > BRAIN_DUMP_VOICE_MAX_MS) {
+  return durationMs;
+}
+
+function configuredPositiveInteger(value: unknown, fallback: number, maximum: number) {
+  const parsed = Math.floor(Number(value));
+  return Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, maximum) : fallback;
+}
+
+export function configuredBrainDumpMaxAudioMs() {
+  return configuredPositiveInteger(process.env.BRAIN_DUMP_MAX_AUDIO_SECONDS, BRAIN_DUMP_VOICE_MAX_MS / 1000, 30 * 60) * 1000;
+}
+
+export function configuredBrainDumpMaxAudioBytes() {
+  return configuredPositiveInteger(process.env.BRAIN_DUMP_MAX_AUDIO_BYTES, BRAIN_DUMP_VOICE_MAX_BYTES, 25 * 1024 * 1024);
+}
+
+function normalizeVoiceDurationForConfig(value: unknown) {
+  const durationMs = normalizeVoiceDurationMs(value);
+  if (durationMs > configuredBrainDumpMaxAudioMs()) {
     throw new BrainDumpInputError("Brain Dump voice recordings must be five minutes or shorter.");
   }
   return durationMs;
+}
+
+function normalizeVoiceSessionId(value: unknown) {
+  const sessionId = asTrimmedString(value, 120);
+  if (!sessionId || !/^[a-zA-Z0-9_-]+$/.test(sessionId)) {
+    throw new BrainDumpInputError("Brain Dump recording session is invalid.");
+  }
+  return sessionId;
+}
+
+function normalizeOwnedVoiceStoragePath(uid: string, sessionId: string, value: unknown) {
+  const path = asTrimmedString(value, 500);
+  const expected = `users/${uid}/brain-dump-sources/${sessionId}/recording.webm`;
+  if (path !== expected || path.includes("..") || /^https?:\/\//i.test(path)) {
+    throw new BrainDumpInputError("Brain Dump recording could not be accessed.");
+  }
+  return path;
+}
+
+function validateWebmBytes(bytes: Uint8Array) {
+  if (bytes.length < 4 || bytes[0] !== 0x1a || bytes[1] !== 0x45 || bytes[2] !== 0xdf || bytes[3] !== 0xa3) {
+    throw new BrainDumpInputError("Brain Dump recording is not a valid WebM audio file.");
+  }
 }
 
 function normalizeImageBase64(value: unknown) {
@@ -775,6 +829,7 @@ export async function processTypedBrainDump(input: {
   now?: () => number;
   workspaceTasks?: Task[];
   archivedTaskMeta?: DeletedTaskMeta;
+  sourceSession?: BrainDumpReviewSession;
 }): Promise<BrainDumpReviewSession> {
   const uid = asTrimmedString(input.uid, 120);
   if (!uid) throw new BrainDumpInputError("You must be signed in to continue.");
@@ -832,16 +887,19 @@ export async function processTypedBrainDump(input: {
     nowMs,
   });
 
+  const sourceSession = input.sourceSession;
   const session: BrainDumpReviewSession = {
+    ...(sourceSession || {}),
     id: sessionId,
     ownerUid: uid,
-    mode: "typed",
+    mode: sourceSession?.mode || "typed",
     state: "review",
     promptId: BRAIN_DUMP_TYPED_PROMPT_ID,
-    createdAtMs: nowMs,
-    expiresAtMs: nowMs + BRAIN_DUMP_UNFINISHED_TTL_MS,
+    createdAtMs: sourceSession?.createdAtMs || nowMs,
+    expiresAtMs: sourceSession?.expiresAtMs || nowMs + BRAIN_DUMP_UNFINISHED_TTL_MS,
     source: {
-      kind: "typed",
+      ...(sourceSession?.source || {}),
+      kind: sourceSession?.source.kind || "typed",
       rawText: text,
     },
     review: {
@@ -854,39 +912,201 @@ export async function processTypedBrainDump(input: {
   return session;
 }
 
-export async function transcribeVoiceBrainDump(input: {
+export async function processVoiceTranscriptBrainDump(input: {
   uid: string;
-  audioBase64: string;
-  mimeType: string;
-  durationMs: number;
+  sessionId: string;
+  text: string;
   timezone?: string;
   provider: BrainDumpAiProvider;
+  store: BrainDumpSessionStore;
+  now?: () => number;
+  workspaceTasks?: Task[];
+  archivedTaskMeta?: DeletedTaskMeta;
+}): Promise<BrainDumpReviewSession> {
+  const uid = asTrimmedString(input.uid, 120);
+  const sessionId = normalizeVoiceSessionId(input.sessionId);
+  if (!uid) throw new BrainDumpInputError("You must be signed in to continue.");
+  const stored = await input.store.getSession(uid, sessionId);
+  const session = stored ? await ensureBrainDumpSessionNotExpired({ session: stored, store: input.store, now: input.now }) : null;
+  if (!session || session.ownerUid !== uid || session.id !== sessionId || session.mode !== "voice") {
+    throw new BrainDumpReviewUpdateError("Brain Dump session was not found.", "brain-dump/not-found", 404);
+  }
+  if (session.state !== "transcript") {
+    throw new BrainDumpReviewUpdateError("Brain Dump transcript is not ready for extraction.", "brain-dump/not-reviewable", 409);
+  }
+
+  const text = normalizeTypedInput(input.text);
+  const editedTranscriptSession: BrainDumpReviewSession = {
+    ...session,
+    source: {
+      ...session.source,
+      rawText: text,
+    },
+  };
+  await input.store.saveSession(editedTranscriptSession);
+
+  return processTypedBrainDump({
+    uid,
+    text,
+    timezone: input.timezone,
+    provider: input.provider,
+    store: input.store,
+    createId: () => sessionId,
+    now: input.now,
+    workspaceTasks: input.workspaceTasks,
+    archivedTaskMeta: input.archivedTaskMeta,
+    sourceSession: editedTranscriptSession,
+  });
+}
+
+async function deleteVoiceSourceFile(
+  storage: BrainDumpVoiceSourceStorage,
+  sourceFile: BrainDumpSourceFile,
+  attemptedAtMs: number
+) {
+  try {
+    await storage.deleteObject(sourceFile.path);
+    return {
+      ...sourceFile,
+      cleanupStatus: "deleted" as const,
+      deletedAtMs: attemptedAtMs,
+      lastCleanupAttemptAtMs: attemptedAtMs,
+    };
+  } catch {
+    return {
+      ...sourceFile,
+      cleanupStatus: "delete_failed" as const,
+      cleanupErrorCode: "storage-delete-failed" as const,
+      deleteAfterMs: attemptedAtMs,
+      lastCleanupAttemptAtMs: attemptedAtMs,
+    };
+  }
+}
+
+export async function transcribeVoiceBrainDump(input: {
+  uid: string;
+  brainDumpId: string;
+  storagePath: string;
+  durationMs: number;
+  provider: BrainDumpAiProvider;
+  store: BrainDumpSessionStore;
+  storage: BrainDumpVoiceSourceStorage;
+  now?: () => number;
 }) {
   const uid = asTrimmedString(input.uid, 120);
   if (!uid) throw new BrainDumpInputError("You must be signed in to continue.");
-  const audioBase64 = normalizeVoiceAudioBase64(input.audioBase64);
-  const mimeType = normalizeVoiceMimeType(input.mimeType);
-  const durationMs = normalizeVoiceDurationMs(input.durationMs);
-  const timezone = normalizeTimezone(input.timezone);
-  if (!input.provider.transcribeVoice) {
-    throw new BrainDumpProviderValidationError("Brain Dump voice transcription is not configured.");
+  const sessionId = normalizeVoiceSessionId(input.brainDumpId);
+  const storagePath = normalizeOwnedVoiceStoragePath(uid, sessionId, input.storagePath);
+  const durationMs = normalizeVoiceDurationForConfig(input.durationMs);
+  const existingSession = await input.store.getSession(uid, sessionId);
+  if (existingSession) {
+    if (existingSession.ownerUid !== uid || existingSession.id !== sessionId || existingSession.mode !== "voice") {
+      throw new BrainDumpReviewUpdateError("Brain Dump session was not found.", "brain-dump/not-found", 404);
+    }
+    if (existingSession.state === "transcript" && existingSession.transcription?.model && existingSession.source.rawText) {
+      return {
+        brainDumpId: sessionId,
+        transcript: existingSession.source.rawText,
+        model: existingSession.transcription.model,
+        detectedLanguage: existingSession.transcription.detectedLanguage,
+        mimeType: existingSession.source.files?.find((file) => file.path === storagePath)?.contentType || "audio/webm",
+        durationMs: existingSession.transcription.durationMs,
+      };
+    }
+    if (existingSession.state !== "transcribing") {
+      throw new BrainDumpReviewUpdateError("Brain Dump recording is not ready for transcription.", "brain-dump/not-reviewable", 409);
+    }
   }
-  const providerResponse = await input.provider.transcribeVoice({
-    promptId: BRAIN_DUMP_VOICE_TRANSCRIPTION_PROMPT_ID,
-    audioBase64,
-    mimeType,
-    timezone,
-    uid,
-  });
-  const parsed = voiceTranscriptionResponseSchema.safeParse(providerResponse);
-  if (!parsed.success) {
-    throw new BrainDumpProviderValidationError("Brain Dump transcription output did not match the expected schema.");
+
+  const source = await input.storage.getObject(storagePath);
+  if (!source) throw new BrainDumpReviewUpdateError("Brain Dump recording was not found.", "brain-dump/not-found", 404);
+  const mimeType = normalizeVoiceMimeType(source.contentType);
+  const sizeBytes = Math.max(0, Math.floor(Number(source.sizeBytes) || 0), source.bytes.byteLength);
+  if (!sizeBytes) throw new BrainDumpInputError("Brain Dump recording is empty or unreadable.");
+  if (sizeBytes > configuredBrainDumpMaxAudioBytes()) {
+    throw new BrainDumpInputError("Brain Dump voice recordings are too large.");
   }
-  return {
-    transcript: parsed.data.transcript,
-    mimeType,
-    durationMs,
+  validateWebmBytes(source.bytes);
+
+  const nowMs = currentTimeMs(input.now);
+  const sourceFile: BrainDumpSourceFile = {
+    path: storagePath,
+    contentType: mimeType,
+    sizeBytes,
+    createdAtMs: Math.max(0, Math.floor(Number(source.createdAtMs) || nowMs)),
+    deleteAfterMs: nowMs + BRAIN_DUMP_UNFINISHED_TTL_MS,
+    cleanupStatus: "active",
   };
+  const transcribingSession: BrainDumpReviewSession = {
+    ...(existingSession || {}),
+    id: sessionId,
+    ownerUid: uid,
+    mode: "voice",
+    state: "transcribing",
+    promptId: BRAIN_DUMP_VOICE_TRANSCRIPTION_PROMPT_ID,
+    createdAtMs: existingSession?.createdAtMs || nowMs,
+    expiresAtMs: existingSession?.expiresAtMs || nowMs + BRAIN_DUMP_UNFINISHED_TTL_MS,
+    source: {
+      kind: "voice",
+      rawText: "",
+      files: [sourceFile],
+    },
+    review: { selectedCount: 0, items: [] },
+  };
+  await input.store.saveSession(transcribingSession);
+
+  try {
+    if (!input.provider.transcribeVoice) {
+      throw new BrainDumpProviderValidationError("Brain Dump voice transcription is not configured.");
+    }
+    const providerResponse = await input.provider.transcribeVoice({
+      promptId: BRAIN_DUMP_VOICE_TRANSCRIPTION_PROMPT_ID,
+      audioBytes: source.bytes,
+      mimeType,
+      fileName: "recording.webm",
+    });
+    const parsed = voiceTranscriptionResponseSchema.safeParse(providerResponse);
+    if (!parsed.success) {
+      throw new BrainDumpProviderValidationError("Brain Dump transcription output did not match the expected schema.");
+    }
+
+    const cleanedSourceFile = await deleteVoiceSourceFile(input.storage, sourceFile, nowMs);
+    const transcriptSession: BrainDumpReviewSession = {
+      ...transcribingSession,
+      state: "transcript",
+      source: {
+        ...transcribingSession.source,
+        rawText: parsed.data.transcript,
+        files: [cleanedSourceFile],
+      },
+      transcription: {
+        model: parsed.data.model,
+        detectedLanguage: parsed.data.detectedLanguage,
+        durationMs,
+        completedAtMs: nowMs,
+      },
+    };
+    await input.store.saveSession(transcriptSession);
+
+    return {
+      brainDumpId: sessionId,
+      transcript: parsed.data.transcript,
+      model: parsed.data.model,
+      detectedLanguage: parsed.data.detectedLanguage,
+      mimeType,
+      durationMs,
+    };
+  } catch (error) {
+    const cleanedSourceFile = await deleteVoiceSourceFile(input.storage, sourceFile, nowMs);
+    await input.store.saveSession({
+      ...transcribingSession,
+      source: {
+        ...transcribingSession.source,
+        files: [cleanedSourceFile],
+      },
+    });
+    throw error;
+  }
 }
 
 export async function interpretImageBrainDump(input: {

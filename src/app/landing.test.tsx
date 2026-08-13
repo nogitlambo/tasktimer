@@ -21,6 +21,9 @@ describe("Landing", () => {
     expect(html).toContain('href="/login"');
     expect(html).toContain("GET STARTED");
     expect(html).toContain("Get it on Google Play");
+    expect(html).not.toContain('id="plans"');
+    expect(html).not.toContain("PLUS Lifetime");
+    expect(html).not.toContain("Get PLUS Lifetime");
     expect(html).toContain('src="/logo/googleplay.webp"');
     expect(html).toContain('class="landingV2SecondaryBtnIcon"');
     expect(html).toContain("https://play.google.com/store/apps/details?id=com.tasklaunch.app&amp;hl=en-US&amp;ah=n93boNLLkVvMLSey6j9qG9SPGek");

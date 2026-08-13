@@ -11,7 +11,15 @@ class BrainDumpOpenAiProviderError extends Error {
 }
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
+const OPENAI_TRANSCRIPTIONS_URL = "https://api.openai.com/v1/audio/transcriptions";
 const DEFAULT_OPENAI_MODEL = "gpt-5.6";
+const DEFAULT_OPENAI_TRANSCRIPTION_MODEL = "gpt-4o-mini-transcribe";
+const DEFAULT_OPENAI_TRANSCRIPTION_LANGUAGE = "en";
+const BRAIN_DUMP_TRANSCRIPTION_PROMPT = [
+  "The audio is a productivity brain dump.",
+  "Expect task names, dates, reminders, appointments, names, and technical terminology.",
+  "Transcribe faithfully. Do not summarise, reorganise, or convert the content into tasks.",
+].join(" ");
 
 const brainDumpResponseSchema = {
   type: "object",
@@ -83,6 +91,16 @@ function configuredOpenAiApiKey() {
 
 function configuredOpenAiModel() {
   return asTrimmedString(process.env.BRAIN_DUMP_OPENAI_MODEL) || DEFAULT_OPENAI_MODEL;
+}
+
+function configuredOpenAiTranscriptionModel() {
+  return asTrimmedString(process.env.OPENAI_TRANSCRIPTION_MODEL) || DEFAULT_OPENAI_TRANSCRIPTION_MODEL;
+}
+
+function configuredOpenAiTranscriptionLanguage() {
+  const configured = asTrimmedString(process.env.BRAIN_DUMP_TRANSCRIPTION_LANGUAGE);
+  if (/^(auto|detect|none)$/i.test(configured)) return "";
+  return configured || DEFAULT_OPENAI_TRANSCRIPTION_LANGUAGE;
 }
 
 function buildTypedExtractionPrompt(input: { text: string; timezone: string }) {
@@ -178,13 +196,52 @@ async function requestOpenAiTypedExtraction(input: { promptId: string; text: str
   }
 }
 
+async function requestOpenAiVoiceTranscription(input: { audioBytes: Uint8Array; mimeType: string; fileName: string }) {
+  const apiKey = configuredOpenAiApiKey();
+  if (!apiKey) {
+    throw new BrainDumpProviderUnavailableError("Brain Dump voice transcription is not configured yet.");
+  }
+
+  const model = configuredOpenAiTranscriptionModel();
+  const form = new FormData();
+  const audioCopy = new Uint8Array(input.audioBytes.byteLength);
+  audioCopy.set(input.audioBytes);
+  form.set("file", new Blob([audioCopy.buffer], { type: input.mimeType }), input.fileName);
+  form.set("model", model);
+  form.set("response_format", "json");
+  form.set("prompt", BRAIN_DUMP_TRANSCRIPTION_PROMPT);
+  const language = configuredOpenAiTranscriptionLanguage();
+  if (language) form.set("language", language);
+
+  const response = await fetch(OPENAI_TRANSCRIPTIONS_URL, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${apiKey}`,
+    },
+    body: form,
+  });
+  const payload = (await response.json().catch(() => null)) as { text?: unknown } | null;
+  if (!response.ok) {
+    throw new BrainDumpOpenAiProviderError(
+      "TaskLaunch couldn't transcribe this recording reliably. Your recording has not been turned into tasks."
+    );
+  }
+  const transcript = asTrimmedString(payload?.text);
+  if (!transcript) {
+    throw new BrainDumpOpenAiProviderError(
+      "TaskLaunch couldn't transcribe this recording reliably. Your recording has not been turned into tasks."
+    );
+  }
+  return { transcript, model };
+}
+
 export function getBrainDumpAiProvider(): BrainDumpAiProvider {
   return {
     async extractTyped(input) {
       return requestOpenAiTypedExtraction(input);
     },
-    async transcribeVoice() {
-      throw new BrainDumpProviderUnavailableError("Brain Dump voice transcription is not configured yet.");
+    async transcribeVoice(input) {
+      return requestOpenAiVoiceTranscription(input);
     },
     async interpretImage() {
       throw new BrainDumpProviderUnavailableError("Brain Dump image interpretation is not configured yet.");

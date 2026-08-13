@@ -9,6 +9,7 @@ class FakeElement {
   hidden = false;
   disabled = false;
   dataset: Record<string, string> = {};
+  labelElement: { textContent: string } | null = null;
   private attributes = new Map<string, string>();
 
   constructor(readonly id: string) {}
@@ -36,6 +37,10 @@ class FakeElement {
       delete this.dataset[key];
     }
   }
+
+  querySelector(selector: string) {
+    return selector === ".dashboardStartNowButtonLabel" ? this.labelElement : null;
+  }
 }
 
 function createDocumentHarness() {
@@ -54,6 +59,7 @@ function createDocumentHarness() {
     "dashboardExecutiveSummaryStart",
   ];
   const byId = new Map(ids.map((id) => [id, new FakeElement(id)]));
+  byId.get("dashboardExecutiveSummaryStart")!.labelElement = { textContent: "LAUNCH" };
   const documentRef = {
     getElementById: (id: string) => byId.get(id) ?? null,
     addEventListener: (type: string, listener: (event: Event) => void) => listeners.set(type, listener),
@@ -150,6 +156,8 @@ describe("renderDashboardExecutiveSummary", () => {
     expect(byId.get("dashboardExecutiveSummaryNextTitle")!.textContent).toBe("Tidy small area");
     expect(byId.get("dashboardExecutiveSummaryNextFirstAction")!.textContent).toBe("11 min");
     expect(byId.get("dashboardExecutiveSummaryStart")!.hidden).toBe(false);
+    expect(byId.get("dashboardExecutiveSummaryStart")!.textContent).toBe("");
+    expect(byId.get("dashboardExecutiveSummaryStart")!.labelElement?.textContent).toBe("LAUNCH");
   });
 
   it("keeps the summary content visible but hides Start now when no next best action exists", () => {
@@ -177,7 +185,8 @@ describe("renderDashboardExecutiveSummary", () => {
     listeners.get("click")?.({ target: { closest: () => byId.get("dashboardExecutiveSummaryStart") } } as unknown as Event);
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    expect(byId.get("dashboardExecutiveSummaryStart")!.textContent).toBe("In Progress");
+    expect(byId.get("dashboardExecutiveSummaryStart")!.textContent).toBe("");
+    expect(byId.get("dashboardExecutiveSummaryStart")!.labelElement?.textContent).toBe("In Progress");
     expect(byId.get("dashboardExecutiveSummaryStart")!.hidden).toBe(false);
     expect(byId.get("dashboardExecutiveSummaryStart")!.disabled).toBe(true);
     expect(byId.get("dashboardExecutiveSummaryStatus")!.textContent).toBe("Task in progress.");

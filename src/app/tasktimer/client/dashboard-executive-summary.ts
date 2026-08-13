@@ -18,6 +18,12 @@ function getElement(documentRef: Document, id: string) {
   return documentRef.getElementById(id);
 }
 
+function setStartNowButtonLabel(button: HTMLButtonElement, label: string) {
+  const labelElement = button.querySelector?.(".dashboardStartNowButtonLabel");
+  if (labelElement) labelElement.textContent = label;
+  else button.textContent = label;
+}
+
 function setHidden(element: HTMLElement | null, hidden: boolean) {
   if (!element) return;
   element.hidden = hidden;
@@ -85,7 +91,7 @@ export function renderDashboardExecutiveSummary(documentRef: Document, snapshot:
   if (start) {
     start.disabled = !nba;
     start.hidden = !nba;
-    start.textContent = "Start now";
+    setStartNowButtonLabel(start, "LAUNCH");
     if (nba) {
       start.dataset.taskId = nba.taskId;
       start.dataset.recommendationId = nba.recommendationId;
@@ -148,7 +154,7 @@ export function createDashboardExecutiveSummary(options: Options) {
       const response = await fetch(getApiUrl(`/api/recommendations/next-best-action/${encodeURIComponent(recommendationId)}/start`), { method: "POST", headers: { "Content-Type": "application/json", "x-firebase-auth": token }, body: JSON.stringify({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC" }) });
       if (!response.ok) throw new Error("recommendation-stale");
       dispatchTaskClarificationStartTaskEvent({ taskId });
-      button.textContent = "In Progress";
+      setStartNowButtonLabel(button, "In Progress");
       button.disabled = true;
       button.hidden = false;
       const status = getElement(documentRef, "dashboardExecutiveSummaryStatus");

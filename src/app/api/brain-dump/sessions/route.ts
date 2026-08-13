@@ -5,6 +5,7 @@ import {
   BrainDumpInputError,
   BrainDumpProviderValidationError,
   processTypedBrainDump,
+  processVoiceTranscriptBrainDump,
   toBrainDumpReviewResponse,
 } from "@/app/brain-dump/lib/brainDumpProcessing";
 import { createFirestoreBrainDumpSessionStore } from "@/app/brain-dump/lib/brainDumpSessionStore";
@@ -44,18 +45,22 @@ export async function POST(req: Request) {
     const { uid } = await verifyFirebaseRequestUser(req, body);
     await assertExecutiveFunctionAvailableForUser(uid);
     const workspace = createFirestoreBrainDumpWorkspaceRepository();
+    const store = createFirestoreBrainDumpSessionStore();
     const workspaceTasks = await workspace.loadTasks(uid);
     const archivedTaskMeta = workspace.loadTaskStatusMeta ? await workspace.loadTaskStatusMeta(uid) : {};
-    const session = await processTypedBrainDump({
+    const voiceSessionId = typeof body.brainDumpId === "string" ? body.brainDumpId.trim() : "";
+    const sharedInput = {
       uid,
       text: String(body.text || ""),
       timezone: typeof body.timezone === "string" ? body.timezone : undefined,
       provider: getBrainDumpAiProvider(),
-      store: createFirestoreBrainDumpSessionStore(),
-      createId: createSessionId,
+      store,
       workspaceTasks,
       archivedTaskMeta,
-    });
+    };
+    const session = voiceSessionId
+      ? await processVoiceTranscriptBrainDump({ ...sharedInput, sessionId: voiceSessionId })
+      : await processTypedBrainDump({ ...sharedInput, createId: createSessionId });
 
     return withAuthenticatedApiCors(req, NextResponse.json({ ok: true, session: toBrainDumpReviewResponse(session) }));
   } catch (error) {

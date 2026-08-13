@@ -5,16 +5,22 @@ import { getBrainDumpAiProvider } from "./brainDumpProvider";
 describe("getBrainDumpAiProvider", () => {
   const originalOpenAiApiKey = process.env.OPENAI_API_KEY;
   const originalOpenAiModel = process.env.BRAIN_DUMP_OPENAI_MODEL;
+  const originalTranscriptionModel = process.env.OPENAI_TRANSCRIPTION_MODEL;
+  const originalTranscriptionLanguage = process.env.BRAIN_DUMP_TRANSCRIPTION_LANGUAGE;
 
   beforeEach(() => {
     process.env.OPENAI_API_KEY = "test-openai-key";
     process.env.BRAIN_DUMP_OPENAI_MODEL = "gpt-test";
+    process.env.OPENAI_TRANSCRIPTION_MODEL = "gpt-transcription-test";
+    process.env.BRAIN_DUMP_TRANSCRIPTION_LANGUAGE = "en";
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
     process.env.OPENAI_API_KEY = originalOpenAiApiKey;
     process.env.BRAIN_DUMP_OPENAI_MODEL = originalOpenAiModel;
+    process.env.OPENAI_TRANSCRIPTION_MODEL = originalTranscriptionModel;
+    process.env.BRAIN_DUMP_TRANSCRIPTION_LANGUAGE = originalTranscriptionLanguage;
   });
 
   it("calls OpenAI Responses with structured output for typed extraction", async () => {
@@ -112,6 +118,58 @@ describe("getBrainDumpAiProvider", () => {
     ).rejects.toMatchObject({
       code: "brain-dump/provider-unavailable",
       status: 503,
+    });
+  });
+
+  it("calls OpenAI audio transcription server-side with configured model, language, and faithful guidance", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ text: "Call the dentist tomorrow." }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getBrainDumpAiProvider().transcribeVoice!({
+      promptId: "brain-dump-voice-transcription-v1",
+      audioBytes: new Uint8Array([0x1a, 0x45, 0xdf, 0xa3]),
+      mimeType: "audio/webm",
+      fileName: "recording.webm",
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.openai.com/v1/audio/transcriptions",
+      expect.objectContaining({
+        method: "POST",
+        headers: { authorization: "Bearer test-openai-key" },
+      })
+    );
+    const [, requestInit] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const body = requestInit.body as FormData;
+    expect(body.get("model")).toBe("gpt-transcription-test");
+    expect(body.get("language")).toBe("en");
+    expect(body.get("response_format")).toBe("json");
+    expect(String(body.get("prompt"))).toContain("Transcribe faithfully");
+    expect(String(body.get("prompt"))).toContain("Do not summarise");
+    expect(body.get("file")).toBeInstanceOf(Blob);
+    expect(result).toEqual({ transcript: "Call the dentist tomorrow.", model: "gpt-transcription-test" });
+    expect(JSON.stringify(requestInit.headers)).not.toContain("Call the dentist");
+  });
+
+  it("does not expose raw OpenAI transcription errors", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: false,
+      json: async () => ({ error: { message: "sensitive provider detail" } }),
+    })));
+
+    await expect(
+      getBrainDumpAiProvider().transcribeVoice!({
+        promptId: "brain-dump-voice-transcription-v1",
+        audioBytes: new Uint8Array([0x1a, 0x45, 0xdf, 0xa3]),
+        mimeType: "audio/webm",
+        fileName: "recording.webm",
+      })
+    ).rejects.toMatchObject({
+      code: "brain-dump/provider-failed",
+      message: "TaskLaunch couldn't transcribe this recording reliably. Your recording has not been turned into tasks.",
     });
   });
 });

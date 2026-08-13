@@ -5,7 +5,8 @@ import SharedWebSignInClient from "../auth/SharedWebSignInClient";
 
 export default function LoginPageClient() {
   const searchParams = useSearchParams();
-  const shouldStartProCheckout = searchParams.get("checkout") === "pro";
+  const checkout = searchParams.get("checkout");
+  const checkoutOffer = checkout === "plus_lifetime" ? "plus_lifetime" : checkout === "pro" ? "plus_monthly" : null;
 
-  return <SharedWebSignInClient shouldStartProCheckout={shouldStartProCheckout} />;
+  return <SharedWebSignInClient checkoutOffer={checkoutOffer} />;
 }

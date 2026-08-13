@@ -1,5 +1,7 @@
 "use client";
 
+import AppImg from "@/components/AppImg";
+
 type Props = { active: boolean };
 
 export default function ExecutivePageContent({ active }: Props) {
@@ -18,61 +20,45 @@ export default function ExecutivePageContent({ active }: Props) {
         </header>
 
         <div className="executiveTodayHealth" aria-label="Today and plan health">
-          <div><span>Plan health</span><strong id="executivePlanHealth">Loading</strong></div>
-          <div><span>Remaining capacity</span><strong id="executiveCapacityRange">Loading</strong></div>
-          <div><span>Work remaining</span><strong id="executiveWorkRemaining">Loading</strong></div>
+          <div className="executiveMetricCard executiveMetricPlanHealth" data-executive-metric-helper-card="plan-health" role="button" tabIndex={0} aria-describedby="executiveMetricHelperPlanHealth" aria-expanded="false"><span className="executiveMetricIcon"><AppImg src="/icons/icons_default/health.webp" alt="" aria-hidden="true" /></span><span className="executiveMetricCopy"><span>Plan health</span><strong id="executivePlanHealth">Loading</strong></span><span className="executiveMetricHelper" id="executiveMetricHelperPlanHealth" role="tooltip" aria-hidden="true"><strong>Plan health compares your remaining estimated work with today&apos;s capacity.</strong><ul><li><b className="executivePlanHealthRealistic">Realistic:</b> work is within capacity.</li><li><b className="executivePlanHealthSlightlyOverloaded">Slightly overloaded:</b> work exceeds capacity, up to 150% of its maximum.</li><li><b className="executivePlanHealthSignificantlyOverloaded">Significantly overloaded:</b> work is more than 150% of maximum capacity.</li><li><b>Insufficient data:</b> there are no active tasks, or every active task lacks an estimate.</li></ul></span></div>
+          <div className="executiveMetricCard" data-executive-metric-helper-card="remaining-capacity" role="button" tabIndex={0} aria-describedby="executiveMetricHelperRemainingCapacity" aria-expanded="false"><span className="executiveMetricIcon"><AppImg src="/icons/icons_default/capacity.webp" alt="" aria-hidden="true" /></span><span className="executiveMetricCopy"><span>Remaining capacity</span><strong id="executiveCapacityRange">Loading</strong></span><span className="executiveMetricHelper" id="executiveMetricHelperRemainingCapacity" role="tooltip" aria-hidden="true"><strong>Your workable time left today.</strong><span>TaskLaunch starts with your manual capacity setting or recent focus history, preferring matching weekdays when enough history exists. It caps that range to your available focus window, then subtracts work completed today.</span></span></div>
+          <div className="executiveMetricCard" data-executive-metric-helper-card="capacity-confidence" role="button" tabIndex={0} aria-describedby="executiveMetricHelperCapacityConfidence" aria-expanded="false"><span className="executiveMetricIcon"><AppImg src="/icons/icons_default/confidence.webp" alt="" aria-hidden="true" /></span><span className="executiveMetricCopy"><span>Capacity confidence</span><strong id="executiveCapacityConfidence">Loading</strong></span><span className="executiveMetricHelper" id="executiveMetricHelperCapacityConfidence" role="tooltip" aria-hidden="true"><strong>How dependable the capacity estimate is.</strong><ul><li><b className="executiveCapacityConfidenceHigh">High:</b> at least 14 valid history days with stable results.</li><li><b className="executiveCapacityConfidenceMedium">Medium:</b> matching-weekday or rolling history is available, but is limited or variable.</li><li><b className="executiveCapacityConfidenceLow">Low:</b> there is not enough history, so the default range is used.</li></ul></span></div>
+          <div className="executiveMetricCard" data-executive-metric-helper-card="work-remaining" role="button" tabIndex={0} aria-describedby="executiveMetricHelperWorkRemaining" aria-expanded="false"><span className="executiveMetricIcon"><AppImg src="/icons/icons_default/work_remaining.webp" alt="" aria-hidden="true" /></span><span className="executiveMetricCopy"><span>Work remaining</span><strong id="executiveWorkRemaining">Loading</strong></span><span className="executiveMetricHelper" id="executiveMetricHelperWorkRemaining" role="tooltip" aria-hidden="true">The total scheduled task time still outstanding for today.</span></div>
         </div>
 
         <div className="executiveDecisionFlow">
           <section className="executiveCard executiveNbaCard dashboardNextBestActionCard" id="dashboardNextBestActionCard" aria-label="Next best action" data-next-best-action-state="loading">
             <div className="executiveSectionHeading">
-              <div><p className="executiveEyebrow">Next best action</p></div>
-              <label className="dashboardNextBestActionTimeLabel" htmlFor="dashboardNextBestActionTimeSelect">Available time
-                <select id="dashboardNextBestActionTimeSelect" defaultValue="any" aria-label="Available time for next best action">
+              <div>
+                <p className="executiveEyebrow">Next best action</p>
+                <div className="dashboardNextBestActionTimeLabel" id="dashboardNextBestActionTimeLabel">Available time</div>
+                <select id="dashboardNextBestActionTimeSelect" defaultValue="any" aria-label="Available time for next best action" hidden>
                   <option value="10">10m</option><option value="20">20m</option><option value="30">30m</option><option value="60">60m</option><option value="any">Any</option>
                 </select>
-              </label>
+                <div className="dashboardNextBestActionTimePills" role="group" aria-labelledby="dashboardNextBestActionTimeLabel">
+                  <button className="dashboardNextBestActionTimePill" type="button" data-next-best-action-time="10" aria-pressed="false">10m</button>
+                  <button className="dashboardNextBestActionTimePill" type="button" data-next-best-action-time="20" aria-pressed="false">20m</button>
+                  <button className="dashboardNextBestActionTimePill" type="button" data-next-best-action-time="30" aria-pressed="false">30m</button>
+                  <button className="dashboardNextBestActionTimePill" type="button" data-next-best-action-time="60" aria-pressed="false">60m</button>
+                  <button className="dashboardNextBestActionTimePill" type="button" data-next-best-action-time="any" aria-pressed="true">Any</button>
+                </div>
+              </div>
             </div>
+            <div className="executiveNbaOrb" aria-hidden="true"><span /></div>
             <div className="dashboardNextBestActionStatus executiveStatus" id="dashboardNextBestActionStatus" role="status" aria-live="polite">Loading your next best action...</div>
             <div className="dashboardNextBestActionContent executiveNbaContent" id="dashboardNextBestActionContent" hidden aria-hidden="true">
               <h3 className="dashboardNextBestActionTitle" id="dashboardNextBestActionTitle" />
               <p className="dashboardNextBestActionFirstAction" id="dashboardNextBestActionFirstAction" />
-              <div className="dashboardNextBestActionMeta" aria-label="Recommendation details"><span id="dashboardNextBestActionDuration" /><span id="dashboardNextBestActionConfidence" /></div>
-              <p className="dashboardNextBestActionExplanation" id="dashboardNextBestActionExplanation" />
-              <div className="dashboardNextBestActionWhy" id="dashboardNextBestActionWhy" hidden aria-hidden="true" />
+              <p className="dashboardNextBestActionExplanation"><strong>Why this?</strong> <span id="dashboardNextBestActionExplanation" /></p>
               <div className="dashboardNextBestActionActions" aria-label="Next Best Action actions">
-                <button className="btn btn-accent" type="button" data-next-best-action="start" data-next-best-action-action="start" disabled>Start now</button>
+                <button className="btn btn-accent dashboardStartNowButton" type="button" data-next-best-action="start" data-next-best-action-action="start" disabled><AppImg className="dashboardStartNowButtonIcon" src="/icons/icons_default/launch_black.webp" alt="" aria-hidden="true" /><span className="dashboardStartNowButtonLabel">LAUNCH</span></button>
                 <button className="btn btn-ghost" type="button" data-next-best-action="alternative" data-next-best-action-action="alternative" disabled>Alternative</button>
                 <button className="btn btn-ghost" type="button" data-next-best-action="dismiss" data-next-best-action-action="dismiss" disabled>Not now</button>
-                <button className="btn btn-ghost" type="button" data-next-best-action="why" data-next-best-action-action="why" aria-expanded="false" disabled>Why this?</button>
               </div>
             </div>
             <div className="dashboardNextBestActionEmpty" id="dashboardNextBestActionEmpty" hidden aria-hidden="true">No eligible task is ready right now.</div>
             <div className="dashboardNextBestActionError" id="dashboardNextBestActionError" hidden aria-hidden="true">This recommendation is unavailable right now.</div>
             <button className="btn btn-ghost dashboardNextBestActionRetry" id="dashboardNextBestActionRetry" type="button" hidden>Retry</button>
-          </section>
-
-          <section className="executiveCard executivePlanCard dashboardDailyExecutiveBriefCard" id="dashboardDailyExecutiveBriefCard" aria-labelledby="executivePlanHeading" data-daily-executive-brief-state="loading">
-            <div className="executiveSectionHeading"><div><p className="executiveEyebrow">Today&apos;s plan</p><h2 id="executivePlanHeading">What today looks like</h2></div><button className="btn btn-ghost" type="button" data-daily-executive-brief="refresh">Refresh</button></div>
-            <div className="executivePlanBody">
-              <div className="executivePlanMain">
-                <div className="dashboardDailyExecutiveBriefStatus executiveStatus" id="dashboardDailyExecutiveBriefStatus" role="status" aria-live="polite">Loading your daily brief...</div>
-                <div className="dashboardDailyExecutiveBriefContent" id="dashboardDailyExecutiveBriefContent">
-                  <div className="dashboardDailyExecutiveBriefHealth executivePlanHealth" id="dashboardDailyExecutiveBriefHealth" data-plan-health="INSUFFICIENT_DATA" />
-                  <p className="dashboardDailyExecutiveBriefSummary" id="dashboardDailyExecutiveBriefSummary" />
-                  <div className="dashboardDailyExecutiveBriefFacts executiveFacts" aria-label="Daily plan facts"><span id="dashboardDailyExecutiveBriefWorkload" /><span id="dashboardDailyExecutiveBriefRange" /><span id="dashboardDailyExecutiveBriefDeadline" /></div>
-                  <div className="dashboardDailyExecutiveBriefAction" id="dashboardDailyExecutiveBriefAction" hidden aria-hidden="true"><strong>Start with</strong><span id="dashboardDailyExecutiveBriefActionTitle" /><span id="dashboardDailyExecutiveBriefActionFirstStep" /><button className="btn btn-accent" type="button" data-daily-executive-brief="start" disabled>Start now</button></div>
-                  <div className="dashboardDailyExecutiveBriefAdjustments" id="dashboardDailyExecutiveBriefAdjustments" hidden aria-hidden="true" />
-                </div>
-              </div>
-              <aside className="executiveCapacityCard dashboardDailyCapacityCard" id="dashboardDailyCapacityCard" aria-labelledby="executiveCapacityHeading" data-daily-capacity-state="loading">
-                <div className="executiveCompactHeading"><p className="executiveEyebrow">Capacity</p><h3 id="executiveCapacityHeading">What fits</h3></div>
-                <div className="dashboardDailyCapacityStatus executiveStatus" id="dashboardDailyCapacityStatus" role="status" aria-live="polite">Loading today&apos;s capacity...</div>
-                <div className="dashboardDailyCapacityContent executiveCapacityContent" id="dashboardDailyCapacityContent"><strong className="dashboardDailyCapacityRange" id="dashboardDailyCapacityRange">30-60 min remaining</strong><span className="dashboardDailyCapacityState" id="dashboardDailyCapacityState">Standard</span><details className="executiveDisclosure"><summary id="dashboardDailyCapacityConfidence">Confidence: low</summary><p className="dashboardDailyCapacityExplanation" id="dashboardDailyCapacityExplanation">TaskLaunch will personalise this estimate as more session history becomes available.</p></details></div>
-                <button className="btn btn-ghost dashboardDailyCapacityRetry" id="dashboardDailyCapacityRetry" type="button" data-daily-capacity="refresh" hidden>Try again</button>
-              </aside>
-            </div>
-            <button className="btn btn-ghost dashboardDailyExecutiveBriefRetry" id="dashboardDailyExecutiveBriefRetry" type="button" data-daily-executive-brief="refresh" hidden>Try again</button>
           </section>
 
           <div className="executiveAttentionStack" aria-labelledby="executiveAttentionHeading">
@@ -93,9 +79,20 @@ export default function ExecutivePageContent({ active }: Props) {
           </div>
 
           <section className="executiveTools" aria-labelledby="executiveToolsHeading">
-            <div><p className="executiveEyebrow">Executive tools</p><h2 id="executiveToolsHeading">Adjust the plan</h2></div>
-            <div className="executiveToolLinks"><button className="btn btn-ghost" type="button" data-schedule-repair="review">Repair today&apos;s plan</button><button className="btn btn-ghost" type="button" data-recovery="open">Recovery Mode</button><button className="btn btn-ghost" type="button" data-daily-capacity="adjust">Adjust capacity</button><a className="btn btn-ghost" href="/brain-dump">Brain Dump</a></div>
+            <div className="executiveToolsHeading"><p className="executiveEyebrow">Executive tools</p><h2 id="executiveToolsHeading">Adjust the plan</h2><p>Powerful actions to optimize your plan and performance.</p></div>
+            <div className="executiveToolLinks"><button className="btn btn-ghost executiveToolLink" type="button" data-schedule-repair="review"><AppImg src="/icons/icons_default/optimise.webp" alt="" aria-hidden="true" /><span>Repair today&apos;s plan</span><i aria-hidden="true">&gt;</i></button><button className="btn btn-ghost executiveToolLink" type="button" data-recovery="open"><AppImg src="/icons/icons_default/reset.webp" alt="" aria-hidden="true" /><span>Recovery Mode</span><i aria-hidden="true">&gt;</i></button><button className="btn btn-ghost executiveToolLink" type="button" data-daily-capacity="adjust"><AppImg src="/icons/icons_default/preferences.webp" alt="" aria-hidden="true" /><span>Adjust capacity</span><i aria-hidden="true">&gt;</i></button><a className="btn btn-ghost executiveToolLink" href="/brain-dump"><AppImg src="/icons/icons_default/executive.webp" alt="" aria-hidden="true" /><span>Brain Dump</span><i aria-hidden="true">&gt;</i></a></div>
           </section>
+        </div>
+
+        <div className="dashboardDailyCapacityCard executiveCapacityServiceHost" id="dashboardDailyCapacityCard" data-daily-capacity-state="loading" hidden aria-hidden="true">
+          <div className="dashboardDailyCapacityStatus" id="dashboardDailyCapacityStatus" role="status" aria-live="polite">Loading today&apos;s capacity...</div>
+          <div className="dashboardDailyCapacityContent" id="dashboardDailyCapacityContent">
+            <strong className="dashboardDailyCapacityRange" id="dashboardDailyCapacityRange">Loading</strong>
+            <span className="dashboardDailyCapacityState" id="dashboardDailyCapacityState">Loading</span>
+            <span className="dashboardDailyCapacityConfidence" id="dashboardDailyCapacityConfidence">Confidence: low</span>
+            <p className="dashboardDailyCapacityExplanation" id="dashboardDailyCapacityExplanation">TaskLaunch will personalise this estimate as more session history becomes available.</p>
+          </div>
+          <button className="btn btn-ghost dashboardDailyCapacityRetry" id="dashboardDailyCapacityRetry" type="button" data-daily-capacity="refresh" hidden>Try again</button>
         </div>
 
         <div className="overlay primitiveSciFiModalOverlay dashboardDailyCapacityAdjustPrimitiveOverlay" id="dashboardDailyCapacityAdjustOverlay" style={{ display: "none" }} aria-hidden="true"><div className="modal dashboardDailyCapacityAdjustPrimitiveModal modalConfirmation" role="dialog" aria-modal="true" aria-label="Adjust today&apos;s capacity" aria-describedby="dashboardDailyCapacityAdjustDescription"><h2 className="modalTitle dashboardDailyCapacityAdjustPrimitiveHeader">Adjust today&apos;s capacity</h2><div className="dashboardDailyCapacityAdjustPrimitiveBody"><p className="modalSubtext confirmText" id="dashboardDailyCapacityAdjustDescription">How much can you realistically take on today?</p><div className="dashboardDailyCapacityAdjustStates" role="group" aria-label="Capacity state"><button className="btn btn-ghost primitiveSciFiModalAction primitiveSciFiModalSecondaryAction dashboardDailyCapacityAdjustPrimitiveAction dashboardDailyCapacityAdjustPrimitiveSecondaryAction" type="button" aria-pressed="false" data-daily-capacity-state-option="REDUCED">Reduced</button><button className="btn btn-ghost primitiveSciFiModalAction primitiveSciFiModalSecondaryAction dashboardDailyCapacityAdjustPrimitiveAction dashboardDailyCapacityAdjustPrimitiveSecondaryAction" type="button" aria-pressed="false" data-daily-capacity-state-option="LIGHT">Light</button><button className="btn btn-ghost primitiveSciFiModalAction primitiveSciFiModalSecondaryAction dashboardDailyCapacityAdjustPrimitiveAction dashboardDailyCapacityAdjustPrimitiveSecondaryAction" type="button" aria-pressed="false" data-daily-capacity-state-option="STANDARD">Standard</button><button className="btn btn-ghost primitiveSciFiModalAction primitiveSciFiModalSecondaryAction dashboardDailyCapacityAdjustPrimitiveAction dashboardDailyCapacityAdjustPrimitiveSecondaryAction" type="button" aria-pressed="false" data-daily-capacity-state-option="STRONG">Strong</button></div><label className="dashboardDailyCapacityCustomMinutes" htmlFor="dashboardDailyCapacityCustomMinutesInput">Custom time<input id="dashboardDailyCapacityCustomMinutesInput" type="number" min="1" max="1440" step="1" inputMode="numeric" placeholder="45" /><span>minutes</span></label><p className="modalDropdownHelp">This changes today&apos;s planning only and will not affect your history.</p><p className="dashboardDailyCapacityAdjustError" id="dashboardDailyCapacityAdjustError" role="alert" hidden /></div><div className="confirmBtns dashboardDailyCapacityAdjustPrimitiveFooter"><button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction dashboardDailyCapacityAdjustPrimitiveAction dashboardDailyCapacityAdjustPrimitiveSecondaryAction" type="button" data-daily-capacity="close">Cancel</button><button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction dashboardDailyCapacityAdjustPrimitiveAction dashboardDailyCapacityAdjustPrimitiveSecondaryAction" type="button" data-daily-capacity="clear">Use estimate</button><button className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction dashboardDailyCapacityAdjustPrimitiveAction dashboardDailyCapacityAdjustPrimitivePrimaryAction" type="button" data-daily-capacity="apply">Apply</button></div></div></div>

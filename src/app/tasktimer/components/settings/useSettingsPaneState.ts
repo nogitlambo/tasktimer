@@ -102,7 +102,7 @@ export function getSettingsNavItems(): SettingsNavItem[] {
     { key: "appearance", label: "Appearance", icon: "/icons/icons_default/appearance.webp" },
     { key: "sounds", label: "Sounds & Alerts", icon: "/icons/icons_default/sounds.webp" },
     { key: "notifications", label: "Notifications", icon: "/icons/icons_default/toast.webp" },
-    { key: "automation", label: "Executive Function", icon: "/icons/icons_default/settings.webp" },
+    { key: "automation", label: "Executive Function", icon: "/icons/icons_default/permissions.webp" },
     { key: "help", label: "Help Center", icon: "/icons/icons_default/question.webp", id: "commandCenterHelpCenterBtn" },
     { key: "data", label: "Data", icon: "/icons/icons_default/data.webp" },
     { key: "about", label: "About", icon: "/icons/icons_default/about.webp" },

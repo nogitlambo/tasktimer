@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   createDashboardNextBestAction,
   formatNextBestActionDuration,
+  formatNextBestActionExplanation,
   getNextBestActionTimeOptions,
   parseNextBestActionDashboardResponse,
 } from "./dashboard-next-best-action";
@@ -22,6 +23,8 @@ describe("dashboard Next Best Action contract", () => {
           firstAction: "Open the outline",
           estimatedMinutes: 20,
           durationSource: "HISTORICAL_ESTIMATE",
+          timeGoalMinutes: 45,
+          latestHistoryEntry: { ts: Date.parse("2026-08-07T12:00:00.000Z"), ms: 30 * 60000 },
           confidence: "high",
           reasonCodes: ["DUE_SOON"],
           explanation: "It is due soon.",
@@ -35,6 +38,9 @@ describe("dashboard Next Best Action contract", () => {
     expect(result.kind).toBe("recommendation");
     if (result.kind !== "recommendation") return;
     expect(result.recommendation.title).toBe("Prepare launch notes");
+    expect(formatNextBestActionExplanation(result.recommendation)).toBe(
+      "It is due soon. Estimated effort: 20 minutes, historical estimate duration. Current time goal: 45 minutes. Last history entry: 30 minutes on Friday, August 7, 2026. Recommendation confidence: high confidence."
+    );
     expect(formatNextBestActionDuration(result.recommendation)).toBe("20m · historical estimate");
   });
 
@@ -50,6 +56,43 @@ describe("dashboard Next Best Action contract", () => {
 
   it("keeps available-time choices bounded and deterministic", () => {
     expect(getNextBestActionTimeOptions()).toEqual([10, 20, 30, 60, null]);
+  });
+
+  it("refreshes with the selected available-time pill", async () => {
+    const clickListeners: Array<(event: Event) => void> = [];
+    const select = { value: "any" };
+    const card = { classList: { toggle: vi.fn() }, setAttribute: vi.fn(), removeAttribute: vi.fn() };
+    const pill = (value: string) => {
+      const attrs = new Map<string, string>([["data-next-best-action-time", value], ["aria-pressed", value === "any" ? "true" : "false"]]);
+      return {
+        getAttribute: (key: string) => attrs.get(key) ?? null,
+        setAttribute: (key: string, next: string) => attrs.set(key, next),
+        attrs,
+      };
+    };
+    const pills = [pill("10"), pill("20"), pill("30"), pill("60"), pill("any")];
+    const documentRef = {
+      getElementById: (id: string) => (id === "dashboardNextBestActionCard" ? card : id === "dashboardNextBestActionTimeSelect" ? select : null),
+      querySelectorAll: (selector: string) => (selector === "[data-next-best-action-time]" ? pills : []),
+      addEventListener: (type: string, listener: (event: Event) => void) => { if (type === "click") clickListeners.push(listener); },
+    } as unknown as Document;
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({ ok: true, recommendation: null }), { status: 200 })) as unknown as typeof fetch & { mock: { calls: Array<Parameters<typeof fetch>> } };
+    const api = createDashboardNextBestAction({
+      documentRef,
+      windowRef: { fetch: fetchImpl, addEventListener: vi.fn() } as unknown as Window,
+      fetchImpl,
+      getCurrentAppPage: () => "executive",
+      getIdToken: async () => "token",
+    });
+
+    api.register();
+    clickListeners.forEach((listener) => listener({ target: { closest: (selector: string) => selector === "[data-next-best-action-time]" ? pills[2] : null } } as unknown as Event));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(select.value).toBe("30");
+    expect(pills[2].attrs.get("aria-pressed")).toBe("true");
+    expect(pills[4].attrs.get("aria-pressed")).toBe("false");
+    expect(JSON.parse(String(fetchImpl.mock.calls.at(-1)?.[1]?.body))).toMatchObject({ availableMinutes: 30 });
   });
 
   it("renders a locked state without fetching when executive function is unavailable", async () => {
@@ -157,6 +200,11 @@ describe("dashboard Next Best Action contract", () => {
         taskId: "task-1",
         title: "Prepare launch notes",
         estimatedMinutes: 20,
+        durationSource: "HISTORICAL_ESTIMATE",
+        timeGoalMinutes: 45,
+        latestHistoryEntry: { ts: Date.parse("2026-08-07T12:00:00.000Z"), ms: 30 * 60000 },
+        confidence: "HIGH",
+        explanation: "It is due soon.",
         expiresAt: "2099-08-07T09:30:00.000Z",
       },
     }), { status: 200 }));
@@ -173,6 +221,9 @@ describe("dashboard Next Best Action contract", () => {
     await refreshPromise;
 
     expect(elements.get("dashboardNextBestActionStatus")).toMatchObject({ textContent: "Recommendation ready", hidden: true });
+    expect(elements.get("dashboardNextBestActionExplanation")?.textContent).toBe(
+      "It is due soon. Estimated effort: 20 minutes, historical estimate duration. Current time goal: 45 minutes. Last history entry: 30 minutes on Friday, August 7, 2026. Recommendation confidence: high confidence."
+    );
     expect(elements.get("dashboardNextBestActionStatus")?.dataset.ariaHidden).toBe("true");
     expect(attrs.get("data-next-best-action-state")).toBe("ready");
   });
@@ -183,19 +234,21 @@ describe("dashboard Next Best Action contract", () => {
     const cardAttrs = new Map<string, string>();
     const button = (textContent: string, attrs: Array<[string, string]>) => {
       const attrMap = new Map<string, string>(attrs);
+      const labelElement = attrMap.get("data-next-best-action-action") === "start" ? { textContent } : null;
       return {
         textContent,
+        labelElement,
         hidden: false,
         disabled: false,
+        querySelector: (selector: string) => selector === ".dashboardStartNowButtonLabel" ? labelElement : null,
         getAttribute: (key: string) => attrMap.get(key) ?? null,
         setAttribute: (key: string, value: string) => attrMap.set(key, value),
       };
     };
     const actionButtons = [
-      button("Start now", [["data-next-best-action-action", "start"], ["data-next-best-action-task-id", "task-1"], ["data-next-best-action-recommendation-id", "recommendation-1"]]),
+      button("LAUNCH", [["data-next-best-action-action", "start"], ["data-next-best-action-task-id", "task-1"], ["data-next-best-action-recommendation-id", "recommendation-1"]]),
       button("Alternative", [["data-next-best-action-action", "alternative"]]),
       button("Not now", [["data-next-best-action-action", "dismiss"]]),
-      button("Why this?", [["data-next-best-action-action", "why"]]),
     ];
     const documentRef = {
       getElementById: (id: string) => {
@@ -219,7 +272,8 @@ describe("dashboard Next Best Action contract", () => {
     listeners.get("click")?.({ target: { closest: () => actionButtons[0] } } as unknown as Event);
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    expect(actionButtons[0]).toMatchObject({ textContent: "In Progress", hidden: false, disabled: true });
+    expect(actionButtons[0]).toMatchObject({ textContent: "LAUNCH", hidden: false, disabled: true });
+    expect(actionButtons[0].labelElement?.textContent).toBe("In Progress");
     expect(actionButtons.slice(1).every((button) => button.hidden)).toBe(true);
     expect(elements.get("dashboardNextBestActionStatus")?.textContent).toBe("Task in progress.");
     expect(cardAttrs.get("data-next-best-action-state")).toBe("started");

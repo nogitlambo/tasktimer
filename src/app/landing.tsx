@@ -2,13 +2,10 @@
 
 import Link from "next/link";
 import AppImg from "../components/AppImg";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { LandingProps } from "./landing.types";
-import PricingSection from "./pricing/PricingSection";
 
 const getStartedHref = "/login";
-const rocketVideoFadeOutMs = 1200;
-const rocketVideoFadeInMs = 2000;
 
 type FeatureIconName = "flow" | "automation" | "insight";
 
@@ -97,12 +94,6 @@ export default function Landing(props: LandingProps) {
   void props;
 
   const [revealStage, setRevealStage] = useState(0);
-  const [isRocketVideoResetting, setIsRocketVideoResetting] = useState(false);
-  const backgroundVideoRef = useRef<HTMLVideoElement | null>(null);
-  const hasTriggeredRocketVideoRef = useRef(false);
-  const isRocketVideoResettingRef = useRef(false);
-  const rocketFadeOutTimerRef = useRef<number | null>(null);
-  const rocketFadeInTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const applyLandingRouteBodyState = () => {
@@ -136,128 +127,13 @@ export default function Landing(props: LandingProps) {
     };
   }, []);
 
-  const playRocketVideo = () => {
-    const video = backgroundVideoRef.current;
-    if (!video) return;
-
-    if (hasTriggeredRocketVideoRef.current) return;
-    if (isRocketVideoResettingRef.current) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    hasTriggeredRocketVideoRef.current = true;
-    video.currentTime = 0;
-    void video.play().catch(() => {
-      hasTriggeredRocketVideoRef.current = false;
-    });
-  };
-
-  useEffect(() => {
-    const video = backgroundVideoRef.current;
-    if (!video) return;
-
-    const resetVideo = () => {
-      video.pause();
-      video.currentTime = 0;
-      hasTriggeredRocketVideoRef.current = false;
-    };
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      resetVideo();
-    }
-
-    return () => {
-      if (rocketFadeOutTimerRef.current !== null) {
-        window.clearTimeout(rocketFadeOutTimerRef.current);
-      }
-
-      if (rocketFadeInTimerRef.current !== null) {
-        window.clearTimeout(rocketFadeInTimerRef.current);
-      }
-    };
-  }, []);
-
-  const startRocketVideoReset = () => {
-    const video = backgroundVideoRef.current;
-    if (!video) return;
-    if (isRocketVideoResettingRef.current) return;
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      video.pause();
-      video.currentTime = 0;
-      hasTriggeredRocketVideoRef.current = false;
-      isRocketVideoResettingRef.current = false;
-      setIsRocketVideoResetting(false);
-      return;
-    }
-
-    isRocketVideoResettingRef.current = true;
-    setIsRocketVideoResetting(true);
-
-    if (rocketFadeOutTimerRef.current !== null) {
-      window.clearTimeout(rocketFadeOutTimerRef.current);
-    }
-
-    if (rocketFadeInTimerRef.current !== null) {
-      window.clearTimeout(rocketFadeInTimerRef.current);
-    }
-
-    rocketFadeOutTimerRef.current = window.setTimeout(() => {
-      video.pause();
-      video.currentTime = 0;
-      setIsRocketVideoResetting(false);
-
-      rocketFadeInTimerRef.current = window.setTimeout(() => {
-        hasTriggeredRocketVideoRef.current = false;
-        isRocketVideoResettingRef.current = false;
-      }, rocketVideoFadeInMs);
-    }, rocketVideoFadeOutMs);
-  };
-
-  const handleRocketVideoTimeUpdate = () => {
-    const video = backgroundVideoRef.current;
-    if (!video) return;
-    if (isRocketVideoResettingRef.current) return;
-    if (!Number.isFinite(video.duration) || video.duration <= 0) return;
-    if (video.duration - video.currentTime > rocketVideoFadeOutMs / 1000) return;
-    startRocketVideoReset();
-  };
-
-  const resetRocketVideoAfterPlayback = () => {
-    startRocketVideoReset();
-  };
-
   const showHero = revealStage >= 1;
   const showHeroActions = revealStage >= 2;
   const showHeader = revealStage >= 3;
-  const showBackgroundImage = revealStage >= 1;
-  const showSupporting = revealStage >= 5;
   const showLowerSections = revealStage >= 6;
-  const showFinalCta = revealStage >= 6;
 
   return (
-    <main
-      className={`landingV2 landingV2LandingPage ${showBackgroundImage ? "isHeroVisible" : ""}${
-        isRocketVideoResetting ? " isRocketVideoResetting" : ""
-      }`}
-    >
-      <video
-        ref={backgroundVideoRef}
-        className="landingV2BackgroundVideo"
-        src="/rocket_breaking_chains4_opticalflow_60fps_50pct.mp4"
-        muted
-        preload="auto"
-        playsInline
-        aria-hidden="true"
-        onTimeUpdate={handleRocketVideoTimeUpdate}
-        onEnded={resetRocketVideoAfterPlayback}
-      />
-      <button
-        type="button"
-        className="landingV2RocketHotspot"
-        aria-label="Play rocket animation"
-        onMouseEnter={playRocketVideo}
-        onFocus={playRocketVideo}
-      />
+    <main className="landingV2 landingV2LandingPage">
       <div className="landingV2Shell">
         <header
           className={`landingV2Header landingV2HeaderFooter ${showHeader ? "isVisible" : ""}`}
@@ -267,7 +143,6 @@ export default function Landing(props: LandingProps) {
           </Link>
 
           <div className="landingV2FooterLinks">
-            <Link href="/privacy">Privacy</Link>
             <Link href="/login">Sign In</Link>
           </div>
         </header>
@@ -275,13 +150,14 @@ export default function Landing(props: LandingProps) {
         <section className={`landingV2Hero ${showHero ? "isVisible" : ""}`} aria-label="TaskLaunch landing hero">
           <div className="landingV2HeroMain">
             <h1 className="landingV2HeroTitle displayFont">
-              Executive function support, built for neurodivergent minds.
+              Your <span className="landingV2HeroTitleGradient">Executive Function,</span> Outsourced.
             </h1>
 
             <p className="landingV2HeroCopy">
-              TaskLaunch bridges the gap between <strong>knowing what needs to be done and actually getting started</strong> —
-              breaking down the overwhelming, finding your next move, keeping plans realistic, and helping you adapt
-              when life gets in the way.
+              Built for neurodivergent brains, TaskLaunch bridges the gap between{" "}
+              <strong>knowing what needs to be done and actually getting started</strong> &mdash; breaking down the
+              overwhelming, finding your next move, keeping plans realistic, and helping you adapt when life gets in
+              the way.
             </p>
 
             <div className={`landingV2Actions ${showHeroActions ? "isVisible" : ""}`}>
@@ -301,32 +177,10 @@ export default function Landing(props: LandingProps) {
             </div>
           </div>
 
-        </section>
-
-        <div className={`landingV2Ticker ${showSupporting ? "isVisible" : ""}`} aria-hidden={!showSupporting}>
-          <div className="landingV2TickerTrack">
-            {[
-              "Focus-aware planning",
-              "Adaptive timing",
-              "Smarter automation",
-              "AI-driven insights",
-              "Cleaner task flow",
-              "Progress without friction",
-              "Support your natural rhythm",
-              "Focus-aware planning",
-              "Adaptive timing",
-              "Smarter automation",
-              "AI-driven insights",
-              "Cleaner task flow",
-              "Progress without friction",
-              "Support your natural rhythm",
-            ].map((item, index) => (
-              <span key={`${item}-${index}`} className="landingV2TickerItem displayFont">
-                {item}
-              </span>
-            ))}
+          <div className="landingV2HeroImageWrap" aria-hidden="true">
+            <AppImg src="/landing/hero_image_trans.png" alt="" className="landingV2HeroImage" />
           </div>
-        </div>
+        </section>
 
         <section className={`landingV2Section ${showLowerSections ? "isVisible" : ""}`} id="features">
           <div className="landingV2SectionLabel">
@@ -349,114 +203,6 @@ export default function Landing(props: LandingProps) {
             ))}
           </div>
         </section>
-
-        <section className={`landingV2Section ${showLowerSections ? "isVisible" : ""}`} id="preview">
-          <div className="landingV2SectionLabel">
-            <span className="landingV2SectionIndex displayFont">02</span>
-            <span className="landingV2SectionLine" />
-            <span className="landingV2SectionName">Interface preview</span>
-          </div>
-
-          <div className="landingV2PreviewFrame">
-            <div className="landingV2PreviewTopbar">
-              <div className="landingV2PreviewDots">
-                <span />
-                <span />
-                <span />
-              </div>
-              <div className="landingV2PreviewUrl">tasklaunch.app / today</div>
-              <div className="landingV2PreviewStatus">focus mode active</div>
-            </div>
-
-            <div className="landingV2PreviewBody">
-              <aside className="landingV2PreviewSidebar">
-                <div className="landingV2PreviewSidebarLabel displayFont">Views</div>
-                <div className="landingV2PreviewSidebarItem isActive">Today</div>
-                <div className="landingV2PreviewSidebarItem">Upcoming</div>
-                <div className="landingV2PreviewSidebarItem">Momentum</div>
-                <div className="landingV2PreviewSidebarLabel displayFont">Focus modes</div>
-                <div className="landingV2PreviewSidebarItem">Mode 1</div>
-                <div className="landingV2PreviewSidebarItem">Mode 2</div>
-                <div className="landingV2PreviewSidebarItem">Mode 3</div>
-              </aside>
-
-              <div className="landingV2PreviewMain">
-                <div className="landingV2PreviewMainHeader">
-                  <div>
-                    <h2 className="landingV2PreviewTitle displayFont">Today&apos;s flow</h2>
-                    <p className="landingV2PreviewSubtitle">A cleaner queue shaped around timing, energy, and momentum.</p>
-                  </div>
-                  <span className="landingV2PreviewBadge displayFont">Adaptive plan</span>
-                </div>
-
-                <div className="landingV2PreviewGroup">
-                  <div className="landingV2PreviewGroupLabel displayFont">In focus</div>
-                  <div className="landingV2PreviewTask isDone">
-                    <span className="landingV2PreviewCheck">OK</span>
-                    <span>Morning planning reset</span>
-                    <span className="landingV2PreviewTaskTag">Completed</span>
-                  </div>
-                  <div className="landingV2PreviewTask">
-                    <span className="landingV2PreviewCheck" />
-                    <span>Draft sprint summary</span>
-                    <span className="landingV2PreviewTaskTag isAccent">Priority</span>
-                  </div>
-                </div>
-
-                <div className="landingV2PreviewGroup">
-                  <div className="landingV2PreviewGroupLabel displayFont">Queued next</div>
-                  <div className="landingV2PreviewTask">
-                    <span className="landingV2PreviewCheck" />
-                    <span>Review time patterns</span>
-                    <span className="landingV2PreviewTaskTag">Insights</span>
-                  </div>
-                  <div className="landingV2PreviewTask">
-                    <span className="landingV2PreviewCheck" />
-                    <span>Refine afternoon block</span>
-                    <span className="landingV2PreviewTaskTag">Schedule</span>
-                  </div>
-                  <div className="landingV2PreviewTask">
-                    <span className="landingV2PreviewCheck" />
-                    <span>Prepare low-energy tasks</span>
-                    <span className="landingV2PreviewTaskTag">Automation</span>
-                  </div>
-                </div>
-              </div>
-
-              <aside className="landingV2PreviewPanel">
-                <div className="landingV2PanelCard">
-                  <span className="landingV2PanelLabel displayFont">Momentum</span>
-                  <strong className="landingV2PanelValue displayFont">Steady</strong>
-                  <p>Consistent progress with low drag between finished work and the next useful task.</p>
-                </div>
-                <div className="landingV2PanelCard">
-                  <span className="landingV2PanelLabel displayFont">AI guidance</span>
-                  <strong className="landingV2PanelValue displayFont">Refine timing</strong>
-                  <p>Shift admin-heavy tasks later and protect your highest-focus window for deeper work.</p>
-                </div>
-                <div className="landingV2PanelCard">
-                  <span className="landingV2PanelLabel displayFont">Automation</span>
-                  <strong className="landingV2PanelValue displayFont">Prepared</strong>
-                  <p>Repeatable structure is ready before the next session starts, so re-entry stays easy.</p>
-                </div>
-              </aside>
-            </div>
-          </div>
-
-          <h2 className="landingV2TickerHeading displayFont">
-            <em>Make progress easier to start, easier to sustain, and easier to trust</em>
-          </h2>
-          <div className={`landingV2Actions landingV2ActionsCentered ${showFinalCta ? "isVisible" : ""}`}>
-            <Link
-              href={getStartedHref}
-              className="btn btn-accent primitiveSciFiModalAction primitiveSciFiModalPrimaryAction landingV2PrimaryBtn displayFont"
-            >
-              Get Started
-            </Link>
-          </div>
-        </section>
-
-        {showLowerSections ? <PricingSection mode="landing" /> : null}
 
         <footer className="landingV2Footer">
           <Link href="/" className="landingV2FooterBrand displayFont" aria-label="TaskLaunch home">

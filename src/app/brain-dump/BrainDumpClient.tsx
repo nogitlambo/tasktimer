@@ -1,10 +1,13 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { deleteObject, ref, uploadBytesResumable } from "firebase/storage";
 
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { getFirebaseStorageClient } from "@/lib/firebaseStorageClient";
 import { trackEvent } from "@/lib/firebaseTelemetry";
 import { getApiUrl } from "@/app/tasktimer/lib/apiClient";
+import { resolveStandaloneRouteBackTarget } from "@/app/tasktimer/lib/routeBack";
 import { resolveTaskTimerRouteHref } from "@/app/tasktimer/lib/routeHref";
 
 import styles from "./BrainDump.module.css";
@@ -12,6 +15,7 @@ import styles from "./BrainDump.module.css";
 const BRAIN_DUMP_TEXT_LIMIT = 20_000;
 const BRAIN_DUMP_VOICE_MIME_TYPE = "audio/webm";
 const BRAIN_DUMP_VOICE_MAX_MS = 5 * 60 * 1000;
+const BRAIN_DUMP_VOICE_MAX_BYTES = 10 * 1024 * 1024;
 const BRAIN_DUMP_VOICE_LABEL = "Voice";
 const BRAIN_DUMP_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp";
 const BRAIN_DUMP_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
@@ -22,7 +26,7 @@ const BRAIN_DUMP_TYPED_DRAFT_KEY = `${TASKTIMER_STORAGE_KEY}:brainDump:typedDraf
 const BRAIN_DUMP_CAPTURE_MODE_KEY = `${TASKTIMER_STORAGE_KEY}:brainDump:captureMode:v1`;
 
 type BrainDumpCaptureMode = "typed" | "voice" | "image";
-type BrainDumpVoiceState = "idle" | "recording" | "paused" | "recorded" | "transcribing";
+type BrainDumpVoiceState = "idle" | "recording" | "paused" | "recorded" | "transcribing" | "transcript";
 type BrainDumpImageState = "idle" | "ready" | "processing";
 
 function readStoredDraft() {
@@ -66,6 +70,26 @@ function createConfirmIdempotencyKey(sessionId: string) {
       ? crypto.randomUUID()
       : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
   return `${sessionId}:${suffix}`;
+}
+
+function createVoiceBrainDumpId() {
+  return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `voice-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
+function durationBucket(durationMs: number) {
+  const seconds = Math.max(0, Math.ceil(durationMs / 1000));
+  if (seconds <= 30) return "0-30s";
+  if (seconds <= 60) return "31-60s";
+  if (seconds <= 180) return "1-3m";
+  return "3-5m";
+}
+
+function fileSizeBucket(sizeBytes: number) {
+  if (sizeBytes <= 1024 * 1024) return "0-1mb";
+  if (sizeBytes <= 5 * 1024 * 1024) return "1-5mb";
+  return "5-10mb";
 }
 
 function formatVoiceDuration(durationMs: number) {
@@ -200,6 +224,8 @@ export default function BrainDumpClient() {
   const [voiceLevel, setVoiceLevel] = useState(0);
   const [voiceAudioBlob, setVoiceAudioBlob] = useState<Blob | null>(null);
   const [voiceAudioUrl, setVoiceAudioUrl] = useState("");
+  const [voiceBrainDumpId, setVoiceBrainDumpId] = useState("");
+  const [voiceStoragePath, setVoiceStoragePath] = useState("");
   const [imageState, setImageState] = useState<BrainDumpImageState>("idle");
   const [imageError, setImageError] = useState("");
   const [imageFileName, setImageFileName] = useState("");
@@ -227,13 +253,19 @@ export default function BrainDumpClient() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const voiceLevelFrameRef = useRef<number | null>(null);
   const voiceAudioUrlRef = useRef("");
+  const voiceTranscriptEditedRef = useRef(false);
   const imagePreviewUrlRef = useRef("");
   const trimmedText = text.trim();
   const voiceBusy = voiceState === "recording" || voiceState === "paused" || voiceState === "transcribing";
   const imageBusy = imageState === "processing";
   const canProcessImage = !!imageBase64 && imageState === "ready" && !busy;
-  const canSubmit =
-    captureMode === "image" ? canProcessImage : trimmedText.length > 0 && trimmedText.length <= BRAIN_DUMP_TEXT_LIMIT && !busy && !voiceBusy;
+  const canSubmit = captureMode === "image"
+    ? canProcessImage
+    : trimmedText.length > 0 &&
+      trimmedText.length <= BRAIN_DUMP_TEXT_LIMIT &&
+      !busy &&
+      !voiceBusy &&
+      (captureMode !== "voice" || (voiceState === "transcript" && !!voiceBrainDumpId));
   const remaining = BRAIN_DUMP_TEXT_LIMIT - text.length;
   const selectedCount = session?.review.items.filter((item) => item.supported && item.selected).length ?? 0;
   const undoExpiresAtMs = batchResult?.state === "completed" ? batchResult.completedAtMs + 30_000 : 0;
@@ -249,10 +281,9 @@ export default function BrainDumpClient() {
 
   function handleBackNavigation(event: MouseEvent<HTMLAnchorElement>) {
     if (typeof window === "undefined") return;
-    if (window.history.length > 1) {
-      event.preventDefault();
-      window.history.back();
-    }
+    event.preventDefault();
+    const backTarget = resolveStandaloneRouteBackTarget("/tasklaunch");
+    window.location.href = resolveTaskTimerRouteHref(backTarget);
   }
 
   function handleRequestError(err: unknown, fallback: string) {
@@ -313,6 +344,10 @@ export default function BrainDumpClient() {
     const nextText = event.target.value;
     setText(nextText);
     writeStoredDraft(nextText);
+    if (captureMode === "voice" && voiceState === "transcript" && !voiceTranscriptEditedRef.current) {
+      voiceTranscriptEditedRef.current = true;
+      void trackEvent("brain_dump_transcript_edited", { mode: "voice" });
+    }
     if (recoverableFailure) setRecoverableFailure(false);
   }
 
@@ -382,6 +417,15 @@ export default function BrainDumpClient() {
     resetImageUpload();
     setStatus("Image removed");
     void trackEvent("brain_dump_image_removed", { mode: "image" });
+  }
+
+  async function discardUploadedVoiceSource() {
+    const path = voiceStoragePath;
+    setVoiceStoragePath("");
+    if (!path) return;
+    const storage = getFirebaseStorageClient();
+    if (!storage) return;
+    await deleteObject(ref(storage, path)).catch(() => {});
   }
 
   function clearVoiceAudio() {
@@ -464,6 +508,9 @@ export default function BrainDumpClient() {
     setError("");
     setVoiceError("");
     setVoiceUploadProgressPct(0);
+    void discardUploadedVoiceSource();
+    setVoiceBrainDumpId("");
+    voiceTranscriptEditedRef.current = false;
     clearVoiceAudio();
     if (!browserSupportsVoiceRecording()) {
       setVoiceError("Voice recording is not available in this browser.");
@@ -490,7 +537,10 @@ export default function BrainDumpClient() {
         stopVoiceLevelMeter();
         stopVoiceStream();
         const blob = new Blob(voiceChunksRef.current, { type: BRAIN_DUMP_VOICE_MIME_TYPE });
-        if (blob.size > 0) {
+        if (blob.size > BRAIN_DUMP_VOICE_MAX_BYTES) {
+          setVoiceState("idle");
+          setVoiceError("Brain Dump voice recordings must be 10 MB or smaller.");
+        } else if (blob.size > 0) {
           setVoiceAudioBlob(blob);
           setVoiceAudioUrl((currentUrl) => {
             if (currentUrl) URL.revokeObjectURL(currentUrl);
@@ -508,7 +558,7 @@ export default function BrainDumpClient() {
       startVoiceTimer();
       setVoiceState("recording");
       setStatus("Recording");
-      void trackEvent("brain_dump_voice_recording_started", { mode: "voice", mime_type: BRAIN_DUMP_VOICE_MIME_TYPE });
+      void trackEvent("brain_dump_recording_started", { mode: "voice", mime_type: BRAIN_DUMP_VOICE_MIME_TYPE });
     } catch (err) {
       stopVoiceStream();
       stopVoiceLevelMeter();
@@ -564,6 +614,9 @@ export default function BrainDumpClient() {
     stopVoiceLevelMeter();
     stopVoiceStream();
     clearVoiceAudio();
+    void discardUploadedVoiceSource();
+    setVoiceBrainDumpId("");
+    voiceTranscriptEditedRef.current = false;
     setVoiceState("idle");
     setVoiceElapsedMs(0);
     setVoiceUploadProgressPct(0);
@@ -578,18 +631,74 @@ export default function BrainDumpClient() {
 
   async function handleTranscribeVoiceRecording() {
     if (!voiceAudioBlob || busy || voiceState === "transcribing") return;
+    const durationMs = Math.max(1, Math.floor(voiceElapsedMs || voiceElapsedBeforePauseMsRef.current));
+    if (durationMs > BRAIN_DUMP_VOICE_MAX_MS) {
+      setVoiceError("Brain Dump voice recordings must be five minutes or shorter.");
+      return;
+    }
+    if (!voiceAudioBlob.size || voiceAudioBlob.size > BRAIN_DUMP_VOICE_MAX_BYTES) {
+      setVoiceError("Brain Dump voice recordings must be 10 MB or smaller.");
+      return;
+    }
     setVoiceState("transcribing");
     setVoiceError("");
     setErrorCode("");
-    setVoiceUploadProgressPct(20);
+    setVoiceUploadProgressPct(5);
     setStatus("Uploading recording securely");
+    const startedAtMs = Date.now();
+    void trackEvent("brain_dump_recording_submitted", {
+      mode: "voice",
+      duration_bucket: durationBucket(durationMs),
+      file_size_bucket: fileSizeBucket(voiceAudioBlob.size),
+      mime_type: BRAIN_DUMP_VOICE_MIME_TYPE,
+    });
+    let attemptedStoragePath = voiceStoragePath;
+    let storageForCleanup: ReturnType<typeof getFirebaseStorageClient> = null;
     try {
       const auth = getFirebaseAuthClient();
       const user = auth?.currentUser || null;
       const idToken = await user?.getIdToken();
-      if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-      const audioBase64 = await readBlobAsBase64(voiceAudioBlob);
+      if (!user?.uid || !idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
+      const storage = getFirebaseStorageClient();
+      if (!storage) throw new Error("Secure recording upload is not available. Please try typing your Brain Dump instead.");
+      storageForCleanup = storage;
+
+      const brainDumpId = voiceBrainDumpId || createVoiceBrainDumpId();
+      const storagePath = voiceStoragePath || `users/${user.uid}/brain-dump-sources/${brainDumpId}/recording.webm`;
+      attemptedStoragePath = storagePath;
+      if (!voiceStoragePath) {
+        const uploadTask = uploadBytesResumable(ref(storage, storagePath), voiceAudioBlob, {
+          contentType: BRAIN_DUMP_VOICE_MIME_TYPE,
+          customMetadata: { durationMs: String(durationMs) },
+        });
+        await new Promise<void>((resolve, reject) => {
+          uploadTask.on(
+            "state_changed",
+            (snapshot) => {
+              const ratio = snapshot.totalBytes > 0 ? snapshot.bytesTransferred / snapshot.totalBytes : 0;
+              setVoiceUploadProgressPct(Math.max(5, Math.min(60, Math.round(5 + ratio * 55))));
+            },
+            reject,
+            resolve
+          );
+        });
+        setVoiceBrainDumpId(brainDumpId);
+        setVoiceStoragePath(storagePath);
+        void trackEvent("brain_dump_audio_uploaded", {
+          mode: "voice",
+          duration_bucket: durationBucket(durationMs),
+          file_size_bucket: fileSizeBucket(voiceAudioBlob.size),
+          mime_type: BRAIN_DUMP_VOICE_MIME_TYPE,
+        });
+      }
+
       setVoiceUploadProgressPct(65);
+      setStatus("Transcribing recording");
+      void trackEvent("brain_dump_transcription_started", {
+        mode: "voice",
+        duration_bucket: durationBucket(durationMs),
+        mime_type: BRAIN_DUMP_VOICE_MIME_TYPE,
+      });
       const response = await fetch(getApiUrl("/api/brain-dump/transcriptions/"), {
         method: "POST",
         headers: {
@@ -597,34 +706,49 @@ export default function BrainDumpClient() {
           "x-firebase-auth": idToken,
         },
         body: JSON.stringify({
-          audioBase64,
-          mimeType: BRAIN_DUMP_VOICE_MIME_TYPE,
-          durationMs: Math.max(1, Math.floor(voiceElapsedMs || voiceElapsedBeforePauseMsRef.current)),
-          timezone,
+          brainDumpId,
+          storagePath,
+          durationMs,
         }),
       });
-      const payload = (await response.json()) as { transcript?: string; error?: string; code?: string };
+      const payload = (await response.json()) as { brainDumpId?: string; transcript?: string; model?: string; error?: string; code?: string };
       if (!response.ok || !payload.transcript) throw payloadError(payload.error || "Brain Dump recording could not be transcribed.", payload.code);
       setText(payload.transcript);
       writeStoredDraft(payload.transcript);
+      setVoiceBrainDumpId(payload.brainDumpId || brainDumpId);
+      setVoiceStoragePath("");
+      voiceTranscriptEditedRef.current = false;
       setVoiceUploadProgressPct(100);
-      setVoiceState("recorded");
+      setVoiceState("transcript");
       setStatus("Editable transcript ready");
       setRecoverableFailure(false);
-      void trackEvent("brain_dump_voice_transcribed", {
+      void trackEvent("brain_dump_transcription_completed", {
         mode: "voice",
-        duration_ms: Math.max(1, Math.floor(voiceElapsedMs || voiceElapsedBeforePauseMsRef.current)),
+        duration_bucket: durationBucket(durationMs),
         mime_type: BRAIN_DUMP_VOICE_MIME_TYPE,
+        model: payload.model || "unknown",
+        latency_ms: Date.now() - startedAtMs,
       });
     } catch (err) {
+      if (attemptedStoragePath && storageForCleanup) {
+        await deleteObject(ref(storageForCleanup, attemptedStoragePath)).catch(() => {});
+      }
+      setVoiceStoragePath("");
       setVoiceState("recorded");
       setVoiceUploadProgressPct(0);
-      setVoiceError(err instanceof Error ? err.message : "Brain Dump recording could not be transcribed.");
+      const code = requestErrorCode(err);
+      const safeMessage = code.startsWith("auth/")
+        ? err instanceof Error ? err.message : "Your sign-in session is no longer valid. Please sign in again."
+        : "TaskLaunch couldn't transcribe this recording reliably. Your recording has not been turned into tasks.";
+      setVoiceError(safeMessage);
       setStatus("");
       setRecoverableFailure(true);
-      void trackEvent("brain_dump_voice_transcription_failed", {
+      void trackEvent("brain_dump_transcription_failed", {
         mode: "voice",
-        duration_ms: Math.max(0, Math.floor(voiceElapsedMs || voiceElapsedBeforePauseMsRef.current)),
+        duration_bucket: durationBucket(durationMs),
+        mime_type: BRAIN_DUMP_VOICE_MIME_TYPE,
+        error_category: code || "unknown",
+        latency_ms: Date.now() - startedAtMs,
       });
     }
   }
@@ -770,7 +894,11 @@ export default function BrainDumpClient() {
             "Content-Type": "application/json",
             "x-firebase-auth": idToken,
           },
-          body: JSON.stringify({ text: trimmedText, timezone }),
+          body: JSON.stringify({
+            text: trimmedText,
+            timezone,
+            ...(captureMode === "voice" && voiceBrainDumpId ? { brainDumpId: voiceBrainDumpId } : {}),
+          }),
           signal: controller.signal,
         });
         const payload = (await response.json()) as { session?: BrainDumpReviewSession; error?: string; code?: string };
@@ -1079,10 +1207,10 @@ export default function BrainDumpClient() {
                   <button
                     className={styles.submitButton}
                     type="button"
-                    disabled={!voiceAudioBlob || voiceState === "transcribing" || busy}
+                    disabled={!voiceAudioBlob || voiceState === "transcribing" || voiceState === "transcript" || busy}
                     onClick={handleTranscribeVoiceRecording}
                   >
-                    {voiceState === "transcribing" ? "Transcribing" : "Transcribe"}
+                    {voiceState === "transcribing" ? "Transcribing" : voiceState === "transcript" ? "Transcript ready" : "Transcribe"}
                   </button>
                 </div>
               ) : null}

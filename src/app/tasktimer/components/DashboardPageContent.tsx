@@ -1,5 +1,7 @@
 "use client";
 
+import AppImg from "@/components/AppImg";
+
 type DashboardPageContentProps = {
   active: boolean;
 };
@@ -27,7 +29,7 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                         <div className="dashboardExecutiveSummaryDivider" aria-hidden="true" />
                         <div className="dashboardExecutiveSummaryNext" id="dashboardExecutiveSummaryNext" hidden>
                           <div><strong>NEXT BEST ACTION</strong><span id="dashboardExecutiveSummaryNextTitle" /><span id="dashboardExecutiveSummaryNextFirstAction" /></div>
-                          <button className="btn btn-accent" type="button" id="dashboardExecutiveSummaryStart" disabled hidden>Start now</button>
+                          <button className="btn btn-accent dashboardStartNowButton" type="button" id="dashboardExecutiveSummaryStart" disabled hidden><AppImg className="dashboardStartNowButtonIcon" src="/icons/icons_default/launch_black.webp" alt="" aria-hidden="true" /><span className="dashboardStartNowButtonLabel">LAUNCH</span></button>
                         </div>
                       </div>
                       <div className="dashboardExecutiveSummaryFallback" id="dashboardExecutiveSummaryFallback" hidden>

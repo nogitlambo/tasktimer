@@ -26,7 +26,11 @@ describe("BrainDumpClient", () => {
     expect(source).toContain('type BrainDumpCaptureMode = "typed" | "voice"');
     expect(source).toContain("navigator.mediaDevices.getUserMedia({ audio: true })");
     expect(source).toContain("new MediaRecorder(stream, { mimeType: BRAIN_DUMP_VOICE_MIME_TYPE })");
+    expect(source).toContain("uploadBytesResumable(ref(storage, storagePath), voiceAudioBlob");
+    expect(source).toContain("`users/${user.uid}/brain-dump-sources/${brainDumpId}/recording.webm`");
     expect(source).toContain('fetch(getApiUrl("/api/brain-dump/transcriptions/"), {');
+    expect(source).toContain("brainDumpId,");
+    expect(source).toContain("storagePath,");
     expect(source).toContain("setText(payload.transcript)");
     expect(source).toContain("writeStoredDraft(payload.transcript)");
     expect(source).toContain('fetch(getApiUrl("/api/brain-dump/sessions/"), {');
@@ -52,8 +56,12 @@ describe("BrainDumpClient", () => {
     expect(source).toContain("voiceUploadProgressPct");
     expect(source).toContain('role="progressbar"');
     expect(source).toContain('aria-live="polite"');
-    expect(source).toContain('trackEvent("brain_dump_voice_transcription_failed"');
-    expect(source).toContain('trackEvent("brain_dump_voice_transcribed"');
+    expect(source).toContain('trackEvent("brain_dump_transcription_failed"');
+    expect(source).toContain('trackEvent("brain_dump_transcription_completed"');
+    expect(source).toContain('trackEvent("brain_dump_transcript_edited"');
+    expect(source).toContain("duration_bucket");
+    expect(source).toContain("file_size_bucket");
+    expect(source).not.toContain("transcript: payload.transcript");
     expect(source).not.toContain("raw_audio");
     expect(source).not.toContain("audio_bytes");
   });
@@ -164,10 +172,11 @@ describe("BrainDumpClient", () => {
     const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
 
     expect(source).toContain('resolveTaskTimerRouteHref("/tasklaunch")');
+    expect(source).toContain('resolveStandaloneRouteBackTarget("/tasklaunch")');
     expect(source).toContain("function handleBackNavigation");
-    expect(source).toContain("window.history.length > 1");
-    expect(source).toContain("window.history.back()");
+    expect(source).toContain("window.location.href = resolveTaskTimerRouteHref(backTarget)");
     expect(source).toContain("href={taskLaunchHref}");
+    expect(source).not.toContain("window.history.back()");
     expect(source).not.toContain('href="/tasklaunch"');
   });
 
