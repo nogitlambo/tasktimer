@@ -16,6 +16,13 @@ function validWebmBytes(size = 8) {
   return bytes;
 }
 
+function validWavBytes(size = 48) {
+  const bytes = new Uint8Array(Math.max(12, size));
+  bytes.set([0x52, 0x49, 0x46, 0x46], 0);
+  bytes.set([0x57, 0x41, 0x56, 0x45], 8);
+  return bytes;
+}
+
 function createHarness(overrides?: { contentType?: string; sizeBytes?: number; bytes?: Uint8Array }) {
   const sessions = new Map<string, BrainDumpReviewSession>();
   const store: BrainDumpSessionStore = {
@@ -24,11 +31,11 @@ function createHarness(overrides?: { contentType?: string; sizeBytes?: number; b
     }),
     getSession: vi.fn(async (uid, sessionId) => sessions.get(`${uid}:${sessionId}`) || null),
   };
-  const bytes = overrides?.bytes || validWebmBytes();
+  const bytes = overrides?.bytes || validWavBytes();
   const storage: BrainDumpVoiceSourceStorage = {
     getObject: vi.fn(async () => ({
       bytes,
-      contentType: overrides?.contentType || "audio/webm",
+      contentType: overrides?.contentType || "audio/wav",
       sizeBytes: overrides?.sizeBytes ?? bytes.byteLength,
       createdAtMs: 900,
     })),
@@ -44,7 +51,7 @@ function createHarness(overrides?: { contentType?: string; sizeBytes?: number; b
   return { sessions, store, storage, provider };
 }
 
-const ownedPath = "users/uid-1/brain-dump-sources/voice-1/recording.webm";
+const ownedPath = "users/uid-1/brain-dump-sources/voice-1/recording.wav";
 
 describe("Brain Dump voice transcription", () => {
   it("transcribes authenticated user-owned audio, stores an editable transcript, and deletes source audio", async () => {
@@ -65,14 +72,14 @@ describe("Brain Dump voice transcription", () => {
       brainDumpId: "voice-1",
       transcript: "Call the dentist tomorrow.",
       model: "gpt-4o-mini-transcribe",
-      mimeType: "audio/webm",
+      mimeType: "audio/wav",
       durationMs: 42_000,
     });
     expect(harness.provider.transcribeVoice).toHaveBeenCalledWith({
       promptId: "brain-dump-voice-transcription-v1",
       audioBytes: expect.any(Uint8Array),
-      mimeType: "audio/webm",
-      fileName: "recording.webm",
+      mimeType: "audio/wav",
+      fileName: "recording.wav",
     });
     expect(harness.provider.extractTyped).not.toHaveBeenCalled();
     expect(harness.storage.deleteObject).toHaveBeenCalledWith(ownedPath);
@@ -128,6 +135,25 @@ describe("Brain Dump voice transcription", () => {
     ).rejects.toMatchObject({ code: "brain-dump/invalid-input", status: 400 });
 
     expect(harness.provider.transcribeVoice).not.toHaveBeenCalled();
+  });
+
+  it("accepts WebM recordings with browser-provided codec parameters", async () => {
+    const harness = createHarness({ contentType: "audio/webm;codecs=opus", bytes: validWebmBytes() });
+
+    await transcribeVoiceBrainDump({
+      uid: "uid-1",
+      brainDumpId: "voice-1",
+      storagePath: ownedPath,
+      durationMs: 10_000,
+      provider: harness.provider,
+      store: harness.store,
+      storage: harness.storage,
+    });
+
+    expect(harness.provider.transcribeVoice).toHaveBeenCalledWith(expect.objectContaining({
+      mimeType: "audio/webm;codecs=opus",
+      fileName: "recording.webm",
+    }));
   });
 
   it("keeps a retryable transcript-stage session, deletes temporary audio, and creates no review items when the provider fails", async () => {

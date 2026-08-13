@@ -101,7 +101,7 @@ body.landingRoute {
   margin: 0 auto;
   max-width: 1920px;
   isolation: isolate;
-  --web-sign-in-bg-image: url("/landing_feature_wide.webp");
+  --web-sign-in-bg-image: none;
   --web-sign-in-bg-position: right top;
   --web-sign-in-bg-width: 2048px;
   --web-sign-in-bg-height: 1000px;
@@ -569,18 +569,6 @@ body[data-theme="lime"] #landingEmailInput.webSignInAuthInput:focus-visible {
   }
 }
 
-@media (min-width: 1200px) {
-  .webSignInPage {
-    --web-sign-in-bg-image: url("/landing_feature_wide.webp");
-  }
-}
-
-@media (min-width: 1800px) {
-  .webSignInPage {
-    --web-sign-in-bg-image: url("/landing_feature_wide.webp");
-  }
-}
-
 @media (max-width: 1199px) {
   .webSignInPage {
     --web-sign-in-bg-position: right top;
@@ -721,7 +709,7 @@ canvas {
   --landing-hero-pad-top: clamp(18px, 5svh, 42px);
   --landing-copy-gap: clamp(24px, 7svh, 90px);
   --landing-action-gap: clamp(24px, 7svh, 90px);
-  --landing-feature-bg: url("/landing_feature_wide-768.webp");
+  --landing-feature-bg: none;
   --landing-feature-position: center top;
   --landing-feature-size: 100% auto;
   --landing-feature-width: clamp(900px, 100vw, 2048px);
@@ -2137,18 +2125,6 @@ body[data-theme="lime"] .landingV2 .landingV2PrimaryBtn.btn-accent,
 .pricingSectionV2 .pricingV2Button.isBusy {
   cursor: wait;
   opacity: 0.82;
-}
-
-@media (min-width: 700px) {
-  .landingV2 {
-    --landing-feature-bg: url("/landing_feature_wide-1440.webp");
-  }
-}
-
-@media (min-width: 1280px) {
-  .landingV2 {
-    --landing-feature-bg: url("/landing_feature_wide-2048.webp");
-  }
 }
 
 @media (max-width: 1180px) {

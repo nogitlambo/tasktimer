@@ -385,7 +385,9 @@ function normalizeTimezone(timezone: unknown) {
 
 function normalizeVoiceMimeType(value: unknown) {
   const mimeType = asTrimmedString(value, 80).toLowerCase();
-  if (mimeType !== "audio/webm") throw new BrainDumpInputError("Brain Dump voice recording must use audio/webm.");
+  if (mimeType !== "audio/wav" && mimeType !== "audio/webm" && !mimeType.startsWith("audio/webm;")) {
+    throw new BrainDumpInputError("Brain Dump voice recording must use WAV or WebM audio.");
+  }
   return mimeType;
 }
 
@@ -426,16 +428,21 @@ function normalizeVoiceSessionId(value: unknown) {
 
 function normalizeOwnedVoiceStoragePath(uid: string, sessionId: string, value: unknown) {
   const path = asTrimmedString(value, 500);
-  const expected = `users/${uid}/brain-dump-sources/${sessionId}/recording.webm`;
-  if (path !== expected || path.includes("..") || /^https?:\/\//i.test(path)) {
+  const expectedPaths = [
+    `users/${uid}/brain-dump-sources/${sessionId}/recording.wav`,
+    `users/${uid}/brain-dump-sources/${sessionId}/recording.webm`,
+  ];
+  if (!expectedPaths.includes(path) || path.includes("..") || /^https?:\/\//i.test(path)) {
     throw new BrainDumpInputError("Brain Dump recording could not be accessed.");
   }
   return path;
 }
 
-function validateWebmBytes(bytes: Uint8Array) {
-  if (bytes.length < 4 || bytes[0] !== 0x1a || bytes[1] !== 0x45 || bytes[2] !== 0xdf || bytes[3] !== 0xa3) {
-    throw new BrainDumpInputError("Brain Dump recording is not a valid WebM audio file.");
+function validateVoiceBytes(bytes: Uint8Array, mimeType: string) {
+  const validWav = bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 && bytes[8] === 0x57 && bytes[9] === 0x41 && bytes[10] === 0x56 && bytes[11] === 0x45;
+  const validWebm = bytes.length >= 4 && bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
+  if ((mimeType === "audio/wav" && !validWav) || (mimeType !== "audio/wav" && !validWebm)) {
+    throw new BrainDumpInputError("Brain Dump recording is not a valid audio file.");
   }
 }
 
@@ -1026,7 +1033,7 @@ export async function transcribeVoiceBrainDump(input: {
   if (sizeBytes > configuredBrainDumpMaxAudioBytes()) {
     throw new BrainDumpInputError("Brain Dump voice recordings are too large.");
   }
-  validateWebmBytes(source.bytes);
+  validateVoiceBytes(source.bytes, mimeType);
 
   const nowMs = currentTimeMs(input.now);
   const sourceFile: BrainDumpSourceFile = {
@@ -1063,7 +1070,7 @@ export async function transcribeVoiceBrainDump(input: {
       promptId: BRAIN_DUMP_VOICE_TRANSCRIPTION_PROMPT_ID,
       audioBytes: source.bytes,
       mimeType,
-      fileName: "recording.webm",
+      fileName: mimeType === "audio/wav" ? "recording.wav" : "recording.webm",
     });
     const parsed = voiceTranscriptionResponseSchema.safeParse(providerResponse);
     if (!parsed.success) {

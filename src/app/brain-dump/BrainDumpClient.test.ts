@@ -25,9 +25,22 @@ describe("BrainDumpClient", () => {
 
     expect(source).toContain('type BrainDumpCaptureMode = "typed" | "voice"');
     expect(source).toContain("navigator.mediaDevices.getUserMedia({ audio: true })");
-    expect(source).toContain("new MediaRecorder(stream, { mimeType: BRAIN_DUMP_VOICE_MIME_TYPE })");
+    expect(source).toContain('const BRAIN_DUMP_VOICE_MIME_TYPE = "audio/wav"');
+    expect(source).toContain("function encodeVoiceWav");
+    expect(source).toContain("audioContext.createScriptProcessor");
+    expect(source).toContain("voicePcmChunksRef.current.push");
+    expect(source).toContain("const meterStream = stream.clone()");
+    expect(source).toContain("voiceMeterStreamRef.current = meterStream");
+    expect(source).toContain("function handleVoicePlaybackLoadedMetadata");
+    expect(source).toContain("function handlePlayVoiceRecording");
+    expect(source).toContain("function handleVoicePlaybackError");
+    expect(source).toContain("Recorder output:");
+    expect(source).toContain("voicePlaybackRef");
+    expect(source).toContain("Play recording ({formatVoiceDuration");
+    expect(source).toContain("audio.currentTime = Number.MAX_SAFE_INTEGER");
+    expect(source).toContain("onLoadedMetadata={handleVoicePlaybackLoadedMetadata}");
     expect(source).toContain("uploadBytesResumable(ref(storage, storagePath), voiceAudioBlob");
-    expect(source).toContain("`users/${user.uid}/brain-dump-sources/${brainDumpId}/recording.webm`");
+    expect(source).toContain("`users/${user.uid}/brain-dump-sources/${brainDumpId}/recording.wav`");
     expect(source).toContain('fetch(getApiUrl("/api/brain-dump/transcriptions/"), {');
     expect(source).toContain("brainDumpId,");
     expect(source).toContain("storagePath,");
@@ -45,12 +58,14 @@ describe("BrainDumpClient", () => {
     expect(source).toContain("browserSupportsVoiceRecording");
     expect(source).toContain('"Microphone permission was denied."');
     expect(source).toContain("function handlePauseVoiceRecording");
-    expect(source).toContain("mediaRecorderRef.current?.pause()");
+    expect(source).toContain("voiceCaptureRef.current.paused = true");
     expect(source).toContain("function handleResumeVoiceRecording");
-    expect(source).toContain("mediaRecorderRef.current?.resume()");
+    expect(source).toContain("voiceCaptureRef.current.paused = false");
     expect(source).toContain("function handleCancelVoiceRecording");
     expect(source).toContain("handleStopVoiceRecording()");
-    expect(source).toContain('<audio controls src={voiceAudioUrl} aria-label="Brain Dump voice recording playback" />');
+    expect(source).toContain('aria-label="Brain Dump voice recording playback"');
+    expect(source).toContain("src={voiceAudioUrl}");
+    expect(source).toContain("onError={handleVoicePlaybackError}");
     expect(source).toContain('role="meter"');
     expect(source).toContain('aria-label="Voice input level"');
     expect(source).toContain("voiceUploadProgressPct");
@@ -105,6 +120,7 @@ describe("BrainDumpClient", () => {
     const source = readFileSync(resolve(__dirname, "../../../next.config.ts"), "utf8");
 
     expect(source).toContain('Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()"');
+    expect(source).toContain('"media-src \'self\' blob:"');
   });
 
   it("supports title edits, item selection, and confirmed creation through the hosted endpoint", () => {
