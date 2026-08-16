@@ -1,5 +1,5 @@
-import BrainDumpClient from "./BrainDumpClient";
+import { redirect } from "next/navigation";
 
 export default function BrainDumpPage() {
-  return <BrainDumpClient />;
+  redirect("/executive?view=brain-dump");
 }

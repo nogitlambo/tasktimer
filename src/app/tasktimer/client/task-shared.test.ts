@@ -68,4 +68,24 @@ describe("createTaskTimerSharedTask checkpoint validation", () => {
     expect(task.accumulatedMs).toBe(45_000);
     expect(task.hasStarted).toBe(true);
   });
+
+  it("clears a stale running flag when no valid start timestamp exists", () => {
+    const task = {
+      id: "task-1",
+      name: "Focus",
+      order: 1,
+      accumulatedMs: 0,
+      running: true,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestones: [],
+      hasStarted: false,
+    } as Task;
+
+    sharedTasks.normalizeLoadedTask(task);
+
+    expect(task.running).toBe(false);
+    expect(task.startMs).toBeNull();
+  });
 });

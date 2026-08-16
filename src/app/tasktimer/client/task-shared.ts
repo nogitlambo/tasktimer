@@ -123,6 +123,10 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     delete taskWithMode.mode;
     task.accumulatedMs = normalizeElapsedMs(task.accumulatedMs, taskWithMode.elapsed);
     if (task.accumulatedMs > 0) task.hasStarted = true;
+    const normalizedStartMs = Math.floor(Number(task.startMs));
+    const hasValidRunningStart = task.running === true && Number.isFinite(normalizedStartMs) && normalizedStartMs > 0;
+    task.running = hasValidRunningStart;
+    task.startMs = hasValidRunningStart ? normalizedStartMs : null;
     if (task.milestoneTimeUnit !== "hour" && task.milestoneTimeUnit !== "minute") {
       task.milestoneTimeUnit = "hour";
     }

@@ -242,7 +242,12 @@ type BrainDumpUndoBatchResult = {
   retainedCount: number;
 };
 
-export default function BrainDumpClient() {
+type BrainDumpClientProps = {
+  embedded?: boolean;
+  onBack?: () => void;
+};
+
+export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpClientProps) {
   const [captureMode, setCaptureMode] = useState<BrainDumpCaptureMode>(() => readStoredCaptureMode());
   const [text, setText] = useState(() => readStoredDraft());
   const [busy, setBusy] = useState(false);
@@ -313,11 +318,26 @@ export default function BrainDumpClient() {
       return "UTC";
     }
   }, []);
-  const taskLaunchHref = resolveTaskTimerRouteHref("/tasklaunch");
+  const taskLaunchHref = resolveTaskTimerRouteHref(onBack ? "/executive" : "/tasklaunch");
+  const primitiveSecondaryButtonClass = embedded
+    ? `${styles.secondaryButton} btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction brainDumpPrimitiveAction`
+    : styles.secondaryButton;
+  const primitivePrimaryButtonClass = embedded
+    ? `${styles.submitButton} btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction brainDumpPrimitiveAction brainDumpPrimitivePrimaryAction`
+    : styles.submitButton;
+  const primitiveTextareaClass = embedded ? `${styles.textarea} brainDumpPrimitiveTextarea` : styles.textarea;
+  const primitiveInputClass = embedded ? `${styles.titleInput} brainDumpPrimitiveInput` : styles.titleInput;
+  const primitiveBackLinkClass = embedded
+    ? `${styles.backLink} btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction brainDumpPrimitiveAction brainDumpPrimitiveLink`
+    : styles.backLink;
 
   function handleBackNavigation(event: MouseEvent<HTMLAnchorElement>) {
     if (typeof window === "undefined") return;
     event.preventDefault();
+    if (onBack) {
+      onBack();
+      return;
+    }
     const backTarget = resolveStandaloneRouteBackTarget("/tasklaunch");
     window.location.href = resolveTaskTimerRouteHref(backTarget);
   }
@@ -387,8 +407,7 @@ export default function BrainDumpClient() {
     if (recoverableFailure) setRecoverableFailure(false);
   }
 
-  function handleCaptureModeChange(event: ChangeEvent<HTMLSelectElement>) {
-    const nextMode: BrainDumpCaptureMode = event.target.value === "voice" || event.target.value === "image" ? event.target.value : "typed";
+  function handleCaptureModeChange(nextMode: BrainDumpCaptureMode) {
     setCaptureMode(nextMode);
     writeStoredCaptureMode(nextMode);
   }
@@ -1209,37 +1228,46 @@ export default function BrainDumpClient() {
   }
 
   return (
-    <main className={styles.page}>
-      <section className={styles.shell} aria-labelledby="brainDumpTitle">
-        <header className={styles.header}>
-          <a className={styles.backLink} href={taskLaunchHref} onClick={handleBackNavigation}>
+    <main className={`${styles.page}${embedded ? " brainDumpEmbedded" : ""}`}>
+      <section className={`${styles.shell}${embedded ? " brainDumpEmbeddedShell" : ""}`} aria-labelledby="brainDumpTitle">
+        <header className={`${styles.header}${embedded ? " brainDumpEmbeddedPanel brainDumpEmbeddedHeader brainDumpPrimitivePanel" : ""}`}>
+          <a className={primitiveBackLinkClass} href={taskLaunchHref} onClick={handleBackNavigation}>
             Back
           </a>
           <div>
             <p className={styles.kicker}>Executive Function</p>
-            <h1 id="brainDumpTitle" className={styles.title}>
+            <h1 id="brainDumpTitle" className={`${styles.title}${embedded ? " brainDumpEmbeddedTitle" : ""}`} tabIndex={-1}>
               Brain Dump
             </h1>
           </div>
         </header>
 
-        <form className={styles.capture} onSubmit={handleSubmit}>
-          <label className={styles.label} htmlFor="brainDumpCaptureMode">
-            Capture mode
-          </label>
-          <select
-            id="brainDumpCaptureMode"
-            className={styles.titleInput}
-            value={captureMode}
-            disabled={busy}
-            onChange={handleCaptureModeChange}
-          >
-            <option value="typed">Typed</option>
-            <option value="voice">{BRAIN_DUMP_VOICE_LABEL}</option>
-            <option value="image">{BRAIN_DUMP_IMAGE_LABEL}</option>
-          </select>
+        <form className={`${styles.capture}${embedded ? " brainDumpEmbeddedPanel brainDumpPrimitivePanel" : ""}`} onSubmit={handleSubmit}>
+          <div className="brainDumpCaptureModeField">
+            <span className={styles.label} id="brainDumpCaptureModeLabel">
+              Capture mode
+            </span>
+            <div className="brainDumpCaptureModePills" role="group" aria-labelledby="brainDumpCaptureModeLabel">
+              {([
+                ["typed", "Typed"],
+                ["voice", BRAIN_DUMP_VOICE_LABEL],
+                ["image", BRAIN_DUMP_IMAGE_LABEL],
+              ] as const).map(([mode, label]) => (
+                <button
+                  className={`brainDumpCaptureModePill${embedded ? " btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction brainDumpPrimitiveAction" : ""}`}
+                  type="button"
+                  key={mode}
+                  aria-pressed={captureMode === mode}
+                  disabled={busy}
+                  onClick={() => handleCaptureModeChange(mode)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
           {captureMode === "voice" ? (
-            <section className={styles.voicePanel} aria-label="Voice Brain Dump recorder">
+            <section className={`${styles.voicePanel}${embedded ? " brainDumpPrimitivePanel" : ""}`} aria-label="Voice Brain Dump recorder">
               <div className={styles.voiceMeterRow}>
                 <span className={styles.voiceTimer}>{formatVoiceDuration(voiceElapsedMs)}</span>
                 <div
@@ -1254,11 +1282,11 @@ export default function BrainDumpClient() {
                 </div>
               </div>
               <div className={styles.secondaryActions}>
-                <button className={styles.secondaryButton} type="button" disabled={voiceBusy || busy} onClick={handleStartVoiceRecording}>
+                <button className={primitiveSecondaryButtonClass} type="button" disabled={voiceBusy || busy} onClick={handleStartVoiceRecording}>
                   Start
                 </button>
                 <button
-                  className={styles.secondaryButton}
+                  className={primitiveSecondaryButtonClass}
                   type="button"
                   disabled={voiceState !== "recording"}
                   onClick={handlePauseVoiceRecording}
@@ -1266,7 +1294,7 @@ export default function BrainDumpClient() {
                   Pause
                 </button>
                 <button
-                  className={styles.secondaryButton}
+                  className={primitiveSecondaryButtonClass}
                   type="button"
                   disabled={voiceState !== "paused"}
                   onClick={handleResumeVoiceRecording}
@@ -1274,7 +1302,7 @@ export default function BrainDumpClient() {
                   Resume
                 </button>
                 <button
-                  className={styles.secondaryButton}
+                  className={primitiveSecondaryButtonClass}
                   type="button"
                   disabled={voiceState !== "recording" && voiceState !== "paused"}
                   onClick={handleStopVoiceRecording}
@@ -1282,7 +1310,7 @@ export default function BrainDumpClient() {
                   Stop
                 </button>
                 <button
-                  className={styles.secondaryButton}
+                  className={primitiveSecondaryButtonClass}
                   type="button"
                   disabled={voiceState === "idle" || voiceState === "transcribing"}
                   onClick={handleCancelVoiceRecording}
@@ -1292,7 +1320,7 @@ export default function BrainDumpClient() {
               </div>
               {voiceAudioUrl ? (
                 <div className={styles.voicePlayback}>
-                  <button className={styles.secondaryButton} type="button" onClick={handlePlayVoiceRecording}>
+                  <button className={primitiveSecondaryButtonClass} type="button" onClick={handlePlayVoiceRecording}>
                     Play recording ({formatVoiceDuration(voiceElapsedMs || voiceElapsedBeforePauseMsRef.current)})
                   </button>
                   <audio
@@ -1305,7 +1333,7 @@ export default function BrainDumpClient() {
                     onError={handleVoicePlaybackError}
                   />
                   <button
-                    className={styles.submitButton}
+                    className={primitivePrimaryButtonClass}
                     type="button"
                     disabled={!voiceAudioBlob || voiceState === "transcribing" || voiceState === "transcript" || busy}
                     onClick={handleTranscribeVoiceRecording}
@@ -1335,8 +1363,8 @@ export default function BrainDumpClient() {
             </section>
           ) : null}
           {captureMode === "image" ? (
-            <section className={styles.imagePanel} aria-label="Image Brain Dump capture">
-              <label className={styles.imagePickerLabel} htmlFor="brainDumpImageFile">
+            <section className={`${styles.imagePanel}${embedded ? " brainDumpPrimitivePanel" : ""}`} aria-label="Image Brain Dump capture">
+              <label className={`${styles.imagePickerLabel}${embedded ? " brainDumpPrimitivePicker" : ""}`} htmlFor="brainDumpImageFile">
                 Choose image
               </label>
               <input
@@ -1361,7 +1389,7 @@ export default function BrainDumpClient() {
                     <p className={styles.dateMeta}>
                       {imageMimeType} | {Math.round(imageSizeBytes / 1024)} KB
                     </p>
-                    <button className={styles.secondaryButton} type="button" disabled={busy} onClick={handleRemoveImage}>
+                    <button className={primitiveSecondaryButtonClass} type="button" disabled={busy} onClick={handleRemoveImage}>
                       Remove image
                     </button>
                   </div>
@@ -1372,7 +1400,7 @@ export default function BrainDumpClient() {
               </label>
               <textarea
                 id="brainDumpImageInstruction"
-                className={styles.instructionTextarea}
+                className={`${styles.instructionTextarea}${embedded ? " brainDumpPrimitiveTextarea" : ""}`}
                 value={imageInstruction}
                 maxLength={1000}
                 onChange={(event) => setImageInstruction(event.target.value)}
@@ -1402,7 +1430,7 @@ export default function BrainDumpClient() {
           </label>
           <textarea
             id="brainDumpText"
-            className={styles.textarea}
+            className={primitiveTextareaClass}
             value={text}
             maxLength={BRAIN_DUMP_TEXT_LIMIT}
             onChange={handleTextChange}
@@ -1413,21 +1441,21 @@ export default function BrainDumpClient() {
             <span id="brainDumpCount" className={remaining < 0 ? styles.countError : styles.count}>
               {remaining} characters left
             </span>
-            <button className={styles.submitButton} type="submit" disabled={!canSubmit}>
+            <button className={primitivePrimaryButtonClass} type="submit" disabled={!canSubmit}>
               {busy ? "Analysing" : captureMode === "image" ? "Review image" : "Review"}
             </button>
           </div>
           <div className={styles.secondaryActions}>
-            <button className={styles.secondaryButton} type="button" disabled={!text || busy} onClick={handleClearDraft}>
+            <button className={primitiveSecondaryButtonClass} type="button" disabled={!text || busy} onClick={handleClearDraft}>
               Clear draft
             </button>
             {recoverableFailure ? (
-              <button className={styles.secondaryButton} type="button" disabled={!canSubmit} onClick={handleRetryProcessing}>
+              <button className={primitiveSecondaryButtonClass} type="button" disabled={!canSubmit} onClick={handleRetryProcessing}>
                 Retry
               </button>
             ) : null}
             {busy ? (
-              <button className={styles.secondaryButton} type="button" onClick={handleCancelProcessing}>
+              <button className={primitiveSecondaryButtonClass} type="button" onClick={handleCancelProcessing}>
                 Cancel
               </button>
             ) : null}
@@ -1446,14 +1474,14 @@ export default function BrainDumpClient() {
             </p>
           ) : null}
           {errorCode === "brain-dump/expired" ? (
-            <button className={styles.secondaryButton} type="button" onClick={handleStartFreshAfterExpiry}>
+            <button className={primitiveSecondaryButtonClass} type="button" onClick={handleStartFreshAfterExpiry}>
               Start fresh
             </button>
           ) : null}
         </div>
 
         {session ? (
-          <section className={styles.review} aria-labelledby="brainDumpReviewTitle">
+          <section className={`${styles.review}${embedded ? " brainDumpEmbeddedPanel brainDumpPrimitivePanel" : ""}`} aria-labelledby="brainDumpReviewTitle">
             <div className={styles.reviewHeader}>
               <h2 id="brainDumpReviewTitle" className={styles.reviewTitle}>
                 Review
@@ -1464,10 +1492,11 @@ export default function BrainDumpClient() {
             </div>
             <div className={styles.reviewList}>
               {session.review.items.map((item) => (
-                <article className={styles.reviewItem} key={item.id} data-supported={String(item.supported)}>
+                <article className={`${styles.reviewItem}${embedded ? " brainDumpPrimitivePanel brainDumpPrimitiveReviewItem" : ""}`} key={item.id} data-supported={String(item.supported)}>
                   <div className={styles.reviewItemHeader}>
                     <label className={styles.reviewControls}>
                       <input
+                        className={embedded ? "brainDumpPrimitiveCheckbox" : undefined}
                         type="checkbox"
                         aria-label={`Select ${item.title}`}
                         checked={item.supported && item.selected}
@@ -1475,7 +1504,7 @@ export default function BrainDumpClient() {
                         onChange={(event) => updateReviewItem(item.id, { selected: event.target.checked })}
                       />
                       <input
-                        className={styles.titleInput}
+                        className={primitiveInputClass}
                         value={item.title}
                         disabled={session.state === "completed" || busy}
                         onChange={(event) => updateReviewItem(item.id, { title: event.target.value })}
@@ -1507,7 +1536,7 @@ export default function BrainDumpClient() {
                       ))}
                       <div className={styles.duplicateActions}>
                         <button
-                          className={styles.secondaryButton}
+                          className={primitiveSecondaryButtonClass}
                           type="button"
                           disabled={session.state === "completed" || busy}
                           aria-pressed={item.duplicateDecision === "create_anyway"}
@@ -1516,7 +1545,7 @@ export default function BrainDumpClient() {
                           Create anyway
                         </button>
                         <button
-                          className={styles.secondaryButton}
+                          className={primitiveSecondaryButtonClass}
                           type="button"
                           disabled={session.state === "completed" || busy}
                           aria-pressed={item.duplicateDecision === "skip"}
@@ -1533,7 +1562,7 @@ export default function BrainDumpClient() {
                     </label>
                     <input
                       id={`brainDumpDate-${item.id}`}
-                      className={styles.titleInput}
+                      className={primitiveInputClass}
                       type="date"
                       aria-label={`Date for ${item.title}`}
                       value={item.date.resolvedDate || ""}
@@ -1551,7 +1580,7 @@ export default function BrainDumpClient() {
                       }
                     />
                     <button
-                      className={styles.secondaryButton}
+                      className={primitiveSecondaryButtonClass}
                       type="button"
                       disabled={!item.date.resolvedDate || session.state === "completed" || busy}
                       onClick={() =>
@@ -1579,7 +1608,7 @@ export default function BrainDumpClient() {
                       </label>
                       <textarea
                         id={`brainDumpNotes-${item.id}`}
-                        className={styles.textarea}
+                        className={primitiveTextareaClass}
                         aria-label={`Notes for ${item.title}`}
                         value={item.enrichment.notes || ""}
                         disabled={session.state === "completed" || busy}
@@ -1594,7 +1623,7 @@ export default function BrainDumpClient() {
                       </label>
                       <input
                         id={`brainDumpDuration-${item.id}`}
-                        className={styles.titleInput}
+                        className={primitiveInputClass}
                         type="number"
                         min="1"
                         max="1440"
@@ -1616,7 +1645,7 @@ export default function BrainDumpClient() {
                       </label>
                       <select
                         id={`brainDumpPriority-${item.id}`}
-                        className={styles.titleInput}
+                        className={primitiveInputClass}
                         aria-label={`Priority for ${item.title}`}
                         value={item.enrichment.priority || ""}
                         disabled={session.state === "completed" || busy}
@@ -1641,7 +1670,7 @@ export default function BrainDumpClient() {
                       </label>
                       <input
                         id={`brainDumpFirstAction-${item.id}`}
-                        className={styles.titleInput}
+                        className={primitiveInputClass}
                         aria-label={`First action for ${item.title}`}
                         value={item.enrichment.firstAction || ""}
                         disabled={session.state === "completed" || busy}
@@ -1652,7 +1681,7 @@ export default function BrainDumpClient() {
                         }
                       />
                       <button
-                        className={styles.secondaryButton}
+                        className={primitiveSecondaryButtonClass}
                         type="button"
                         disabled={session.state === "completed" || busy}
                         onClick={() =>
@@ -1675,7 +1704,7 @@ export default function BrainDumpClient() {
             </div>
             <div className={styles.reviewActions}>
               <button
-                className={styles.secondaryButton}
+                className={primitiveSecondaryButtonClass}
                 type="button"
                 disabled={busy || session.state === "completed"}
                 onClick={handleSaveReview}
@@ -1683,7 +1712,7 @@ export default function BrainDumpClient() {
                 Save review
               </button>
               <button
-                className={styles.submitButton}
+                className={primitivePrimaryButtonClass}
                 type="button"
                 disabled={selectedCount === 0 || busy || session.state === "completed"}
                 onClick={handleConfirm}
@@ -1694,7 +1723,7 @@ export default function BrainDumpClient() {
                 <>
                   {undoAvailable ? (
                     <button
-                      className={styles.secondaryButton}
+                      className={primitiveSecondaryButtonClass}
                       type="button"
                       aria-label="Undo Brain Dump task creation"
                       disabled={busy}
@@ -1703,7 +1732,7 @@ export default function BrainDumpClient() {
                       Undo
                     </button>
                   ) : null}
-                  <a className={styles.backLink} href={taskLaunchHref} onClick={handleBackNavigation}>
+                  <a className={primitiveBackLinkClass} href={taskLaunchHref} onClick={handleBackNavigation}>
                     Tasks
                   </a>
                 </>

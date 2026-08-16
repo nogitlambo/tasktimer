@@ -114,7 +114,7 @@ describe("task timer lifecycle", () => {
   it("starts a stopped task and opens focus mode when configured", () => {
     const harness = createHarness({ autoFocus: true });
 
-    harness.lifecycle.startTask(0);
+    expect(harness.lifecycle.startTask(0)).toBe("started");
 
     expect(harness.tasks[0]).toMatchObject({ running: true, startMs: 123, hasStarted: true, resumePendingSinceDayKey: null });
     expect(harness.calls).toEqual([
@@ -130,6 +130,21 @@ describe("task timer lifecycle", () => {
       "render",
       "open-focus:0",
     ]);
+  });
+
+  it("starts a task whose stale running flag has no valid start timestamp", () => {
+    const harness = createHarness({
+      tasks: [task({ running: true, startMs: null })],
+    });
+
+    expect(harness.lifecycle.startTask(0)).toBe("started");
+
+    expect(harness.tasks[0]).toMatchObject({
+      running: true,
+      startMs: 123,
+      hasStarted: true,
+    });
+    expect(harness.calls).toContain("upsert-live:task-1:0:0:force");
   });
 
   it("passes the daily time-goal trigger to the native running timer notification", () => {
@@ -295,7 +310,7 @@ describe("task timer lifecycle", () => {
       tasks: [task({ id: "task-1", name: "Running", running: true, startMs: 1 }), task({ id: "task-2", name: "Next" })],
     });
 
-    harness.lifecycle.startTask(1);
+    expect(harness.lifecycle.startTask(1)).toBe("requires-confirmation");
     expect(harness.calls.slice(0, 2)).toEqual([
       "add-running-confirm-class",
       "confirm:Task Already Running:Running is currently running. Do you want to stop this timer and launch Next?",
@@ -327,6 +342,25 @@ describe("task timer lifecycle", () => {
       "remove-running-confirm-class",
       "close-confirm",
     ]);
+  });
+
+  it("only runs the recommended-launch continuation after a switch is confirmed", () => {
+    const running = task({ id: "task-1", name: "Running", running: true, startMs: 1 });
+    const next = task({ id: "task-2", name: "Next" });
+    const onStarted = vi.fn();
+    const harness = createHarness({ tasks: [running, next] });
+
+    harness.lifecycle.startTask(1, { onStarted });
+    harness.confirmOptions[0]?.onCancel?.();
+
+    expect(onStarted).not.toHaveBeenCalled();
+    expect(next.running).toBe(false);
+
+    harness.lifecycle.startTask(1, { onStarted });
+    harness.confirmOptions[1]?.onOk();
+
+    expect(onStarted).toHaveBeenCalledTimes(1);
+    expect(next.running).toBe(true);
   });
 
   it("stops a running task and refreshes dashboard widgets on the dashboard", () => {

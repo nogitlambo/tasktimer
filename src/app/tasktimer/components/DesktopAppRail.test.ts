@@ -7,11 +7,12 @@ import {
   getDesktopRailProfileMenuItems,
   getDesktopRailProfileSignOutLabel,
   getMobileFooterNavItems,
+  getMobileFooterUtilityItems,
   shouldCloseDesktopRailProfileMenuOnPointerDown,
 } from "./DesktopAppRail";
 
 describe("DesktopAppRail profile menu", () => {
-  it("keeps Notes before Tasks in the desktop rail and mobile footer", () => {
+  it("keeps Notes in the desktop rail and Executive in the mobile footer", () => {
     const desktopItems = getDesktopRailPrimaryNavItems();
     const mobileItems = getMobileFooterNavItems();
 
@@ -25,7 +26,7 @@ describe("DesktopAppRail profile menu", () => {
     ]);
     expect(mobileItems.map((item) => item.mobileId)).toEqual([
       "footerDashboardBtn",
-      "footerSessionNotesBtn",
+      "footerExecutiveBtn",
       "footerTasksBtn",
       "footerTest2Btn",
       "footerLeaderboardBtn",
@@ -34,7 +35,9 @@ describe("DesktopAppRail profile menu", () => {
     expect(desktopItems.find((item) => item.page === "notes")?.href).toBe("/notes");
     expect(desktopItems.find((item) => item.page === "executive")?.iconSrc).toBe("/icons/icons_default/executive.webp");
     expect(desktopItems.find((item) => item.page === "executive")?.href).toBe("/executive");
-    expect(mobileItems.some((item) => item.mobileId === "footerExecutiveBtn")).toBe(false);
+    expect(mobileItems.some((item) => item.mobileId === "footerSessionNotesBtn")).toBe(false);
+    expect(mobileItems.find((item) => item.page === "executive")?.iconSrc).toBe("/icons/icons_default/executive.webp");
+    expect(mobileItems.find((item) => item.page === "executive")?.href).toBe("/executive");
     expect(desktopItems.find((item) => item.page === "leaderboard")?.iconSrc).toBe("/icons/icons_default/leaderboards.webp");
   });
 
@@ -43,6 +46,22 @@ describe("DesktopAppRail profile menu", () => {
 
     expect(items.map((item) => item.label)).toEqual(["Settings"]);
     expect(items.map((item) => item.href)).toEqual(["/settings"]);
+  });
+
+  it("moves Profile, Settings, and User Guide into the mobile footer utility sheet", () => {
+    const items = getMobileFooterUtilityItems();
+
+    expect(items.map((item) => item.label)).toEqual(["Account", "Settings", "User Guide"]);
+    expect(items.map((item) => item.href)).toEqual(["/account", "/settings", "/user-guide"]);
+  });
+
+  it("keeps the mobile footer sheet out of desktop layout and the fixed nav outside the transformed panel", () => {
+    const source = readFileSync(resolve(__dirname, "DesktopAppRail.tsx"), "utf8");
+    const css = readFileSync(resolve(__dirname, "../styles/09-desktop-rail.css"), "utf8");
+
+    expect(css).toMatch(/\.appFooterSheet\s*\{[^}]*display:\s*none;/);
+    expect(source).toMatch(/<\/section>\s*<div className="appFooterNav"/);
+    expect(css).not.toContain(".appFooterSheetPanel .appFooterNav{");
   });
 
   it("shows User Guide and Feedback in the Help Center submenu", () => {

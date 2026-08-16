@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { parseRecoveryResponse } from "./dashboard-recovery";
+import { createDashboardRecovery, parseRecoveryResponse } from "./dashboard-recovery";
 
 const action = {
   id: "defer:task-1",
@@ -41,5 +41,83 @@ describe("parseRecoveryResponse", () => {
 
   it("rejects malformed or non-active sessions", () => {
     expect(parseRecoveryResponse({ ok: true, session: { id: "recovery-1", status: "COMPLETED", actions: [action] } })).toEqual({ kind: "invalid" });
+  });
+});
+
+describe("Recovery Mode launcher", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("opens the modal immediately while a user-requested recovery refresh is pending", () => {
+    class FakeElement {
+      style: Record<string, string> = { display: "none" };
+      attributes = new Map<string, string>();
+      classList = { toggle: vi.fn() };
+      disabled = false;
+      hidden = false;
+      textContent = "";
+
+      setAttribute(name: string, value: string) {
+        this.attributes.set(name, value);
+      }
+
+      removeAttribute(name: string) {
+        this.attributes.delete(name);
+      }
+
+      querySelector() {
+        return null;
+      }
+
+      focus() {}
+    }
+
+    vi.stubGlobal("HTMLElement", FakeElement);
+    const card = new FakeElement();
+    const overlay = new FakeElement();
+    const status = new FakeElement();
+    const modalStatus = new FakeElement();
+    const elements = new Map<string, FakeElement>([
+      ["dashboardRecoveryCard", card],
+      ["dashboardRecoveryOverlay", overlay],
+      ["dashboardRecoveryStatus", status],
+      ["dashboardRecoveryModalStatus", modalStatus],
+    ]);
+    const listeners = new Map<string, (event: Event) => void>();
+    const openButton = {
+      getAttribute: (name: string) => (name === "data-recovery" ? "open" : null),
+    };
+    let currentPage = "other";
+    const documentRef = {
+      activeElement: null,
+      getElementById: (id: string) => elements.get(id) || null,
+      addEventListener: (type: string, listener: (event: Event) => void) => listeners.set(type, listener),
+      querySelector: () => null,
+    } as unknown as Document;
+    const fetchImpl = vi.fn(() => new Promise<Response>(() => {}));
+    const api = createDashboardRecovery({
+      documentRef,
+      windowRef: {
+        fetch: fetchImpl,
+        addEventListener: vi.fn(),
+      } as unknown as Window,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      getCurrentAppPage: () => currentPage,
+      getTasks: () => [],
+      getIdToken: async () => "token",
+    });
+    api.register();
+    currentPage = "executive";
+
+    listeners.get("click")?.({
+      target: {
+        closest: (selector: string) => selector === "[data-recovery]" ? openButton : null,
+      },
+    } as unknown as Event);
+
+    expect(overlay.style.display).toBe("flex");
+    expect(overlay.attributes.get("aria-hidden")).toBe("false");
+    expect(modalStatus.textContent).toBe("Checking whether Recovery Mode can help...");
   });
 });

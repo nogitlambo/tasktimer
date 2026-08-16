@@ -37,6 +37,21 @@ describe("calculateDailyExecutiveBriefPlan", () => {
     expect(plan.capacityMinutes).toBe(25);
   });
 
+  it("supports zero remaining availability after a focus window has ended", () => {
+    const plan = calculateDailyExecutiveBriefPlan({
+      ...baseInput,
+      availability: { ...baseInput.availability, userSelectedMinutes: 0 },
+      tasks: [task({ estimatedMinutes: 20 })],
+    });
+
+    expect(plan).toMatchObject({
+      capacitySource: "USER_SELECTED",
+      capacityMinutes: 0,
+      realisticWorkloadRange: { minMinutes: 0, maxMinutes: 0 },
+      planHealth: "SIGNIFICANTLY_OVERLOADED",
+    });
+  });
+
   it("calculates planned, completed, remaining, and realistic workload values deterministically", () => {
     const input = { ...baseInput, tasks: [task({ id: "a", estimatedMinutes: 30, completedMinutes: 10 }), task({ id: "b", estimatedMinutes: 40, completedMinutes: 5 })] };
     expect(calculateDailyExecutiveBriefPlan(input)).toMatchObject({

@@ -48,6 +48,7 @@ export type DailyExecutiveBriefReasonCode = z.infer<typeof DailyExecutiveBriefRe
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const minutesSchema = z.number().int().min(1).max(1440);
+const capacityMinutesSchema = z.number().int().min(0).max(1440);
 
 export const DailyExecutiveBriefTaskSchema = z.object({
   id: z.string().trim().min(1).max(160),
@@ -68,11 +69,11 @@ export const DailyExecutiveBriefTaskSchema = z.object({
 export type DailyExecutiveBriefTask = z.infer<typeof DailyExecutiveBriefTaskSchema>;
 
 export const DailyExecutiveBriefAvailabilitySchema = z.object({
-  userSelectedMinutes: minutesSchema.nullable().optional(),
-  remainingFocusWindowMinutes: minutesSchema.nullable().optional(),
-  scheduleAvailableMinutes: minutesSchema.nullable().optional(),
-  historicalBaselineMinutes: minutesSchema.nullable().optional(),
-  productDefaultMinutes: minutesSchema.default(60),
+  userSelectedMinutes: capacityMinutesSchema.nullable().optional(),
+  remainingFocusWindowMinutes: capacityMinutesSchema.nullable().optional(),
+  scheduleAvailableMinutes: capacityMinutesSchema.nullable().optional(),
+  historicalBaselineMinutes: capacityMinutesSchema.nullable().optional(),
+  productDefaultMinutes: capacityMinutesSchema.default(60),
   focusWindowPresent: z.boolean().default(true),
 });
 
@@ -156,7 +157,7 @@ function selectCapacity(availability: z.output<typeof DailyExecutiveBriefAvailab
     ["HISTORICAL_BASELINE", availability.historicalBaselineMinutes],
     ["PRODUCT_DEFAULT", availability.productDefaultMinutes],
   ];
-  const selected = options.find(([, minutes]) => Number.isInteger(minutes) && Number(minutes) > 0);
+  const selected = options.find(([, minutes]) => Number.isInteger(minutes) && Number(minutes) >= 0);
   return selected || ["PRODUCT_DEFAULT", 60];
 }
 
@@ -226,7 +227,7 @@ export function calculateDailyExecutiveBriefPlan(
   const [capacitySource, selectedCapacity] = selectCapacity(availability);
   const capacityMinutes = Number(selectedCapacity);
   const realisticMax = capacityMinutes;
-  const realisticMin = Math.max(1, Math.min(realisticMax, Math.round(realisticMax * config.realisticWorkloadFactor)));
+  const realisticMin = Math.max(0, Math.min(realisticMax, Math.round(realisticMax * config.realisticWorkloadFactor)));
 
   if (unknownDurationTaskCount > 0) addReason(reasons, "UNKNOWN_DURATION");
   if (!availability.focusWindowPresent) addReason(reasons, "NO_FOCUS_WINDOW");

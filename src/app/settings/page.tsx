@@ -15,7 +15,6 @@ import {
   createTaskTimerWorkspaceRepository,
 } from "../tasktimer/lib/workspaceRepository";
 import type { UserPreferencesV1 } from "../tasktimer/lib/cloudStore";
-import "../tasktimer/tasktimer.css";
 
 const settingsWorkspaceRepository = createTaskTimerWorkspaceRepository();
 const settingsPreferencesPersistence = createTaskTimerWorkspacePreferencesPersistence(settingsWorkspaceRepository);

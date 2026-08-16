@@ -58,6 +58,7 @@ function safeResponseRecommendation(recommendation: ReturnType<typeof createReco
     estimatedMinutes: recommendation.payload.durationMinutes,
     durationSource: recommendation.payload.durationSource,
     timeGoalMinutes: recommendation.payload.timeGoalMinutes,
+    dailyProgressPercent: recommendation.payload.dailyProgressPercent,
     latestHistoryEntry: recommendation.payload.latestHistoryEntry,
     score: recommendation.payload.score,
     confidence: recommendation.payload.confidence,
@@ -91,7 +92,10 @@ export async function POST(req: Request) {
     const timezone = asString(body.timezone, 120) || "UTC";
     const nowMs = Date.now();
     const repository = createFirestoreNextBestActionRepository(db);
-    const candidates = await repository.loadCandidates({ uid, nowMs, timezone });
+    const [candidates, suppressedTaskIds] = await Promise.all([
+      repository.loadCandidates({ uid, nowMs, timezone }),
+      repository.loadSuppressedTaskIds({ uid, nowMs }),
+    ]);
     let remainingCapacityRange: { min: number; max: number } | null = null;
     try {
       const capacity = await getDailyCapacity({
@@ -112,7 +116,7 @@ export async function POST(req: Request) {
       todayDate: localDateForRecommendationTimezone(timezone, nowMs),
       availableMinutes,
       remainingCapacityRange,
-      excludedTaskIds,
+      excludedTaskIds: Array.from(new Set([...excludedTaskIds, ...suppressedTaskIds])),
       candidates,
     });
     if (!ranked.primary) {

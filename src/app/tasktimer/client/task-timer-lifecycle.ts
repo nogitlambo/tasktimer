@@ -83,6 +83,17 @@ type TaskTimerLifecycleOptions = {
   nowMs: () => number;
 };
 
+export type TaskLaunchResult =
+  | "started"
+  | "already-running"
+  | "requires-confirmation"
+  | "blocked"
+  | "not-found";
+
+export type TaskStartOptions = {
+  onStarted?: () => void;
+};
+
 export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleCommandAdapters): TaskTimerLifecycleCommands {
   function getTaskResumeBaselineMs(task: Task) {
     const legacyElapsedMs = Number((task as Task & { elapsed?: unknown }).elapsed);
@@ -258,13 +269,19 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
 }
 
 export function createTaskTimerLifecycle(options: TaskTimerLifecycleOptions) {
-  function findOtherRunningTaskIndex(targetIndex: number) {
-    return options.getTasks().findIndex((task, index) => index !== targetIndex && !!task?.running);
+  function isActivelyRunning(task: Task | null | undefined) {
+    const startMs = Number(task?.startMs);
+    return !!task?.running && Number.isFinite(startMs) && startMs > 0;
   }
 
-  function startTask(index: number) {
+  function findOtherRunningTaskIndex(targetIndex: number) {
+    return options.getTasks().findIndex((task, index) => index !== targetIndex && isActivelyRunning(task));
+  }
+
+  function startTask(index: number, startOptions?: TaskStartOptions): TaskLaunchResult {
     const task = options.getTasks()[index];
-    if (!task || task.running) return;
+    if (!task) return "not-found";
+    if (isActivelyRunning(task)) return "already-running";
     if (
       isTaskTimeGoalStartLockedForPeriod(
         task,
@@ -272,7 +289,7 @@ export function createTaskTimerLifecycle(options: TaskTimerLifecycleOptions) {
         options.getWeekStarting?.() || "mon"
       )
     ) {
-      return;
+      return "blocked";
     }
     const otherRunningIndex = findOtherRunningTaskIndex(index);
     if (otherRunningIndex >= 0) {
@@ -288,7 +305,7 @@ export function createTaskTimerLifecycle(options: TaskTimerLifecycleOptions) {
             options.removeTaskAlreadyRunningConfirmClass();
             options.closeConfirm();
             stopTask(otherRunningIndex);
-            startTask(index);
+            startTask(index, startOptions);
           },
           onCancel: () => {
             options.removeTaskAlreadyRunningConfirmClass();
@@ -296,10 +313,12 @@ export function createTaskTimerLifecycle(options: TaskTimerLifecycleOptions) {
           },
         }
       );
-      return;
+      return "requires-confirmation";
     }
 
     options.commands.startTaskTimer(task, index, options.nowMs());
+    startOptions?.onStarted?.();
+    return "started";
   }
 
   function stopTask(index: number) {

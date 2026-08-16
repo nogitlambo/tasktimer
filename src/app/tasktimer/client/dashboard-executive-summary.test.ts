@@ -174,11 +174,13 @@ describe("renderDashboardExecutiveSummary", () => {
     const { byId, documentRef, listeners } = createDocumentHarness();
     renderDashboardExecutiveSummary(documentRef, readySnapshot("REALISTIC"));
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 })));
+    const startTaskById = vi.fn(() => "started" as const);
     const api = createDashboardExecutiveSummary({
       documentRef,
       windowRef: { addEventListener: vi.fn() } as unknown as Window,
       getCurrentAppPage: () => "other",
       getIdToken: async () => "token",
+      startTaskById,
     });
 
     api.register();
@@ -190,6 +192,7 @@ describe("renderDashboardExecutiveSummary", () => {
     expect(byId.get("dashboardExecutiveSummaryStart")!.hidden).toBe(false);
     expect(byId.get("dashboardExecutiveSummaryStart")!.disabled).toBe(true);
     expect(byId.get("dashboardExecutiveSummaryStatus")!.textContent).toBe("Task in progress.");
+    expect(startTaskById).toHaveBeenCalledWith("task-1");
   });
 
   it("clears the plan health pill attribute for fallback status text", () => {

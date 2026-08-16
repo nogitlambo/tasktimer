@@ -7,7 +7,7 @@
 
 @media (max-width: 720px){
   .executiveShell{padding:18px 14px 90px}
-  .executiveHeader,.executiveSectionHeading,.executiveTools,.dashboardExecutiveSummary .dashboardPanelLabelRow{display:grid;gap:14px}
+  .executiveHeader,.executiveSectionHeading,.dashboardExecutiveSummary .dashboardPanelLabelRow{display:grid;gap:14px}
   .executiveTodayMarker{text-align:left}
   .executiveTodayHealth{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .executiveMetricCard{min-height:unset;padding:13px!important;gap:11px}.executiveMetricIcon{flex-basis:42px;width:42px;height:42px}.executiveMetricIcon img{width:22px;height:22px}.executiveMetricCopy strong{font-size:18px}.executiveMetricCopy i{height:4px}
@@ -18,8 +18,7 @@
   .executiveTools{order:4}
   .executivePlanBody{grid-template-columns:1fr}
   .executivePlanBody .executiveCapacityCard.dashboardDailyCapacityCard{padding:12px 0 0;border-left:0;border-top:1px solid rgba(121,226,255,.16)}
-  .executiveToolLinks{justify-content:flex-start}
-  .executiveNbaContent{max-width:100%;padding-bottom:100px}.executiveNbaOrb{right:24px;bottom:10px;width:88px;height:88px}.executiveNbaOrb::before{inset:-20px}.executiveNbaOrb::after{inset:-38px}.executiveNbaOrb span{width:26px;height:26px}.executiveToolLinks{grid-template-columns:repeat(2,minmax(0,1fr))}.executiveToolLink{min-height:78px;padding:10px!important;grid-template-columns:30px minmax(0,1fr) auto}.executiveToolLink img{width:26px;height:26px}.executiveToolLink span{font-size:12px}
+  .executiveTools{width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);border-radius:0;padding:14px}.executiveNbaContent{max-width:100%}.executiveToolLinks{grid-template-columns:repeat(2,minmax(0,1fr))}.executiveToolLinks>.btn{width:100%;height:auto;padding:14px!important}
   .dashboardExecutiveSummaryNext{align-items:stretch;flex-direction:column}
 }
 

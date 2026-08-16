@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import "../tasktimer/tasktimer.css";
 
 export const metadata: Metadata = {
   robots: {

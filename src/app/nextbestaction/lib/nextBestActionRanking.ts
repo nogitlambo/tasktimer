@@ -33,6 +33,7 @@ export type NextBestActionCandidate = {
   blocksImportantWork?: boolean;
   recentlyStartedIncomplete?: boolean;
   userPreferenceMatch?: boolean;
+  dailyProgressPercent?: number | null;
 };
 
 export type NextBestActionRankingWeights = {
@@ -103,6 +104,7 @@ export type RankedNextBestActionCandidate = {
   dueDate: string | null;
   explicitPriority: NextBestActionPriority | null;
   timeGoalMinutes: number | null;
+  dailyProgressPercent: number | null;
   latestHistoryEntry: { ts: number; ms: number } | null;
 };
 
@@ -257,6 +259,9 @@ function rankCandidate(candidate: NextBestActionCandidate, context: NextBestActi
     dueDate,
     explicitPriority: candidate.explicitPriority || null,
     timeGoalMinutes: asPositiveMinutes(candidate.task.timeGoalMinutes),
+    dailyProgressPercent: candidate.dailyProgressPercent == null
+      ? null
+      : Math.min(100, Math.max(0, Math.round(candidate.dailyProgressPercent))),
     latestHistoryEntry: latestHistoryEntry(candidate),
   };
 }

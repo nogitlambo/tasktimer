@@ -121,15 +121,6 @@
   object-fit: contain !important;
 }
 
-.taskLaunchMobileMenuBtn{
-  display:none;
-  border: 0;
-}
-
-.taskLaunchTopbarControls{
-  display:none;
-}
-
 .taskLaunchBrainDumpEntry{
   display:inline-flex;
   align-items:center;
@@ -233,10 +224,6 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .taskLaunchMobileT
   #app[aria-label="TaskLaunch App"] .taskLaunchBrainDumpFloatingAction{
     display:none;
   }
-}
-
-.taskLaunchMobileMenu{
-  display:none;
 }
 
 .controls{display:flex; align-items:center; gap:var(--space-2);}
@@ -514,25 +501,12 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   transform: scale(.995);
 }
 
-body[data-theme="lime"] .taskLaunchMobileMenuPanel{
-  border-color: transparent;
-}
-
-body[data-theme="lime"] .taskLaunchMobileMenuBars > span{
-  background: rgba(241, 250, 224, 0.96);
-}
-
 @media (prefers-reduced-motion: reduce){
 .dashboardRefreshBusyProgressBar{
     animation: none;
     transform: translateX(68%);
   }
 
-.taskLaunchMobileMenu,
-  .taskLaunchMobileMenuPanel,
-  .taskLaunchMobileMenuBars > span{
-    transition: none;
-  }
 }
 #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageControls{
   width:100% !important;
@@ -1352,7 +1326,7 @@ body.isInitialAuthHydrating{
 
 #app[aria-label="TaskLaunch App"]{
     --mobile-footer-offset: 10px;
-    --mobile-footer-height: 78px;
+    --mobile-footer-height: 88px;
     --mobile-footer-reserved-space: calc(
       var(--mobile-footer-height) + env(safe-area-inset-bottom)
     );
@@ -1569,279 +1543,6 @@ body[data-tasktimer-native-runtime="true"] #app[aria-label="TaskLaunch App"] .ta
 
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpUserName{
     max-width:100%;
-  }
-
-#app[aria-label="TaskLaunch App"] .taskLaunchMobileMenuBtn{
-    grid-area:controls;
-  }
-
-.taskLaunchTopbarControls{
-    grid-area: controls;
-    justify-self: end;
-    display: inline-flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-    min-width: 0;
-  }
-
-#app[aria-label="TaskLaunch App"] .taskLaunchTopbarExecutiveFunctionImg{
-    display:block;
-    width:auto;
-    height:24px;
-    max-height:24px;
-    flex:0 0 auto;
-    object-fit:contain;
-  }
-
-.brand{
-    grid-area: brand;
-  }
-
-.controls{
-    grid-area: controls;
-  }
-
-.taskLaunchMobileMenuBtn{
-    display: inline-grid;
-    grid-area: controls;
-    justify-self: end;
-    position: relative;
-    z-index: 42;
-    border: 0;
-    background: transparent !important;
-    box-shadow: none !important;
-    border-radius: 0;
-    clip-path: none;
-  }
-
-.taskLaunchMobileMenuBtn:hover,
-  .taskLaunchMobileMenuBtn:focus-visible{
-    background: transparent !important;
-  }
-
-.taskLaunchMobileMenuBtn.isHidden{
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-  }
-
-body.taskLaunchMobileMenuOpen #app[aria-label="TaskLaunch App"] .appFooterNav{
-    z-index: 0 !important;
-  }
-
-.taskLaunchMobileMenuBars{
-    display: inline-grid;
-    gap: 4px;
-  }
-
-.taskLaunchMobileMenuBars > span{
-    display: block;
-    width: 16px;
-    height: 1.5px;
-    border-radius: 999px;
-    background: rgba(236, 248, 255, 0.96);
-    transition: transform .18s ease, opacity .18s ease;
-  }
-
-.taskLaunchMobileMenu{
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    width: auto;
-    height: auto;
-    padding: 0;
-    background: transparent;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition:
-      opacity .24s ease,
-      visibility 0s linear .28s;
-    z-index: 1300 !important;
-    overflow: hidden;
-    overscroll-behavior: contain;
-  }
-
-.taskLaunchMobileMenu::before{
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    background: rgba(0,0,0,.55);
-    backdrop-filter: blur(6px);
-  }
-
-.taskLaunchMobileMenu.isOpen{
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    transition:
-      opacity .24s ease,
-      visibility 0s linear 0s;
-  }
-
-.taskLaunchMobileMenuPanel{
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 50dvh;
-    max-height: 50dvh;
-    min-height: 0;
-    margin: 0;
-    padding: 26px 14px calc(18px + var(--safe-bottom));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    background:
-      linear-gradient(180deg, rgba(52, 56, 64, .28) 0%, rgba(36, 39, 46, .16) 22%, rgba(13, 15, 19, 0) 44%),
-      linear-gradient(180deg, rgba(96, 102, 112, .09) 0%, rgba(96, 102, 112, 0) 30%),
-      #0d0f13 !important;
-    border: 1px solid transparent;
-    border-bottom: 0;
-    border-radius: 18px 18px 0 0;
-    box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(236,236,236,.06);
-    font-family: var(--font-orbitron) !important;
-    transform: translateY(calc(100% + 24px));
-    transition: transform .28s cubic-bezier(.22,1,.36,1);
-  }
-
-#app[aria-label="TaskLaunch App"] .taskLaunchMobileMenuPanel,
-#app[aria-label="TaskLaunch App"] .taskLaunchMobileMenuPanel :where(button, a, span, div){
-    font-family: var(--font-orbitron) !important;
-  }
-
-.taskLaunchMobileMenu.isOpen .taskLaunchMobileMenuPanel{
-    transform: translateY(var(--mobile-sheet-drag-y, 0px));
-  }
-
-.taskLaunchMobileMenuPanel.isDragging{
-    transition: none;
-  }
-
-.taskLaunchMobileMenuSwipeHandle{
-    position: absolute;
-    top: 9px;
-    left: 50%;
-    z-index: 2;
-    display: block;
-    width: 42px;
-    height: 4px;
-    border-radius: 999px;
-    background: rgba(170,178,190,.72);
-    transform: translateX(-50%);
-    touch-action: none;
-  }
-
-.taskLaunchMobileMenuHeader{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
-    flex: 0 0 auto;
-    margin: 0 0 18px;
-    padding: 12px 0 12px;
-    border-bottom: 1px solid rgba(170,178,190,.22);
-    text-align: center;
-  }
-
-.taskLaunchMobileMenuHeaderIcon{
-    display: block;
-    width: 22px;
-    height: 22px;
-    flex: 0 0 22px;
-    object-fit: contain;
-  }
-
-.taskLaunchMobileMenuHeaderText{
-    font-family: var(--font-orbitron);
-    font-size: 13.12px;
-    font-weight: 400;
-    letter-spacing: .16em;
-    line-height: normal;
-    color: rgba(245, 248, 244, .96);
-    text-transform: uppercase;
-  }
-
-.taskLaunchMobileMenuList{
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(3, minmax(74px, 1fr));
-    gap: 12px;
-    width: 100%;
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-
-#app[aria-label="TaskLaunch App"] .taskLaunchMobileMenu .taskLaunchMobileMenuItem{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 9px;
-    min-height: 74px;
-    height: 100%;
-    padding: 12px 10px;
-    text-decoration: none;
-    width: 100%;
-    border: 1px solid rgba(76, 80, 88, .86) !important;
-    border-radius: 20px !important;
-    background:
-      linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.018)),
-      rgba(18,20,24,.86) !important;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.035), 0 10px 22px rgba(0,0,0,.22) !important;
-    clip-path: none !important;
-    overflow: hidden;
-    font-family: var(--font-orbitron) !important;
-    text-align: center;
-  }
-
-#app[aria-label="TaskLaunch App"] .taskLaunchMobileMenu .taskLaunchMobileMenuItem:hover,
-  #app[aria-label="TaskLaunch App"] .taskLaunchMobileMenu .taskLaunchMobileMenuItem:focus-visible{
-    border-color: rgba(108, 114, 124, .94) !important;
-    background:
-      linear-gradient(180deg, rgba(201, 255, 36, .08), rgba(255,255,255,.025)),
-      rgba(18,20,24,.96) !important;
-  }
-
-#app[aria-label="TaskLaunch App"] .taskLaunchMobileMenu .taskLaunchMobileMenuItem:disabled{
-    cursor: wait;
-    opacity: .72;
-  }
-
-.taskLaunchMobileMenuItemIcon{
-    display: block;
-    width: 24px;
-    height: 24px;
-    flex: 0 0 24px;
-    object-fit: contain;
-    filter: brightness(0) invert(1);
-  }
-
-.taskLaunchMobileMenuItemText{
-    font-family: var(--font-orbitron) !important;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0;
-    line-height: 1.15;
-    text-transform: uppercase;
-    color: inherit;
-    text-align: center;
-  }
-
-.taskLaunchMobileMenuError{
-    margin: 0;
-    text-align: center;
-    font-family: var(--font-orbitron) !important;
-  }
-
-body.taskLaunchMobileMenuOpen{
-    overflow: hidden;
   }
 
 .modeSwitchWrap{

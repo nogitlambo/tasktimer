@@ -7,7 +7,6 @@ import AccountScreen from "../tasktimer/components/AccountScreen";
 import { initTaskTimerSettingsClient } from "../tasktimer/tasktimerClient";
 import { useTaskTimerRouteClient } from "../tasktimer/useTaskTimerRouteClient";
 import { trackEvent, trackScreen } from "@/lib/firebaseTelemetry";
-import "../tasktimer/tasktimer.css";
 
 export default function AccountPage() {
   const initClient = useCallback(() => initTaskTimerSettingsClient(), []);

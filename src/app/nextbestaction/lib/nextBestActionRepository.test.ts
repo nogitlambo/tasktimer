@@ -34,6 +34,7 @@ function startHarness(options: { task?: Record<string, unknown>; recommendation?
   const sourceTaskVersion = computeTaskClarificationSourceVersion("task-1", task);
   const row = options.recommendation || { ...recommendation(), sourceTaskVersion };
   const updates: Array<{ ref: { path?: string }; value: Record<string, unknown> }> = [];
+  const sets: Array<{ ref: { path?: string }; value: Record<string, unknown> }> = [];
   const db = {
     collection: (root: string) => ({
       doc: (uid: string) => ({
@@ -42,15 +43,18 @@ function startHarness(options: { task?: Record<string, unknown>; recommendation?
         }),
       }),
     }),
-    runTransaction: async (callback: (transaction: { get: (ref: { path?: string }) => Promise<unknown>; update: (ref: { path?: string }, value: Record<string, unknown>) => void }) => Promise<unknown>) =>
+    runTransaction: async (callback: (transaction: { get: (ref: { path?: string }) => Promise<unknown>; update: (ref: { path?: string }, value: Record<string, unknown>) => void; set: (ref: { path?: string }, value: Record<string, unknown>) => void }) => Promise<unknown>) =>
       callback({
         get: async (ref) => ref.path?.includes("/tasks/")
           ? { exists: true, data: () => task }
-          : { exists: true, data: () => buildNextBestActionFirestoreRecord(row) },
+          : ref.path?.includes("/nextBestActionSuppressions/")
+            ? { exists: false, data: () => undefined }
+            : { exists: true, data: () => buildNextBestActionFirestoreRecord(row) },
         update: (ref, value) => updates.push({ ref, value }),
+        set: (ref, value) => sets.push({ ref, value }),
       }),
   };
-  return { repository: createFirestoreNextBestActionRepository(db as never), updates, row, task };
+  return { repository: createFirestoreNextBestActionRepository(db as never), updates, sets, row, task };
 }
 
 describe("Next Best Action recommendation persistence", () => {
@@ -245,8 +249,76 @@ describe("Next Best Action recommendation persistence", () => {
     await expect(dismissal.repository.dismissRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs: Date.parse("2026-08-07T09:05:00.000Z"), feedbackCode: "wrong_timing" })).resolves.toBe("dismissed");
     expect(alternative.updates[0]?.value).toMatchObject({ status: "SKIPPED" });
     expect(dismissal.updates[0]?.value).toMatchObject({ status: "DISMISSED", feedbackCode: "wrong_timing" });
+    expect(dismissal.sets[0]).toMatchObject({
+      ref: { path: "users/uid-1/nextBestActionSuppressions/task-1" },
+      value: { taskId: "task-1", releasedAt: null },
+    });
     expect(alternative.task.name).toBe("Prepare launch");
     expect(dismissal.task.name).toBe("Prepare launch");
+  });
+
+  it("returns only active suppression task ids and lazily removes expired records", async () => {
+    const deleteExpired = vi.fn(async () => undefined);
+    const db = {
+      collection: () => ({
+        doc: () => ({
+          collection: () => ({
+            get: async () => ({
+              docs: [
+                { id: "active-task", data: () => ({ taskId: "active-task", expiresAt: { toMillis: () => Date.parse("2026-08-07T10:00:00.000Z") }, releasedAt: null }), ref: { delete: vi.fn() } },
+                { id: "released-task", data: () => ({ taskId: "released-task", expiresAt: { toMillis: () => Date.parse("2026-08-07T10:00:00.000Z") }, releasedAt: { toMillis: () => Date.parse("2026-08-07T09:01:00.000Z") } }), ref: { delete: vi.fn() } },
+                { id: "expired-task", data: () => ({ taskId: "expired-task", expiresAt: { toMillis: () => Date.parse("2026-08-07T08:59:00.000Z") }, releasedAt: null }), ref: { delete: deleteExpired } },
+              ],
+            }),
+          }),
+        }),
+      }),
+    };
+    const repository = createFirestoreNextBestActionRepository(db as never);
+
+    await expect(repository.loadSuppressedTaskIds({ uid: "uid-1", nowMs: Date.parse("2026-08-07T09:00:00.000Z") })).resolves.toEqual(["active-task"]);
+    expect(deleteExpired).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not extend an existing active suppression when the task is dismissed again", async () => {
+    const sets = vi.fn();
+    const row = recommendation();
+    const db = {
+      collection: (root: string) => ({ doc: (uid: string) => ({ collection: (collectionName: string) => ({ doc: (id: string) => ({ path: `${root}/${uid}/${collectionName}/${id}` }) }) }) }),
+      runTransaction: async (callback: (transaction: { get: (ref: { path: string }) => Promise<unknown>; update: () => void; set: () => void }) => Promise<unknown>) => callback({
+        get: async (ref) => ref.path.includes("/nextBestActionSuppressions/")
+          ? { exists: true, data: () => ({ taskId: "task-1", expiresAt: { toMillis: () => Date.parse("2026-08-07T10:00:00.000Z") }, releasedAt: null }) }
+          : { exists: true, data: () => buildNextBestActionFirestoreRecord(row) },
+        update: vi.fn(),
+        set: sets,
+      }),
+    };
+    const repository = createFirestoreNextBestActionRepository(db as never);
+
+    await expect(repository.dismissRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs: Date.parse("2026-08-07T09:05:00.000Z") })).resolves.toBe("dismissed");
+    expect(sets).not.toHaveBeenCalled();
+  });
+
+  it("releases active suppressions for other tasks but retains the completed task suppression", async () => {
+    const updates: Array<{ ref: { path: string }; value: Record<string, unknown> }> = [];
+    const docs = [
+      { id: "task-suppressed", ref: { path: "suppressions/task-suppressed" }, data: () => ({ expiresAt: { toMillis: () => Date.parse("2026-08-07T10:00:00.000Z") }, releasedAt: null }) },
+      { id: "task-completed", ref: { path: "suppressions/task-completed" }, data: () => ({ expiresAt: { toMillis: () => Date.parse("2026-08-07T10:00:00.000Z") }, releasedAt: null }) },
+      { id: "already-released", ref: { path: "suppressions/already-released" }, data: () => ({ expiresAt: { toMillis: () => Date.parse("2026-08-07T10:00:00.000Z") }, releasedAt: { toMillis: () => Date.parse("2026-08-07T09:01:00.000Z") } }) },
+    ];
+    const db = {
+      collection: () => ({ doc: () => ({ collection: () => ({}) }) }),
+      runTransaction: async (callback: (transaction: { get: () => Promise<unknown>; update: (ref: { path: string }, value: Record<string, unknown>) => void }) => Promise<unknown>) => callback({
+        get: async () => ({ docs }),
+        update: (ref, value) => updates.push({ ref, value }),
+      }),
+    };
+    const repository = createFirestoreNextBestActionRepository(db as never);
+
+    await expect(repository.releaseSuppressionsForCompletedTask({ uid: "uid-1", completedTaskId: "task-completed", nowMs: Date.parse("2026-08-07T09:00:00.000Z") })).resolves.toBe(1);
+    expect(updates).toHaveLength(1);
+    expect(updates[0]?.ref.path).toBe("suppressions/task-suppressed");
+    expect(updates[0]?.value).toHaveProperty("releasedAt");
   });
 
   it("expires prior active recommendations while preserving the newly refreshed recommendation", async () => {

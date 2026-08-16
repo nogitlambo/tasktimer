@@ -451,7 +451,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     ctx.els.appPageHistory?.classList.toggle("appPageOn", nextPage === "history");
     ctx.els.footerTasksBtn?.classList.toggle("isOn", nextPage === "tasks" || nextPage === "schedule");
     ctx.els.footerDashboardBtn?.classList.toggle("isOn", nextPage === "dashboard");
-    ctx.els.footerSessionNotesBtn?.classList.toggle("isOn", nextPage === "notes");
+    ctx.els.footerExecutiveBtn?.classList.toggle("isOn", nextPage === "executive");
     ctx.els.footerTest2Btn?.classList.toggle("isOn", nextPage === "friends");
     ctx.els.footerLeaderboardBtn?.classList.toggle("isOn", nextPage === "leaderboard");
     ctx.els.commandCenterTasksBtn?.classList.toggle("isOn", nextPage === "tasks" || nextPage === "schedule");
@@ -658,9 +658,9 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     ctx.on(ctx.els.footerDashboardBtn, "click", () =>
       applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" })
     );
-    ctx.on(ctx.els.footerSessionNotesBtn, "click", (e: any) => {
+    ctx.on(ctx.els.footerExecutiveBtn, "click", (e: any) => {
       e?.preventDefault?.();
-      applyAppPage("notes", { pushNavStack: true, syncUrl: "push" });
+      applyAppPage("executive", { pushNavStack: true, syncUrl: "push" });
     });
     ctx.on(ctx.els.footerTest2Btn, "click", (e: any) => {
       e?.preventDefault?.();

@@ -137,6 +137,7 @@ const els = {
   initialAuthBusyText: documentRef.getElementById("initialAuthBusyText"),
   footerTasksBtn: documentRef.getElementById("footerTasksBtn") as HTMLButtonElement | null,
   footerSessionNotesBtn: documentRef.getElementById("footerSessionNotesBtn") as HTMLButtonElement | null,
+  footerExecutiveBtn: documentRef.getElementById("footerExecutiveBtn") as HTMLButtonElement | null,
   footerDashboardBtn: documentRef.getElementById("footerDashboardBtn") as HTMLButtonElement | null,
   footerTest2Btn: documentRef.getElementById("footerTest2Btn") as HTMLButtonElement | null,
   footerTest2AlertBadge: documentRef.getElementById("footerTest2AlertBadge") as HTMLElement | null,
@@ -218,7 +219,6 @@ const els = {
   dashboardHeatSummaryBody: documentRef.getElementById("dashboardHeatSummaryBody"),
   dashboardHeatSummaryCloseBtn: documentRef.getElementById("dashboardHeatSummaryCloseBtn") as HTMLButtonElement | null,
 
-  menuIcon: documentRef.getElementById("menuIcon"),
   historyManagerScreen: documentRef.getElementById("historyManagerScreen"),
   historyManagerLoadingOverlay: documentRef.getElementById("historyManagerLoadingOverlay") as HTMLElement | null,
   historyManagerBtn: documentRef.getElementById("historyManagerBtn"),

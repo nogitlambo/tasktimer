@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   isDeletedAccountUid: vi.fn(),
   createFirestoreNextBestActionRepository: vi.fn(),
   loadCandidates: vi.fn(),
+  loadSuppressedTaskIds: vi.fn(),
   saveRecommendation: vi.fn(),
   enforceUidRateLimit: vi.fn(),
   createCapacityRepository: vi.fn(),
@@ -80,8 +81,10 @@ describe("POST /api/recommendations/next-best-action", () => {
       },
     ]);
     mocks.saveRecommendation.mockResolvedValue(undefined);
+    mocks.loadSuppressedTaskIds.mockResolvedValue([]);
     mocks.createFirestoreNextBestActionRepository.mockReturnValue({
       loadCandidates: mocks.loadCandidates,
+      loadSuppressedTaskIds: mocks.loadSuppressedTaskIds,
       saveRecommendation: mocks.saveRecommendation,
     });
     mocks.createCapacityRepository.mockReturnValue({});
@@ -177,6 +180,17 @@ describe("POST /api/recommendations/next-best-action", () => {
       empty: true,
       message: "Nothing needs your attention right now.",
     });
+    expect(mocks.saveRecommendation).not.toHaveBeenCalled();
+  });
+
+  it("excludes tasks suppressed by a previous dismissal", async () => {
+    mocks.loadSuppressedTaskIds.mockResolvedValueOnce(["task-1"]);
+
+    const result = await POST(request({ availableMinutes: 20 }));
+    const payload = await result.json();
+
+    expect(result.status).toBe(200);
+    expect(payload).toMatchObject({ ok: true, recommendation: null });
     expect(mocks.saveRecommendation).not.toHaveBeenCalled();
   });
 

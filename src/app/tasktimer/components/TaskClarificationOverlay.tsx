@@ -88,6 +88,7 @@ export default function TaskClarificationOverlay() {
   const [selectedSubtaskIds, setSelectedSubtaskIds] = useState<string[]>([]);
   const [draftSubtaskTitles, setDraftSubtaskTitles] = useState<Record<string, string>>({});
   const [createdSubtaskIds, setCreatedSubtaskIds] = useState<string[]>([]);
+  const [createdSubtaskLabels, setCreatedSubtaskLabels] = useState<Record<string, string>>({});
   const [applyStatus, setApplyStatus] = useState<"idle" | "applying" | "applied" | "error">("idle");
   const [applyError, setApplyError] = useState<string | null>(null);
   const [undoStatus, setUndoStatus] = useState<"idle" | "available" | "undoing" | "reversed" | "partial" | "expired" | "error">("idle");
@@ -117,6 +118,7 @@ export default function TaskClarificationOverlay() {
       setSelectedSubtaskIds([]);
       setDraftSubtaskTitles({});
       setCreatedSubtaskIds([]);
+      setCreatedSubtaskLabels({});
       setApplyStatus("idle");
       setApplyError(null);
       setUndoStatus("idle");
@@ -280,6 +282,13 @@ export default function TaskClarificationOverlay() {
     setApplyStatus("applying");
     setApplyError(null);
     const applyStartedAt = Date.now();
+    const selectedSubtasks = state.recommendation.subtasks
+      .filter((subtask) => selectedSubtaskIds.includes(subtask.id))
+      .map((subtask) => ({
+        id: subtask.id,
+        title: (draftSubtaskTitles[subtask.id] || subtask.title).trim(),
+        estimatedMinutes: subtask.estimatedMinutes,
+      }));
     try {
       const auth = getFirebaseAuthClient();
       const idToken = await auth?.currentUser?.getIdToken();
@@ -299,13 +308,7 @@ export default function TaskClarificationOverlay() {
               ...(titleSelected ? { name: draftTitle.trim() } : {}),
               ...(selectedSubtaskIds.length
                 ? {
-                    subtasks: state.recommendation.subtasks
-                      .filter((subtask) => selectedSubtaskIds.includes(subtask.id))
-                      .map((subtask) => ({
-                        id: subtask.id,
-                        title: (draftSubtaskTitles[subtask.id] || subtask.title).trim(),
-                        estimatedMinutes: subtask.estimatedMinutes,
-                      })),
+                    subtasks: selectedSubtasks,
                   }
                 : {}),
             },
@@ -323,8 +326,11 @@ export default function TaskClarificationOverlay() {
       const nextCreatedSubtaskIds =
         recommendationPayload && typeof recommendationPayload === "object" && Array.isArray((recommendationPayload as { createdSubtaskIds?: unknown }).createdSubtaskIds)
           ? (recommendationPayload as { createdSubtaskIds: unknown[] }).createdSubtaskIds.filter((id): id is string => typeof id === "string")
-          : [];
+           : [];
       setCreatedSubtaskIds(nextCreatedSubtaskIds);
+      setCreatedSubtaskLabels(
+        Object.fromEntries(nextCreatedSubtaskIds.map((taskId, index) => [taskId, selectedSubtasks[index]?.title || "Created task"]))
+      );
       const reversibleUntil = recommendationPayload && typeof recommendationPayload === "object" ? (recommendationPayload as { reversibleUntil?: unknown }).reversibleUntil : null;
       const reversibleUntilMs = typeof reversibleUntil === "string" ? Date.parse(reversibleUntil) : Number.NaN;
       setUndoDeadlineMs(Number.isFinite(reversibleUntilMs) ? reversibleUntilMs : null);
@@ -555,7 +561,7 @@ export default function TaskClarificationOverlay() {
               <ul>
                 {createdSubtaskIds.map((taskId) => (
                   <li key={taskId}>
-                    <span>{taskId}</span>
+                    <span>{createdSubtaskLabels[taskId] || "Created task"}</span>
                     <button className="btn btn-accent small" type="button" onClick={() => dispatchTaskClarificationStartTaskEvent({ taskId })}>
                       Start now
                     </button>

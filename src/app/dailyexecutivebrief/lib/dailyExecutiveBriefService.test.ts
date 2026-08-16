@@ -113,4 +113,30 @@ describe("generateDailyExecutiveBrief", () => {
     expect(result.snapshot.plan.planHealth).toBe("SLIGHTLY_OVERLOADED");
     expect(result.snapshot.adaptiveCapacity?.primarySource).toBe("WEEKDAY_HISTORY");
   });
+
+  it("creates a brief when adaptive remaining capacity is zero", async () => {
+    const result = await generateDailyExecutiveBrief({
+      uid: "uid-1",
+      date: "2026-08-07",
+      repository: repository(),
+      nowMs: Date.parse("2026-08-07T10:00:00Z"),
+      capacityLoader: vi.fn().mockResolvedValue({
+        fullDayRange: { min: 0, max: 0 },
+        remainingRange: { min: 0, max: 0 },
+        state: "USER_DEFINED",
+        confidence: "MEDIUM",
+        primarySource: "USER_CUSTOM",
+        sourceSignals: ["USER_OVERRIDE", "AVAILABLE_TIME_CAP"],
+        completedMinutesToday: 5,
+        availableMinutesCeiling: 0,
+        sourceVersion: "e".repeat(64),
+      }),
+    });
+
+    expect(result.snapshot.plan).toMatchObject({
+      capacityMinutes: 0,
+      realisticWorkloadRange: { minMinutes: 0, maxMinutes: 0 },
+      planHealth: "SIGNIFICANTLY_OVERLOADED",
+    });
+  });
 });

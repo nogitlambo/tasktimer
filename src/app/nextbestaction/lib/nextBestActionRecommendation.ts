@@ -66,6 +66,7 @@ export const NextBestActionPayloadSchema = z
     durationMinutes: z.number().int().min(1).max(1440).nullable(),
     durationSource: DurationEstimateSourceSchema.nullable(),
     timeGoalMinutes: z.number().int().min(1).max(1440).nullable().optional(),
+    dailyProgressPercent: z.number().int().min(0).max(100).nullable().optional(),
     latestHistoryEntry: LatestHistoryEntrySchema.nullable().optional(),
     alternativeIndex: z.number().int().min(0).max(3),
     explanation: nullableText(500),
@@ -95,6 +96,7 @@ export function createNextBestActionRecommendation(input: {
   durationMinutes: number;
   durationSource: DurationEstimateSource;
   timeGoalMinutes?: number | null;
+  dailyProgressPercent?: number | null;
   latestHistoryEntry?: { ts: number; ms: number } | null;
   alternativeIndex?: number;
   explanation: string;
@@ -123,6 +125,7 @@ export function createNextBestActionRecommendation(input: {
       durationMinutes: input.durationMinutes,
       durationSource: input.durationSource,
       timeGoalMinutes: input.timeGoalMinutes ?? null,
+      dailyProgressPercent: input.dailyProgressPercent ?? null,
       latestHistoryEntry: input.latestHistoryEntry ?? null,
       alternativeIndex: input.alternativeIndex || 0,
       explanation: input.explanation.trim(),

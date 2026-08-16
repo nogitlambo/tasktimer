@@ -40,4 +40,9 @@ describe("TaskClarificationOverlay hardening", () => {
     expect(source).toContain("trackTaskClarificationLifecycle(payload.partial ? \"partial_undo\" : \"undone\"");
     expect(source).not.toContain("console.log");
   });
+
+  it("shows created subtasks by their approved titles, not their generated IDs", () => {
+    expect(source).toContain("createdSubtaskLabels");
+    expect(source).toContain("subtask.title");
+  });
 });

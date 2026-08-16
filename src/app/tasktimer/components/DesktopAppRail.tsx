@@ -7,7 +7,9 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import AppImg from "@/components/AppImg";
 import { onAuthStateChanged, type User } from "firebase/auth";
@@ -37,6 +39,14 @@ import {
 import { getErrorMessage } from "./settings/settingsAccountService";
 import { useSharedProfileSessionActions } from "./settings/useSharedProfileSessionActions";
 import SignOutConfirmModal from "./SignOutConfirmModal";
+import {
+  getMobileSwipeCloseDragY,
+  getResetMobileSwipeCloseState,
+  getStartMobileSwipeCloseState,
+  getUpdatedMobileSwipeCloseState,
+  shouldCloseFromMobileSwipe,
+  type MobileSwipeCloseState,
+} from "./mobileSwipeClose";
 
 type DesktopRailPage =
   | "dashboard"
@@ -68,6 +78,7 @@ type NavItem = {
   mobileId: string;
   href: string;
   showInMobileFooter?: boolean;
+  mobileFooterOrder?: number;
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -79,6 +90,7 @@ const NAV_ITEMS: NavItem[] = [
     desktopId: "commandCenterDashboardBtn",
     mobileId: "footerDashboardBtn",
     href: "/dashboard",
+    mobileFooterOrder: 0,
   },
   {
     page: "notes",
@@ -88,6 +100,7 @@ const NAV_ITEMS: NavItem[] = [
     desktopId: "commandCenterSessionNotesBtn",
     mobileId: "footerSessionNotesBtn",
     href: "/notes",
+    showInMobileFooter: false,
   },
   {
     page: "tasks",
@@ -97,6 +110,7 @@ const NAV_ITEMS: NavItem[] = [
     desktopId: "commandCenterTasksBtn",
     mobileId: "footerTasksBtn",
     href: "/tasklaunch",
+    mobileFooterOrder: 2,
   },
   {
     page: "executive",
@@ -106,7 +120,7 @@ const NAV_ITEMS: NavItem[] = [
     desktopId: "commandCenterExecutiveBtn",
     mobileId: "footerExecutiveBtn",
     href: "/executive",
-    showInMobileFooter: false,
+    mobileFooterOrder: 1,
   },
   {
     page: "friends",
@@ -116,6 +130,7 @@ const NAV_ITEMS: NavItem[] = [
     desktopId: "commandCenterGroupsBtn",
     mobileId: "footerTest2Btn",
     href: "/friends",
+    mobileFooterOrder: 3,
   },
   {
     page: "leaderboard",
@@ -125,6 +140,7 @@ const NAV_ITEMS: NavItem[] = [
     desktopId: "commandCenterLeaderboardBtn",
     mobileId: "footerLeaderboardBtn",
     href: "/leaderboards",
+    mobileFooterOrder: 4,
   },
   {
     page: "history",
@@ -202,8 +218,18 @@ export function getDesktopRailPrimaryNavItems() {
 }
 
 export function getMobileFooterNavItems() {
-  return NAV_ITEMS.filter((item) => item.showInMobileFooter !== false);
+  return NAV_ITEMS
+    .filter((item) => item.showInMobileFooter !== false)
+    .sort((left, right) => (left.mobileFooterOrder ?? Number.MAX_SAFE_INTEGER) - (right.mobileFooterOrder ?? Number.MAX_SAFE_INTEGER));
 }
+
+export function getMobileFooterUtilityItems() {
+  return ["account", "settings", "userGuide"]
+    .map((page) => NAV_ITEMS.find((item) => item.page === page))
+    .filter((item): item is NavItem => !!item);
+}
+
+const MOBILE_FOOTER_SWIPE_THRESHOLD_PX = 70;
 
 const RAIL_TRANSITION_STORAGE_KEY = "tasktimer:railSlideTransition";
 function railPageOrder(page: DesktopRailPage) {
@@ -524,8 +550,12 @@ export default function DesktopAppRail({
   const [profileMenuClosing, setProfileMenuClosing] = useState(false);
   const [helpCenterMenuOpen, setHelpCenterMenuOpen] = useState(false);
   const [temporaryModalOpen, setTemporaryModalOpen] = useState(false);
+  const [mobileFooterSheetOpen, setMobileFooterSheetOpen] = useState(false);
+  const [mobileFooterSheetDragY, setMobileFooterSheetDragY] = useState(0);
+  const [isMobileFooterSheetDragging, setIsMobileFooterSheetDragging] = useState(false);
   const profileMenuCloseTimerRef = useRef<number | null>(null);
   const profileMenuRef = useRef<HTMLDetailsElement | null>(null);
+  const mobileFooterSwipeRef = useRef<MobileSwipeCloseState>(getResetMobileSwipeCloseState());
   const { signOutBusy, actionBusy, runSignOut } = useSharedProfileSessionActions();
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
@@ -696,6 +726,74 @@ export default function DesktopAppRail({
     }
   }, [actionBusy, runSignOut]);
 
+  const resetMobileFooterSheetDrag = useCallback(() => {
+    mobileFooterSwipeRef.current = getResetMobileSwipeCloseState();
+    setMobileFooterSheetDragY(0);
+    setIsMobileFooterSheetDragging(false);
+  }, []);
+
+  const closeMobileFooterSheet = useCallback(() => {
+    resetMobileFooterSheetDrag();
+    setMobileFooterSheetOpen(false);
+  }, [resetMobileFooterSheetDrag]);
+
+  const toggleMobileFooterSheetFromKeyboard = useCallback(() => {
+    resetMobileFooterSheetDrag();
+    setMobileFooterSheetOpen((open) => !open);
+  }, [resetMobileFooterSheetDrag]);
+
+  const handleMobileFooterHandlePointerDown = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) return;
+    mobileFooterSwipeRef.current = getStartMobileSwipeCloseState(event.pointerId, event.clientX, event.clientY);
+    setMobileFooterSheetDragY(0);
+    setIsMobileFooterSheetDragging(true);
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture is optional in embedded browsers.
+    }
+  }, []);
+
+  const handleMobileFooterHandlePointerMove = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
+    const swipe = mobileFooterSwipeRef.current;
+    if (!swipe.active || swipe.consumed || swipe.pointerId !== event.pointerId) return;
+    const nextSwipe = getUpdatedMobileSwipeCloseState(swipe, event.pointerId, event.clientX, event.clientY);
+    mobileFooterSwipeRef.current = nextSwipe;
+    const direction = mobileFooterSheetOpen ? "down" : "up";
+    const dragY = getMobileSwipeCloseDragY(nextSwipe, direction);
+    if (dragY <= 0) return;
+    event.preventDefault();
+    setMobileFooterSheetDragY(mobileFooterSheetOpen ? dragY : -dragY);
+  }, [mobileFooterSheetOpen]);
+
+  const handleMobileFooterHandlePointerEnd = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
+    const swipe = mobileFooterSwipeRef.current;
+    if (swipe.pointerId !== event.pointerId) return;
+    const direction = mobileFooterSheetOpen ? "down" : "up";
+    if (shouldCloseFromMobileSwipe(swipe, MOBILE_FOOTER_SWIPE_THRESHOLD_PX, direction)) {
+      mobileFooterSwipeRef.current.consumed = true;
+      playTaskFlipClickAudio();
+      setMobileFooterSheetOpen((open) => !open);
+    }
+    resetMobileFooterSheetDrag();
+  }, [mobileFooterSheetOpen, resetMobileFooterSheetDrag]);
+
+  useEffect(() => {
+    if (!mobileFooterSheetOpen || typeof window === "undefined") return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      playTaskFlipClickAudio();
+      closeMobileFooterSheet();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [closeMobileFooterSheet, mobileFooterSheetOpen]);
+
+  useEffect(() => {
+    document.body.classList.toggle("taskLaunchMobileFooterSheetOpen", mobileFooterSheetOpen);
+    return () => document.body.classList.remove("taskLaunchMobileFooterSheetOpen");
+  }, [mobileFooterSheetOpen]);
+
   const handleOpenBillingPortal = useCallback(async () => {
     const auth = getFirebaseAuthClient();
     const currentUser = auth?.currentUser || null;
@@ -865,13 +963,78 @@ export default function DesktopAppRail({
       />
 
       {showMobileFooter ? (
-        <>
+        <div className={`appFooterSheet${mobileFooterSheetOpen ? " isOpen" : ""}${isMobileFooterSheetDragging ? " isDragging" : ""}`}>
+          <button
+            className="appFooterSheetBackdrop"
+            type="button"
+            tabIndex={mobileFooterSheetOpen ? 0 : -1}
+            aria-label="Close navigation utilities"
+            onClick={() => {
+              playTaskFlipClickAudio();
+              closeMobileFooterSheet();
+            }}
+          />
+          <section
+            className="appFooterSheetPanel"
+            id="mobileFooterUtilities"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation utilities"
+            aria-hidden={mobileFooterSheetOpen ? "false" : "true"}
+            style={{ "--mobile-footer-sheet-drag-y": `${mobileFooterSheetDragY}px` } as CSSProperties}
+          >
+            <div className="appFooterSheetUtilities" role="menu" aria-label="Navigation utilities">
+              {getMobileFooterUtilityItems().map((item) => (
+                <a
+                  key={item.mobileId}
+                  className="appFooterSheetUtility"
+                  href={item.href}
+                  role="menuitem"
+                  onClick={closeMobileFooterSheet}
+                >
+                  <AppImg className="appFooterSheetUtilityIcon" src={item.iconSrc} alt="" aria-hidden="true" />
+                  <span>{item.label === "Account" ? "Profile" : item.label}</span>
+                </a>
+              ))}
+              <button
+                className="appFooterSheetUtility"
+                type="button"
+                role="menuitem"
+                disabled={actionBusy}
+                onClick={() => {
+                  closeMobileFooterSheet();
+                  setShowSignOutConfirm(true);
+                }}
+              >
+                <AppImg className="appFooterSheetUtilityIcon" src="/icons/icons_default/signout.webp" alt="" aria-hidden="true" />
+                <span>{getDesktopRailProfileSignOutLabel(signOutBusy)}</span>
+              </button>
+            </div>
+          </section>
           <div className="appFooterNav" aria-label="App pages">
-            {NAV_ITEMS.filter((item) => item.showInMobileFooter !== false).map((item) =>
+            <button
+              className="appFooterSheetHandle"
+              type="button"
+              aria-label={mobileFooterSheetOpen ? "Drag down to close navigation utilities" : "Drag up to open navigation utilities"}
+              aria-controls="mobileFooterUtilities"
+              aria-expanded={mobileFooterSheetOpen}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                toggleMobileFooterSheetFromKeyboard();
+              }}
+              onPointerDown={handleMobileFooterHandlePointerDown}
+              onPointerMove={handleMobileFooterHandlePointerMove}
+              onPointerUp={handleMobileFooterHandlePointerEnd}
+              onPointerCancel={handleMobileFooterHandlePointerEnd}
+            >
+              <span aria-hidden="true" />
+            </button>
+            {getMobileFooterNavItems().map((item) =>
               renderMobileNavItem(item, navActivePage, useClientNavButtons)
             )}
           </div>
-        </>
+        </div>
       ) : null}
       <div className="overlay" id="rewardsInfoOverlay">
         <div className="modal rewardsInfoModal" role="dialog" aria-modal="true" aria-label="Subscription details">

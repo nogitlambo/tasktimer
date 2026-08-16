@@ -58,7 +58,7 @@ const PRIMARY_CLICK_SELECTOR =
 const TASK_LAUNCH_CLICK_SELECTOR =
   'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #focusDial.isStopped, #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id], #timeGoalCompleteNextTaskOverlay [data-time-goal-next-task-id]';
 const SECONDARY_DIRECT_SELECTOR =
-  '.switch,[role="switch"],#closeMenuBtn,[data-nav-page],.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action="openAddTask"],[data-action="reset"],[data-action="edit"],#openFriendRequestModalBtn';
+  '.switch,[role="switch"],#closeMenuBtn,[data-nav-page],.dashboardRailMenuBtn,.settingsNavTile,.appFooterSheetUtility,#openAddTaskBtn,[data-action="openAddTask"],[data-action="reset"],[data-action="edit"],#openFriendRequestModalBtn';
 const FOOTER_NAV_SELECTOR = ".appFooterBtn";
 const CHECKBOX_SELECTOR = 'input[type="checkbox"],[role="checkbox"],.modalPreviewDropdownOption';
 const DESTRUCTIVE_CONFIRM_SELECTOR =

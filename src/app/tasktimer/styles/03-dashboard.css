@@ -1,23 +1,53 @@
 /* Generated from tasktimer.css split. */
 /* Executive experience and compact Dashboard summary */
 .executiveShell{--executive-accent:#c9ff24;--executive-panel:#111216;--executive-line:#1a1b20;--executive-status-good:var(--executive-accent);--executive-status-warning:#ffd84d;--executive-status-danger:#ff7462;width:min(1560px,100%);margin:0 auto;padding:20px 24px 28px;color:#f5f7fb}
+.executiveFlipScene{position:relative;width:100%;min-height:100px;perspective:2200px;transform-style:preserve-3d;isolation:isolate;transition:height .76s cubic-bezier(.16,1,.3,1);will-change:height}
+.executiveFlipFace{position:absolute;inset:0;width:100%;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:translateZ(0);transform-style:preserve-3d;transform-origin:center center;transition:transform .76s cubic-bezier(.16,1,.3,1);will-change:transform}
+.executiveFlipFaceFront{transform:translateZ(0) rotateY(0)}
+.executiveFlipFaceBack{transform:translateZ(0) rotateY(180deg)}
+.executiveFlipScene.isFlipped .executiveFlipFaceFront{pointer-events:none;transform:translateZ(0) rotateY(-180deg)}
+.executiveFlipScene.isFlipped .executiveFlipFaceBack{transform:translateZ(0) rotateY(0)}
+@media (prefers-reduced-motion:reduce){.executiveFlipScene,.executiveFlipFace{transition:none!important}}
+.brainDumpEmbedded{min-height:0!important;background:transparent!important}
+#app[aria-label="TaskLaunch App"] #appPageExecutive .brainDumpEmbeddedShell{width:100%;max-width:none;margin:0}
+.brainDumpEmbeddedShell{padding:20px 24px 28px!important}
+.brainDumpEmbeddedPanel{width:100%;max-width:none;border:1px solid #1a1b20;border-radius:12px;background:#111216;padding:20px}
+.brainDumpEmbeddedHeader{grid-template-columns:auto minmax(0,1fr);align-items:start}
+.brainDumpEmbeddedTitle{font-size:clamp(2rem,4vw,3.25rem)!important}
+.brainDumpPrimitivePanel{position:relative;border:1px solid #2a2f38!important;border-radius:8px!important;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012))!important;box-shadow:inset 0 1px rgba(255,255,255,.04),0 14px 30px rgba(0,0,0,.2)}
+.brainDumpPrimitiveTextarea{border:1px solid #2a2f38!important;border-radius:4px!important;background:#0d0f13!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important}
+.brainDumpPrimitiveTextarea:focus-visible{border-color:#c9ff24!important;box-shadow:0 0 0 2px rgba(201,255,36,.16),inset 0 1px 0 rgba(255,255,255,.025)!important}
+.brainDumpPrimitiveInput{width:100%;border:1px solid #2a2f38!important;border-radius:4px!important;background:#0d0f13!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important;color:#f5f7fb!important}
+.brainDumpPrimitiveInput:focus-visible{border-color:#c9ff24!important;box-shadow:0 0 0 2px rgba(201,255,36,.16),inset 0 1px 0 rgba(255,255,255,.025)!important}
+.brainDumpPrimitiveCheckbox{appearance:none;display:grid;place-content:center;width:18px!important;height:18px!important;margin:0;border:1px solid #8b929d;border-radius:0;background:#1a1b20;cursor:pointer}.brainDumpPrimitiveCheckbox:checked{border-color:#c9ff24;background:#c9ff24}.brainDumpPrimitiveCheckbox:checked::after{content:"";width:8px;height:5px;border:solid #050607;border-width:0 0 2px 2px;transform:translateY(-1px) rotate(-45deg)}.brainDumpPrimitiveCheckbox:focus-visible{outline:2px solid #c9ff24;outline-offset:2px}.brainDumpPrimitiveCheckbox:disabled{cursor:not-allowed;opacity:.5}
+.brainDumpPrimitiveAction,.brainDumpPrimitivePicker{min-height:38px!important;border:1px solid #424750!important;border-radius:4px!important;background:#1a1b20!important;color:#c7ccd5!important;font-family:var(--font-orbitron)!important;font-size:11px!important;letter-spacing:.04em!important;box-shadow:none!important}
+.brainDumpPrimitiveAction:hover,.brainDumpPrimitiveAction:focus-visible,.brainDumpPrimitivePicker:hover,.brainDumpPrimitivePicker:focus-within{border-color:#c9ff24!important;background:#202227!important;color:#c9ff24!important;outline:none!important}
+.brainDumpPrimitivePrimaryAction{border-color:#c9ff24!important;background:#c9ff24!important;color:#080a0d!important}.brainDumpPrimitivePrimaryAction:hover,.brainDumpPrimitivePrimaryAction:focus-visible{background:#d8ff57!important;color:#080a0d!important}
+.brainDumpPrimitiveAction:disabled{border-color:#2a2f38!important;background:#15171d!important;color:#666d78!important}
+.brainDumpPrimitiveLink{width:max-content;min-width:0!important;padding-inline:14px!important;text-decoration:none!important}.brainDumpPrimitiveReviewItem{padding:14px!important}.brainDumpCaptureModeField{display:grid;gap:8px}.brainDumpCaptureModePills{display:flex;flex-wrap:wrap;gap:8px}.brainDumpCaptureModePill{min-height:38px;min-width:78px;border:1px solid #424750;border-radius:4px;background:#1a1b20;color:#c7ccd5;font:11px var(--font-orbitron);letter-spacing:.04em}.brainDumpCaptureModePill:hover,.brainDumpCaptureModePill:focus-visible{border-color:#c9ff24;color:#c9ff24;outline:none}.brainDumpCaptureModePill[aria-pressed="true"]{border-color:#c9ff24!important;background:#c9ff24!important;color:#080a0d!important}.brainDumpCaptureModePill:disabled{border-color:#2a2f38;background:#15171d;color:#666d78}
+@media (max-width:640px){.brainDumpEmbeddedShell{padding:18px 14px 90px!important}.brainDumpEmbeddedPanel{padding:14px}}
 .executiveHeader,.executiveSectionHeading,.executiveTools,.dashboardExecutiveSummary .dashboardPanelLabelRow{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
-.executiveHeader{padding:2px 2px 18px;border-bottom:1px solid rgba(111,131,171,.22)}
+.executiveHeader{padding:2px 2px 18px;border-bottom:0}
 .executiveHeader h1,.executiveSectionHeading h2,.executiveSectionHeading h3,.executiveTools h2,.executiveCompactHeading h3,.executiveAttentionStack>h2{margin:0;color:#f7f9ff}
 .executiveHeader h1{font-family:var(--font-readable,inherit);font-size:clamp(26px,3.4vw,38px);letter-spacing:-.04em}
 .executiveHeaderSummary{margin:7px 0 0;color:#aeb6c7;max-width:620px;font:15px/1.5 var(--font-readable,inherit)}
 .executiveEyebrow{margin:0 0 8px;color:var(--executive-accent);font-size:12px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}
-.executiveTodayMarker{display:grid;flex:0 0 auto;gap:3px;padding:7px 0;text-align:right;color:#98a3b7;font:700 10px var(--font-readable,inherit);letter-spacing:.12em;text-transform:uppercase}.executiveTodayMarker strong{color:#f5f7fb;font:700 13px var(--font-readable,inherit);letter-spacing:.02em;text-transform:none}
+.executiveTodayMarker{display:grid;flex:0 0 auto;gap:3px;padding:7px 0;text-align:right;color:#98a3b7;font:700 10px var(--font-readable,inherit);letter-spacing:.12em;text-transform:uppercase}.executiveTodayMarker strong{color:#f5f7fb;font:700 13px var(--font-readable,inherit);letter-spacing:.02em;text-transform:none}.executiveTodayLocalTime{color:#aeb6c7;font:500 11px var(--font-readable,inherit);letter-spacing:.01em;text-transform:none}
+#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveTodayRefreshButton{justify-self:end;margin-top:6px;min-height:30px;padding-inline:10px;font-size:10px}
 .executiveTodayHealth{position:relative;z-index:5;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:0 0 20px;overflow:visible;background:transparent}
-.executiveMetricCard{display:flex !important;align-items:center;gap:18px;min-height:102px;padding:16px 18px !important;border:1px solid var(--executive-line) !important;border-radius:16px !important;background:var(--executive-panel) !important;box-shadow:inset 0 1px rgba(255,255,255,.035),0 12px 30px rgba(0,0,0,.2)}
+.executiveMetricCard{display:flex !important;align-items:center;gap:18px;min-height:102px;padding:16px 18px !important;border:1px solid var(--executive-line) !important;border-radius:16px !important;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012) 48%,rgba(0,0,0,.08)),#111216 !important;box-shadow:inset 0 1px rgba(255,255,255,.035),0 12px 30px rgba(0,0,0,.2)}
 .executiveMetricCard{position:relative;cursor:help;isolation:isolate}.executiveMetricCard:focus-visible{outline:1px solid var(--executive-accent);outline-offset:2px}.executiveMetricHelper{position:absolute;z-index:4;left:50%;top:calc(100% + 9px);width:min(360px,calc(100vw - 32px));padding:10px 12px;border:1px solid var(--executive-line);border-radius:8px;background:#111216;color:#c3cada;font:13px/1.4 var(--font-readable,inherit);text-align:left;box-shadow:0 12px 26px rgba(0,0,0,.34);opacity:0;pointer-events:none;transform:translate(-50%,-4px);transition:opacity .14s ease,transform .14s ease}.executiveMetricHelper strong,.executiveMetricHelper>span{display:block}.executiveMetricHelper strong{margin-bottom:6px;color:#f5f7fb;font-weight:700}.executiveMetricHelper ul{margin:6px 0 0;padding-left:18px}.executiveMetricHelper li+li{margin-top:4px}.executiveMetricHelper b{color:#f5f7fb}.executiveMetricHelper .executivePlanHealthRealistic,.executiveMetricHelper .executiveCapacityConfidenceHigh{color:var(--executive-status-good)}.executiveMetricHelper .executivePlanHealthSlightlyOverloaded,.executiveMetricHelper .executiveCapacityConfidenceMedium{color:var(--executive-status-warning)}.executiveMetricHelper .executivePlanHealthSignificantlyOverloaded,.executiveMetricHelper .executiveCapacityConfidenceLow{color:var(--executive-status-danger)}.executiveMetricHelper::before{content:"";position:absolute;top:-5px;left:50%;width:8px;height:8px;border-top:1px solid var(--executive-line);border-left:1px solid var(--executive-line);background:#111216;transform:translateX(-50%) rotate(45deg)}.executiveMetricCard.isHelperVisible .executiveMetricHelper{opacity:1;transform:translate(-50%,0)}
 .executiveMetricIcon{display:grid;place-items:center;flex:0 0 58px;width:58px;height:58px;border:1px solid var(--executive-line);border-radius:50%;background:var(--executive-panel);box-shadow:0 5px 12px rgba(0,0,0,.45),inset 0 1px rgba(255,255,255,.09)}
 .executiveMetricIcon img{width:29px;height:29px;object-fit:contain;filter:sepia(1) saturate(3) hue-rotate(30deg) brightness(1.35)}
 .executiveMetricPlanHealth .executiveMetricIcon img{filter:none}
 .executiveMetricCopy{display:grid;min-width:0;gap:5px}.executiveMetricCopy>span{color:#c3cada;font:700 11px var(--font-readable,inherit);letter-spacing:.04em;text-transform:uppercase}.executiveMetricCopy strong{font:700 clamp(20px,2vw,29px) var(--font-readable,inherit);color:#f8f9fc;white-space:nowrap}.executiveMetricCopy i{display:block;width:min(224px,100%);height:6px;border-radius:99px;background:linear-gradient(90deg,var(--executive-accent) 0 62%,#39435b 62%);box-shadow:0 0 9px rgba(201,255,36,.45)}
+#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveMetricCopy strong[data-executive-metric-loading="true"]{color:#c3cada;font:500 13px var(--font-readable,inherit);animation:executiveMetricLoadingPulse 1.35s ease-in-out infinite}
+@keyframes executiveMetricLoadingPulse{0%,100%{opacity:.5}50%{opacity:1}}
+@media (prefers-reduced-motion: reduce){#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveMetricCopy strong[data-executive-metric-loading="true"]{animation:none}}
+#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth{font-size:clamp(15px,1.25vw,20px);line-height:1.15;white-space:normal;overflow-wrap:normal}
 .executiveMetricCard:nth-child(2) i{background:repeating-linear-gradient(90deg,var(--executive-accent) 0 25px,transparent 25px 34px),#3a4357;box-shadow:none}.executiveMetricCard:nth-child(3) i{width:118px;background:radial-gradient(circle,var(--executive-accent) 0 4px,transparent 5px) 0 50%/24px 8px repeat-x;box-shadow:none}.executiveMetricCard:nth-child(4) i{background:linear-gradient(90deg,var(--executive-accent) 0 55%,#39435b 55%)}
 #app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health]{color:#ffb867}#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="REALISTIC"]{color:var(--executive-status-good)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="SLIGHTLY_OVERLOADED"]{color:var(--executive-status-warning)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="SIGNIFICANTLY_OVERLOADED"]{color:var(--executive-status-danger)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executiveCapacityConfidence[data-capacity-confidence="HIGH"]{color:var(--executive-status-good)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executiveCapacityConfidence[data-capacity-confidence="MEDIUM"]{color:var(--executive-status-warning)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executiveCapacityConfidence[data-capacity-confidence="LOW"]{color:var(--executive-status-danger)}
-.executiveDecisionFlow{display:grid;grid-template-columns:minmax(290px,.76fr) minmax(0,1.7fr);grid-template-areas:"nba nba" "attention tools";gap:20px}
+.executiveDecisionFlow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"nba attention" "tools tools";gap:20px}
 .executiveCard,.executiveTools,.dashboardExecutiveSummary{border:1px solid var(--executive-line);border-radius:16px;background:var(--executive-panel);padding:20px;box-shadow:inset 0 1px rgba(255,255,255,.035),0 14px 34px rgba(0,0,0,.2)}
 .executiveNbaCard.dashboardNextBestActionCard{grid-area:nba;position:relative;min-height:300px;overflow:hidden;border-color:var(--executive-line);background:var(--executive-panel)}
 #app[aria-label="TaskLaunch App"] #appPageExecutive .executiveNbaCard.dashboardNextBestActionCard,
@@ -26,10 +56,9 @@
   border-radius:8px;
 }
 .executiveNbaCard .executiveSectionHeading{position:relative;z-index:1}.executiveSectionHeading h2{font-size:17px}.executiveSectionHeading h3,.executiveCompactHeading h3,.executiveAttentionStack>h2{font-size:15px}.executiveStatus{position:relative;z-index:1;margin:12px 0;color:#aeb6c7;font:14px var(--font-readable,inherit)}
-.executiveNbaOrb{position:absolute;right:9%;bottom:24px;display:grid;place-items:center;width:150px;height:150px;border:2px solid rgba(201,255,36,.78);border-radius:50%;background:radial-gradient(circle,rgba(201,255,36,.22),rgba(201,255,36,.04) 48%,transparent 67%);box-shadow:0 0 0 10px rgba(201,255,36,.04),0 0 0 22px rgba(111,156,208,.035),0 0 35px rgba(201,255,36,.28)}.executiveNbaOrb::before,.executiveNbaOrb::after{content:"";position:absolute;border:1px solid rgba(114,143,203,.22);border-radius:50%}.executiveNbaOrb::before{inset:-38px}.executiveNbaOrb::after{inset:-76px}.executiveNbaOrb span{width:37px;height:37px;background:var(--executive-accent);clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);filter:drop-shadow(0 0 7px var(--executive-accent))}
 .executiveNbaContent,.executivePlanCard .dashboardDailyExecutiveBriefContent,.executiveCapacityContent{display:grid;gap:13px}
-.executiveNbaContent{position:relative;z-index:1;max-width:64%}.executiveNbaContent .dashboardNextBestActionTitle{font-size:clamp(30px,4vw,48px);line-height:1.04;letter-spacing:-.045em;margin:8px 0 0}.executiveNbaContent .dashboardNextBestActionFirstAction{font-size:16px;color:#f1f4fa}
-.executiveNbaContent .dashboardNextBestActionExplanation,.executivePlanCard .dashboardDailyExecutiveBriefSummary,.dashboardDailyCapacityExplanation{color:var(--text-secondary,#aeb9cc);font:13px var(--font-readable,inherit);line-height:1.5}
+.executiveNbaContent{position:relative;z-index:1;max-width:100%}.executiveNbaContent .dashboardNextBestActionTitle{font-size:clamp(30px,4vw,48px);line-height:1.04;letter-spacing:-.045em;margin:8px 0 0}.executiveNbaContent .dashboardNextBestActionFirstAction{font-size:16px;color:#f1f4fa}
+.executiveNbaContent .dashboardNextBestActionExplanation{padding-bottom:16px}.executiveNbaContent .dashboardNextBestActionExplanation,.executivePlanCard .dashboardDailyExecutiveBriefSummary,.dashboardDailyCapacityExplanation{color:var(--text-secondary,#aeb9cc);font:13px var(--font-readable,inherit);line-height:1.5}
 .executiveFacts{display:flex;flex-wrap:wrap;gap:8px;color:var(--text-secondary,#aeb9cc);font-size:12px}
 .executiveFacts span{padding:6px 8px;border:1px solid rgba(121,226,255,.16)}
 .executivePlanHealth{min-height:4px;border-left:3px solid var(--accent,#a9d65f);padding-left:10px;color:var(--text-primary,#f1f7ff);font-weight:700}
@@ -49,7 +78,11 @@
 .executiveAttentionStack:has(.executiveAttentionCard[data-schedule-repair-state="ready"]),.executiveAttentionStack:has(.executiveAttentionCard[data-schedule-repair-state="error"]),.executiveAttentionStack:has(.executiveAttentionCard[data-schedule-repair-state="locked"]),.executiveAttentionStack:has(.executiveRecoveryCard[data-recovery-state="ready"]),.executiveAttentionStack:has(.executiveRecoveryCard[data-recovery-state="error"]),.executiveAttentionStack:has(.executiveRecoveryCard[data-recovery-state="locked"]){display:grid}
 .executiveAttentionStack .executiveAttentionCard,.executiveAttentionStack .executiveRecoveryCard{display:none}
 .executiveAttentionStack .executiveAttentionCard[data-schedule-repair-state="ready"],.executiveAttentionStack .executiveAttentionCard[data-schedule-repair-state="error"],.executiveAttentionStack .executiveAttentionCard[data-schedule-repair-state="locked"],.executiveAttentionStack .executiveRecoveryCard[data-recovery-state="ready"],.executiveAttentionStack .executiveRecoveryCard[data-recovery-state="error"],.executiveAttentionStack .executiveRecoveryCard[data-recovery-state="locked"]{display:block}
-.executiveAttentionStack .executiveCard{padding:16px}.executiveAttentionStack .executiveSectionHeading{gap:12px}.executiveAttentionStack .executiveEyebrow{margin-bottom:4px;font-size:10px}.executiveAttentionStack .executiveSectionHeading h3{font-size:17px}.executiveTools{grid-area:tools;display:grid;align-content:center;gap:18px}.executiveToolsHeading>p:last-child{margin:7px 0 0;color:#aeb6c7;font:14px var(--font-readable,inherit)}.executiveToolLinks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.executiveToolLink{display:grid !important;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:104px;padding:14px !important;border:1px solid var(--executive-line) !important;border-radius:12px !important;background:var(--executive-panel) !important;text-align:left !important;text-decoration:none}.executiveToolLink img{width:32px;height:32px;object-fit:contain;filter:sepia(1) saturate(3) hue-rotate(30deg) brightness(1.35)}.executiveToolLink span{color:#f3f5fa;font:700 14px var(--font-readable,inherit)}.executiveToolLink i{color:#c4cee0;font-size:23px;font-style:normal}.executiveToolLink:hover,.executiveToolLink:focus-visible{border-color:var(--executive-accent)!important;color:var(--executive-accent)!important}
+.executiveAttentionStack .executiveCard{padding:16px}.executiveAttentionStack .executiveSectionHeading{gap:12px}.executiveAttentionStack .executiveEyebrow{margin-bottom:4px;font-size:10px}.executiveAttentionStack .executiveSectionHeading h3{font-size:17px}.executiveTools{grid-area:tools;display:block;padding:12px}.executiveToolsLabel{margin:0 0 10px}.executiveToolLinks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.executiveToolLinks>.btn{display:grid;align-content:start;justify-items:center;width:100%;min-width:0;height:auto;padding:16px!important;gap:10px;border-color:#3a3d45!important;text-align:center!important}.executiveToolIcon{box-sizing:content-box;flex:0 0 auto;width:34px;height:34px;padding:0;object-fit:contain;filter:brightness(0) saturate(100%) invert(92%) sepia(94%) saturate(1176%) hue-rotate(22deg) brightness(103%) contrast(105%)}.executiveToolCopy{display:grid;justify-items:center;gap:5px;min-width:0;text-align:center}.executiveToolLabel{padding-bottom:16px;color:inherit;font-size:13px;font-weight:500;line-height:1.2}.executiveToolCopy small{color:#aeb6c7;font-family:var(--font-readable);font-size:13px;font-weight:400;letter-spacing:0;line-height:1.35;text-align:center}
+.executiveToolIcon.executiveToolRepairIcon{flex-basis:auto;width:34px;height:34px;filter:none}
+#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveToolLinks>.btn{border-color:#3a3d45!important;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012) 48%,rgba(0,0,0,.08)),#111216!important}
+#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveToolLinks>.btn:hover:not(:disabled),#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveToolLinks>.btn:focus-visible{border-color:var(--accent)!important;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012) 48%,rgba(0,0,0,.08)),#111216!important}
+#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveToolLinks>.btn .executiveToolLabel{font-family:Orbitron,"Bahnschrift","Segoe UI Variable","Segoe UI",Arial,sans-serif!important}
 #appPageExecutive.isExecutiveFunctionDisabled button,
 #appPageExecutive.isExecutiveFunctionDisabled .executiveToolLinks .btn{display:none}
 .dashboardExecutiveSummary{grid-column:1/-1;margin-bottom:16px;cursor:pointer}
@@ -277,7 +310,7 @@
 
 .dashboardScheduleRepairAction{
   display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(130px,180px);
+  grid-template-columns:minmax(0,1fr);
   gap:8px 12px;
   align-items:center;
   padding:8px 0;
@@ -292,6 +325,64 @@
   display:block;
   color:#fff;
   font:13px var(--font-readable);
+}
+
+.dashboardScheduleRepairAction .dashboardScheduleRepairSuggestionRow{
+  align-items:start;
+}
+
+.dashboardScheduleRepairAction .primitiveSciFiModalCheckbox{
+  appearance:none;
+  -webkit-appearance:none;
+  display:inline-grid;
+  place-content:center;
+  flex:0 0 auto;
+  width:18px;
+  height:18px;
+  margin:1px 0 0;
+  border:1px solid rgba(170,178,190,.72);
+  border-radius:0;
+  background:rgba(26,27,32,.72);
+  box-shadow:none;
+  cursor:pointer;
+  transform:none;
+}
+
+.dashboardScheduleRepairAction .primitiveSciFiModalCheckbox:checked{
+  border-color:var(--accent);
+  background:var(--accent);
+}
+
+.dashboardScheduleRepairAction .primitiveSciFiModalCheckbox:checked::after{
+  content:"";
+  width:8px;
+  height:5px;
+  border:solid #050607;
+  border-width:0 0 2px 2px;
+  transform:translateY(-1px) rotate(-45deg);
+}
+
+.dashboardScheduleRepairAction .primitiveSciFiModalCheckbox:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
+
+.dashboardScheduleRepairSuggestionCopy{
+  display:grid;
+  min-width:0;
+  gap:3px;
+}
+
+.dashboardScheduleRepairAction .dashboardScheduleRepairSuggestionCopy > strong{
+  font-family:var(--font-orbitron);
+  text-transform:none;
+}
+
+.dashboardScheduleRepairSuggestionSubtext{
+  display:block;
+  font-family:var(--font-readable) !important;
+  font-weight:400;
+  text-transform:none;
 }
 
 .dashboardScheduleRepairAction > .btn{
@@ -649,6 +740,32 @@
   color:#f2f5ff;
   font:18px var(--font-readable);
   font-weight:650;
+}
+
+.dashboardNextBestActionTimeGoal{
+  display:inline-flex;
+  align-items:center;
+  width:max-content;
+  box-sizing:border-box;
+  min-height:32px;
+  padding:4px 9px;
+  border:1px solid #1a1b20;
+  border-radius:999px;
+  background:#2b2d31;
+  color:#c9ff24;
+  font:700 11px var(--font-orbitron);
+  letter-spacing:0;
+  text-transform:uppercase;
+}
+
+.dashboardNextBestActionPills{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+.dashboardNextBestActionTimeGoal[hidden]{
+  display:none;
 }
 
 .dashboardNextBestActionFirstAction,
@@ -9892,6 +10009,10 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   min-height:36px !important;
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard #dashboardExecutiveSummaryStart .dashboardStartNowButtonLabel{
+  color:#000 !important;
+}
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext .btn[hidden]{
   display:none !important;
 }
@@ -10508,7 +10629,9 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext .btn{
-    flex:1 1 140px !important;
+    flex:0 0 auto !important;
+    align-self:flex-start !important;
+    min-height:48px !important;
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryStack{

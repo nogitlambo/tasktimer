@@ -46,7 +46,7 @@ export const DailyExecutiveBriefSnapshotSchema = z.object({
     completedMinutes: z.number().int().min(0),
     remainingMinutes: z.number().int().min(0),
     realisticWorkloadRange: z.object({ minMinutes: z.number().int().min(0), maxMinutes: z.number().int().min(0) }),
-    capacityMinutes: z.number().int().min(1),
+    capacityMinutes: z.number().int().min(0),
     capacitySource: DailyExecutiveBriefCapacitySourceSchema,
     planHealth: DailyExecutiveBriefPlanHealthSchema,
     deadlineRisk: DailyExecutiveBriefDeadlineRiskSchema,

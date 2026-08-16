@@ -8,22 +8,39 @@ import ExecutivePageContent from "./ExecutivePageContent";
 
 describe("Dashboard Next Best Action card", () => {
   it("keeps the Dashboard compact and renders accessible action hooks on Executive", () => {
-    const dashboardHtml = renderToStaticMarkup(createElement(DashboardPageContent, { active: true }));
-    const html = renderToStaticMarkup(createElement(ExecutivePageContent, { active: true }));
+    const dashboardHtml = renderToStaticMarkup(
+      createElement(DashboardPageContent, { active: true }),
+    );
+    const html = renderToStaticMarkup(
+      createElement(ExecutivePageContent, { active: true }),
+    );
 
     expect(dashboardHtml).toContain('id="dashboardExecutiveSummary"');
     expect(dashboardHtml).not.toContain('id="dashboardNextBestActionCard"');
     expect(html).toContain('id="dashboardNextBestActionCard"');
+    expect(html).toContain('id="dashboardNextBestActionDailyProgress"');
     expect(html).toContain('aria-label="Next best action"');
     expect(html).not.toContain("Move the plan forward");
     expect(html).toContain('id="dashboardNextBestActionTimeSelect"');
     expect(html).toContain('class="dashboardNextBestActionTimePills"');
-    expect(html).toContain('aria-labelledby="dashboardNextBestActionTimeLabel"');
-    expect(html).toContain('data-next-best-action-time="10" aria-pressed="false"');
-    expect(html).toContain('data-next-best-action-time="20" aria-pressed="false"');
-    expect(html).toContain('data-next-best-action-time="30" aria-pressed="false"');
-    expect(html).toContain('data-next-best-action-time="60" aria-pressed="false"');
-    expect(html).toContain('data-next-best-action-time="any" aria-pressed="true"');
+    expect(html).toContain(
+      'aria-labelledby="dashboardNextBestActionTimeLabel"',
+    );
+    expect(html).toContain(
+      'data-next-best-action-time="10" aria-pressed="false"',
+    );
+    expect(html).toContain(
+      'data-next-best-action-time="20" aria-pressed="false"',
+    );
+    expect(html).toContain(
+      'data-next-best-action-time="30" aria-pressed="false"',
+    );
+    expect(html).toContain(
+      'data-next-best-action-time="60" aria-pressed="false"',
+    );
+    expect(html).toContain(
+      'data-next-best-action-time="any" aria-pressed="true"',
+    );
     expect(html).toContain('<option value="10">10m</option>');
     expect(html).toContain('<option value="20">20m</option>');
     expect(html).toContain('<option value="30">30m</option>');
@@ -35,7 +52,7 @@ describe("Dashboard Next Best Action card", () => {
     expect(html).not.toContain('data-next-best-action="why"');
     expect(html).toContain("Why this?");
     expect(html).not.toContain('id="dashboardNextBestActionWhy"');
-    expect(html).not.toContain('data-next-best-action-rank');
+    expect(html).not.toContain("data-next-best-action-rank");
     expect(html).not.toContain('id="dashboardDailyExecutiveBriefCard"');
     expect(html).not.toContain("executivePlanCard");
     expect(html).toContain('id="executiveCapacityConfidence"');
@@ -45,9 +62,15 @@ describe("Dashboard Next Best Action card", () => {
     expect(html).toContain('id="dashboardDailyCapacityStatus"');
     expect(html).toContain('data-daily-capacity="adjust"');
     expect(html).toContain('id="dashboardDailyCapacityAdjustOverlay"');
-    expect(html).toContain('class="overlay primitiveSciFiModalOverlay dashboardDailyCapacityAdjustPrimitiveOverlay"');
-    expect(html).toContain('class="modal dashboardDailyCapacityAdjustPrimitiveModal modalConfirmation"');
-    expect(html).toContain('aria-describedby="dashboardDailyCapacityAdjustDescription"');
+    expect(html).toContain(
+      'class="overlay primitiveSciFiModalOverlay dashboardDailyCapacityAdjustPrimitiveOverlay"',
+    );
+    expect(html).toContain(
+      'class="modal dashboardDailyCapacityAdjustPrimitiveModal modalConfirmation"',
+    );
+    expect(html).toContain(
+      'aria-describedby="dashboardDailyCapacityAdjustDescription"',
+    );
     expect(html).toContain('data-daily-capacity="close"');
     expect(html).toContain('aria-pressed="false"');
     expect(html).toContain('data-daily-capacity-state-option="LIGHT"');
@@ -55,11 +78,43 @@ describe("Dashboard Next Best Action card", () => {
     expect(html).toContain('data-daily-capacity="clear"');
     expect(html).toContain("dashboardDailyCapacityAdjustPrimitiveFooter");
     expect(html).toContain("primitiveSciFiModalPrimaryAction");
-    const css = readFileSync("src/app/tasktimer/styles/04-overlays.css", "utf8").replace(/\r\n/g, "\n");
-    expect(css).toContain("#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustStates{");
-    expect(css).toContain("grid-template-columns:repeat(4, minmax(0, 1fr)) !important;");
-    expect(css).toContain("#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustPrimitiveFooter{");
-    expect(css).toContain("grid-template-columns:repeat(3, minmax(0, 1fr)) !important;");
+    const executiveSource = readFileSync(
+      "src/app/tasktimer/components/ExecutivePageContent.tsx",
+      "utf8",
+    );
+    expect(executiveSource).toContain(
+      'import { createPortal } from "react-dom";',
+    );
+    expect(executiveSource).toContain(
+      "createPortal(<DailyCapacityAdjustOverlay />, overlayPortalHost)",
+    );
+    expect(executiveSource).toContain(
+      "createPortal(<ScheduleRepairOverlay />, overlayPortalHost)",
+    );
+    const css = readFileSync(
+      "src/app/tasktimer/styles/04-overlays.css",
+      "utf8",
+    ).replace(/\r\n/g, "\n");
+    expect(css).toContain(
+      "#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay{",
+    );
+    expect(css).toContain("z-index:1400 !important;");
+    expect(css).toContain(
+      "padding:max(18px, var(--safe-top)) 14px max(18px, var(--safe-bottom)) !important;",
+    );
+    expect(css).toContain("#dashboardScheduleRepairOverlay{");
+    expect(css).toContain(
+      "#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustStates{",
+    );
+    expect(css).toContain(
+      "grid-template-columns:repeat(4, minmax(0, 1fr)) !important;",
+    );
+    expect(css).toContain(
+      "#dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay .dashboardDailyCapacityAdjustPrimitiveFooter{",
+    );
+    expect(css).toContain(
+      "grid-template-columns:repeat(3, minmax(0, 1fr)) !important;",
+    );
     expect(css).toContain("min-width:0 !important;");
   });
 });

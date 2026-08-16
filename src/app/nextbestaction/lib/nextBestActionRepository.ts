@@ -20,6 +20,8 @@ import { createNextBestActionRecommendation, parseNextBestActionRecommendationRe
 import type { NextBestActionCandidate } from "./nextBestActionRanking";
 
 export const NEXT_BEST_ACTION_AUDIT_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+export const NEXT_BEST_ACTION_SUPPRESSION_MS = 60 * 60 * 1000;
+const NEXT_BEST_ACTION_SUPPRESSION_COLLECTION = "nextBestActionSuppressions";
 
 type RawRow = Record<string, unknown>;
 
@@ -69,6 +71,7 @@ function mapTask(taskId: string, raw: RawRow): Task {
     hasStarted: raw.hasStarted === true,
     onceOffTargetDate: typeof raw.onceOffTargetDate === "string" ? raw.onceOffTargetDate.trim() || null : null,
     timeGoalMinutes: asPositiveMinutes(raw.timeGoalMinutes) || 0,
+    timeGoalPeriod: raw.timeGoalPeriod === "week" ? "week" : raw.timeGoalPeriod === "day" ? "day" : undefined,
   } as Task;
 }
 
@@ -133,6 +136,20 @@ function readHistoryRows(taskId: string, taskRows: Array<{ id: string; data: () 
   return entries.sort((a, b) => a.ts - b.ts);
 }
 
+function dailyProgressPercent(task: Task, history: HistoryEntry[], nowMs: number, timezone: string) {
+  const goalMinutes = asPositiveMinutes(task.timeGoalMinutes);
+  if (task.timeGoalPeriod !== "day" || !goalMinutes) return null;
+  const today = localDateForRecommendationTimezone(timezone, nowMs);
+  const completedMs = history.reduce(
+    (sum, entry) =>
+      localDateForRecommendationTimezone(timezone, entry.ts) === today
+        ? sum + Math.max(0, Math.floor(Number(entry.ms) || 0))
+        : sum,
+    0,
+  );
+  return Math.min(100, Math.round((completedMs / (goalMinutes * 60_000)) * 100));
+}
+
 function clarificationSignals(rows: Array<{ data: () => RawRow }>, nowMs: number) {
   const byTaskId = new Map<string, TaskClarificationRecommendation>();
   for (const row of rows) {
@@ -190,6 +207,8 @@ export interface NextBestActionRepository {
   loadRecommendation(uid: string, recommendationId: string): Promise<NextBestActionRecommendation | null>;
   skipRecommendation(input: { uid: string; recommendationId: string; nowMs: number }): Promise<"skipped" | "idempotent" | "expired" | "not-active" | "not-found">;
   dismissRecommendation(input: { uid: string; recommendationId: string; nowMs: number; feedbackCode?: string | null }): Promise<"dismissed" | "idempotent" | "expired" | "not-active" | "not-found">;
+  loadSuppressedTaskIds(input: { uid: string; nowMs: number }): Promise<string[]>;
+  releaseSuppressionsForCompletedTask(input: { uid: string; completedTaskId: string; nowMs: number }): Promise<number>;
   startRecommendation(input: { uid: string; recommendationId: string; nowMs: number; timezone?: string }): Promise<NextBestActionStartResult>;
 }
 
@@ -239,6 +258,7 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
             incompatibleRunning: raw.incompatibleRunning === true,
             explicitPriority: raw.priority === "high" || raw.priority === "medium" || raw.priority === "low" ? raw.priority : null,
             history,
+            dailyProgressPercent: dailyProgressPercent(task, history, nowMs, recommendationTimezone),
             clarification: clarification
               ? {
                   status: clarification.status,
@@ -321,6 +341,8 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
         if (!snapshot.exists) return "not-found" as const;
         const recommendation = parseNextBestActionRecommendationRecord(snapshot.data() as Record<string, unknown>);
         if (!recommendation || recommendation.userId !== safeUid) return "not-found" as const;
+        const suppressionRef = userCollection(safeUid, NEXT_BEST_ACTION_SUPPRESSION_COLLECTION).doc(recommendation.taskId);
+        const suppressionSnapshot = await transaction.get(suppressionRef);
         if (recommendation.status === "DISMISSED") return "idempotent" as const;
         if (recommendation.status !== "ACTIVE") return recommendation.status === "EXPIRED" ? "expired" as const : "not-active" as const;
         if (Date.parse(String(recommendation.expiresAt)) <= nowMs) {
@@ -328,7 +350,52 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
           return "expired" as const;
         }
         transaction.update(recommendationRef, { status: "DISMISSED", dismissedAt: Timestamp.fromMillis(nowMs), respondedAt: Timestamp.fromMillis(nowMs), feedbackCode: asString(feedbackCode, 60) || null });
+        const existingSuppression = suppressionSnapshot.exists ? suppressionSnapshot.data() as RawRow : null;
+        const hasActiveSuppression = Boolean(existingSuppression)
+          && !asMillis(existingSuppression?.releasedAt)
+          && asMillis(existingSuppression?.expiresAt) > nowMs;
+        if (!hasActiveSuppression) {
+          transaction.set(suppressionRef, {
+            taskId: recommendation.taskId,
+            dismissedAt: Timestamp.fromMillis(nowMs),
+            expiresAt: Timestamp.fromMillis(nowMs + NEXT_BEST_ACTION_SUPPRESSION_MS),
+            releasedAt: null,
+          });
+        }
         return "dismissed" as const;
+      });
+    },
+
+    async loadSuppressedTaskIds({ uid, nowMs }) {
+      const safeUid = asString(uid, 120);
+      if (!safeUid) return [];
+      const snapshot = await userCollection(safeUid, NEXT_BEST_ACTION_SUPPRESSION_COLLECTION).get();
+      const active: string[] = [];
+      const expired = snapshot.docs.filter((doc) => {
+        const data = doc.data() as RawRow;
+        const taskId = asString(data.taskId, 160) || doc.id;
+        const releasedAt = asMillis(data.releasedAt);
+        const expiresAt = asMillis(data.expiresAt);
+        if (taskId && !releasedAt && expiresAt > nowMs) active.push(taskId);
+        return !releasedAt && expiresAt > 0 && expiresAt <= nowMs;
+      });
+      if (expired.length) await Promise.all(expired.map((doc) => doc.ref.delete()));
+      return active;
+    },
+
+    async releaseSuppressionsForCompletedTask({ uid, completedTaskId, nowMs }) {
+      const safeUid = asString(uid, 120);
+      const safeCompletedTaskId = asString(completedTaskId, 160);
+      if (!safeUid || !safeCompletedTaskId) return 0;
+      const collection = userCollection(safeUid, NEXT_BEST_ACTION_SUPPRESSION_COLLECTION);
+      return db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(collection);
+        const releasable = snapshot.docs.filter((doc) => {
+          const data = doc.data() as RawRow;
+          return doc.id !== safeCompletedTaskId && !asMillis(data.releasedAt) && asMillis(data.expiresAt) > nowMs;
+        });
+        releasable.forEach((doc) => transaction.update(doc.ref, { releasedAt: Timestamp.fromMillis(nowMs) }));
+        return releasable.length;
       });
     },
 
@@ -382,6 +449,7 @@ export function createRecommendationForRanking(input: {
     durationMinutes: number;
     durationSource: Parameters<typeof createNextBestActionRecommendation>[0]["durationSource"];
     timeGoalMinutes?: number | null;
+    dailyProgressPercent?: number | null;
     latestHistoryEntry?: { ts: number; ms: number } | null;
     firstAction: string | null;
     focusWindowMatched: boolean;

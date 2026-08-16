@@ -31,7 +31,6 @@ import {
   default as TaskTimerAppFrame,
   getDesktopHeaderRankId,
   getDesktopInsigniaUpgradeAudioCallback,
-  getTaskLaunchMobileMenuItems,
   getXpProgressSubtext,
   scheduleDesktopInsigniaUpgradeActivation,
   shouldRenderDesktopInsigniaUpgrade,
@@ -69,56 +68,28 @@ afterEach(() => {
   rankLadderModalMock.mockClear();
 });
 
-describe("TaskTimerAppFrame mobile menu", () => {
-  it("shows Profile, Settings, User Guide, and Sign Out in the hamburger menu", () => {
-    const items = getTaskLaunchMobileMenuItems();
-
-    expect(items.map((item) => item.label)).toEqual(["Profile", "Settings", "User Guide", "Sign Out"]);
-    expect(items.map((item) => item.label)).not.toContain("Account");
-    expect(items.filter((item) => item.kind === "link").map((item) => item.href)).toEqual(["/account", "/settings", "/user-guide"]);
-    expect(items.find((item) => item.label === "Profile")?.iconSrc).toBe("/icons/icons_default/account.webp");
-    expect(items.find((item) => item.label === "Sign Out")).toMatchObject({
-      kind: "action",
-      actionId: "signOut",
-    });
-  });
-
-  it("keeps the hamburger and menu ids stable", () => {
+describe("TaskTimerAppFrame mobile navigation", () => {
+  it("does not render the removed hamburger menu", () => {
     const html = renderTaskTimerAppFrameMarkup();
 
-    expect(html).toContain('id="menuIcon"');
-    expect(html).toContain('aria-controls="mobileSettingsMenu"');
-    expect(html).toContain('id="mobileSettingsMenu"');
+    expect(html).not.toContain('id="menuIcon"');
+    expect(html).not.toContain('id="mobileSettingsMenu"');
   });
 
-  it("renders the executive function image in the desktop header and mobile top bar", () => {
+  it("does not render the Brain Dump executive function image in the app shell header or top bar", () => {
     const html = renderTaskTimerAppFrameMarkup();
 
-    expect(html).toContain('class="taskLaunchTopbarExecutiveFunctionImg"');
-    expect(html).toContain('class="appShellHeaderExecutiveFunctionImg"');
-    expect((html.match(/src="\/executive_function\.png"/g) ?? []).length).toBe(2);
+    expect(html).not.toContain('class="taskLaunchTopbarExecutiveFunctionImg"');
+    expect(html).not.toContain('class="appShellHeaderExecutiveFunctionImg"');
+    expect(html).not.toContain('class="taskLaunchBrainDumpEntry taskLaunchTopbarBrainDumpEntry"');
+    expect(html).not.toContain('class="taskLaunchBrainDumpEntry appShellHeaderBrainDumpEntry"');
   });
 
-  it("uses the executive function image as the primary Brain Dump entry on mobile and desktop", () => {
+  it("does not render Brain Dump as a topbar or app shell header entry", () => {
     const html = renderTaskTimerAppFrameMarkup();
 
-    expect(html).toContain('href="/brain-dump"');
-    expect(html).toContain('aria-label="Brain Dump"');
-    expect(html).toContain('title="Brain Dump"');
-    expect(html).toContain('class="taskLaunchBrainDumpEntry taskLaunchTopbarBrainDumpEntry"');
-    expect(html).toContain('class="taskLaunchBrainDumpEntry appShellHeaderBrainDumpEntry"');
-    expect((html.match(/aria-label="Brain Dump"/g) ?? []).length).toBe(2);
-  });
-
-  it("renders the mobile menu as a dialog-style bottom sheet structure", () => {
-    const html = renderTaskTimerAppFrameMarkup();
-
-    expect(html).toContain('class="taskLaunchMobileMenuPanel"');
-    expect(html).toContain('role="dialog"');
-    expect(html).toContain('aria-modal="true"');
-    expect(html).toContain('class="taskLaunchMobileMenuSwipeHandle"');
-    expect(html).toContain('class="taskLaunchMobileMenuList"');
-    expect(html).toContain('class="menuItem taskLaunchMobileMenuItem"');
+    expect(html).not.toContain('class="taskLaunchBrainDumpEntry taskLaunchTopbarBrainDumpEntry"');
+    expect(html).not.toContain('class="taskLaunchBrainDumpEntry appShellHeaderBrainDumpEntry"');
   });
 
   it("does not server-render the bordered initial auth overlay as visible on leaderboard pages", () => {
@@ -219,16 +190,8 @@ describe("TaskTimerAppFrame rank ladder wiring", () => {
 });
 
 describe("TaskTimerAppFrame XP award CSS contracts", () => {
-  const frameSource = readFileSync(resolve(__dirname, "TaskTimerAppFrame.tsx"), "utf8");
   const shellCss = readFileSync(resolve(__dirname, "../styles/01-shell.css"), "utf8");
   const overlaysCss = readFileSync(resolve(__dirname, "../styles/04-overlays.css"), "utf8");
-
-  it("tracks Brain Dump entry opens without source content", () => {
-    expect(frameSource).toContain('trackEvent("brain_dump_entry_opened", {');
-    expect(frameSource).toContain('entry_point: "executive_function_image"');
-    expect(frameSource).not.toContain("raw_text");
-    expect(frameSource).not.toContain("source_text");
-  });
 
   it("styles Brain Dump shell entry links as accessible primary-theme image controls", () => {
     expect(shellCss).toContain(".taskLaunchBrainDumpEntry{");

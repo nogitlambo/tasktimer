@@ -77,6 +77,18 @@ describe("DashboardPageContent momentum dial markers", () => {
     expect(mobileSharedPanelRule).toContain("border-radius:16px !important;");
   });
 
+  it("keeps the Executive Summary launch action at the shared primitive button size on mobile", () => {
+    const css = readFileSync("src/app/tasktimer/styles/03-dashboard.css", "utf8").replace(/\r\n/g, "\n");
+    const mobileExecutiveStyles = css.slice(css.lastIndexOf("@media (max-width: 640px){"));
+    const mobileLaunchRule =
+      mobileExecutiveStyles.match(/\.dashboardExecutiveSummaryNext \.btn\{[\s\S]*?\n  \}/)?.[0] || "";
+
+    expect(mobileLaunchRule).toContain("flex:0 0 auto !important;");
+    expect(mobileLaunchRule).toContain("align-self:flex-start !important;");
+    expect(mobileLaunchRule).toContain("min-height:48px !important;");
+    expect(mobileLaunchRule).not.toContain("flex:1 1 140px !important;");
+  });
+
   it("renders multiplier threshold markers at 40, 70, and 90", () => {
     const html = renderDashboardMarkup();
 

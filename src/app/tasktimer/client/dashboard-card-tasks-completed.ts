@@ -62,12 +62,15 @@ export function buildDashboardTasksCompletedModel(options: {
     if (!isCurrentPeriodCompletion(opportunity)) return null;
     const elapsedMs = Number(task.timeGoalCompletedElapsedMs);
     if (!Number.isFinite(elapsedMs)) return null;
-    const taskGoalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
-    const completionGoalMinutes =
-      opportunity.historyScope === "day" && task.timeGoalPeriod === "day" && taskGoalMinutes > 0
-        ? taskGoalMinutes
-        : goalMinutes;
+    const completionGoalMinutes = getCompletionGoalMinutes(opportunity, goalMinutes);
     return elapsedMs >= completionGoalMinutes * 60000 ? 1 : null;
+  }
+
+  function getCompletionGoalMinutes(opportunity: DashboardTasksCompletedOpportunity, goalMinutes: number) {
+    const taskGoalMinutes = Math.max(0, Number(opportunity.task.timeGoalMinutes || 0));
+    return opportunity.historyScope === "day" && opportunity.task.timeGoalPeriod === "day" && taskGoalMinutes > 0
+      ? taskGoalMinutes
+      : goalMinutes;
   }
 
   function getResetCompletionProgress(opportunity: DashboardTasksCompletedOpportunity, goalMinutes: number) {
@@ -77,7 +80,7 @@ export function buildDashboardTasksCompletedModel(options: {
     if (!isCurrentPeriodCompletion(opportunity)) return null;
     const elapsedMs = Number(task.timeGoalCompletedElapsedMs);
     if (!Number.isFinite(elapsedMs)) return null;
-    return Math.max(0, Math.min(1, elapsedMs / (goalMinutes * 60000)));
+    return Math.max(0, Math.min(1, elapsedMs / (getCompletionGoalMinutes(opportunity, goalMinutes) * 60000)));
   }
 
   function localDayKeyForTimestamp(value: number) {

@@ -1,22 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import AppImg from "@/components/AppImg";
-import { usePathname, useSearchParams } from "next/navigation";
 import DesktopAppRail from "./DesktopAppRail";
-import { trackEvent } from "@/lib/firebaseTelemetry";
-import {
-  getMobileSwipeCloseDragY,
-  getResetMobileSwipeCloseState,
-  getStartMobileSwipeCloseState,
-  getUpdatedMobileSwipeCloseState,
-  shouldCloseFromMobileSwipe,
-  type MobileSwipeCloseState,
-} from "./mobileSwipeClose";
 import RankLadderModal from "./RankLadderModal";
 import RankThumbnail from "./RankThumbnail";
 import ModuleIntroTour from "./ModuleIntroTour";
-import { playTaskFlipClickAudio } from "../client/secondary-click-audio";
 import {
   RANK_LADDER,
   buildRankLadderSummary,
@@ -25,27 +14,8 @@ import {
   type RankPromotionRecord,
 } from "../lib/rewards";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
-import { hasTaskTimerEntitlement, readTaskTimerPlanFromStorage, TASKTIMER_PLAN_CHANGED_EVENT } from "../lib/entitlements";
-import SignOutConfirmModal from "./SignOutConfirmModal";
-import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 
 type MainAppPage = "tasks" | "schedule" | "dashboard" | "notes" | "executive" | "friends" | "leaderboard" | "history";
-
-type TaskLaunchMobileMenuLinkItem = {
-  kind: "link";
-  label: string;
-  href: string;
-  iconSrc: string;
-};
-
-type TaskLaunchMobileMenuActionItem = {
-  kind: "action";
-  label: string;
-  iconSrc: string;
-  actionId: "signOut";
-};
-
-type TaskLaunchMobileMenuItem = TaskLaunchMobileMenuLinkItem | TaskLaunchMobileMenuActionItem;
 
 type TaskTimerAppFrameProps = {
   activePage: MainAppPage;
@@ -91,8 +61,6 @@ const DEFAULT_INITIAL_AUTH_BUSY_TEXT = "Loading your workspace into this session
 const LEADERBOARD_INITIAL_AUTH_BUSY_TEXT = "Loading leaderboard standings";
 const DESKTOP_INSIGNIA_UPGRADE_START_DELAY_MS = 600;
 const DESKTOP_INSIGNIA_UPGRADE_ACTIVE_DURATION_MS = 3400;
-const MOBILE_MENU_SWIPE_CLOSE_START_ZONE_PX = 78;
-const MOBILE_MENU_SWIPE_CLOSE_THRESHOLD_PX = 70;
 
 function formatXpNumber(value: number) {
   return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString();
@@ -157,35 +125,6 @@ function playDesktopInsigniaUpgradeAudio() {
   }
 }
 
-export function getTaskLaunchMobileMenuItems(): TaskLaunchMobileMenuItem[] {
-  return [
-    {
-      kind: "link",
-      label: "Profile",
-      href: resolveTaskTimerRouteHref("/account"),
-      iconSrc: "/icons/icons_default/account.webp",
-    },
-    {
-      kind: "link",
-      label: "Settings",
-      href: resolveTaskTimerRouteHref("/settings"),
-      iconSrc: "/icons/icons_default/settings.webp",
-    },
-    {
-      kind: "link",
-      label: "User Guide",
-      href: resolveTaskTimerRouteHref("/user-guide"),
-      iconSrc: "/icons/icons_default/question.webp",
-    },
-    {
-      kind: "action",
-      label: "Sign Out",
-      iconSrc: "/icons/icons_default/signout.webp",
-      actionId: "signOut",
-    },
-  ];
-}
-
 export function getXpProgressSubtext(totalXp: number, xpToNext: number | null) {
   return buildXpProgressSubtext(totalXp, xpToNext);
 }
@@ -209,25 +148,12 @@ export default function TaskTimerAppFrame({
   onTestRankPromotion,
   xpAwardFx,
 }: TaskTimerAppFrameProps) {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const isLeaderboardPage = activePage === "leaderboard";
   const initialAuthBusyText = isLeaderboardPage ? LEADERBOARD_INITIAL_AUTH_BUSY_TEXT : DEFAULT_INITIAL_AUTH_BUSY_TEXT;
   const initialAuthBusyHeading = isLeaderboardPage ? "Loading leaderboard standings" : "Loading your workspace";
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileMenuDragY, setMobileMenuDragY] = useState(0);
-  const [isMobileMenuDragging, setIsMobileMenuDragging] = useState(false);
-  const [signOutBusy, setSignOutBusy] = useState(false);
-  const [signOutError, setSignOutError] = useState("");
-  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
   const [activeDesktopInsigniaUpgradeSeq, setActiveDesktopInsigniaUpgradeSeq] = useState<number | null>(null);
-  const [canUseExecutiveFunction, setCanUseExecutiveFunction] = useState(true);
-  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
-  const mobileMenuBtnRef = useRef<HTMLButtonElement | null>(null);
-  const mobileMenuSwipeCloseRef = useRef<MobileSwipeCloseState>(getResetMobileSwipeCloseState());
   const railPage = activePage === "schedule" ? "tasks" : activePage;
-  const searchParamsKey = searchParams.toString();
   const currentRankIndex = useMemo(
     () => Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === currentRankId)),
     [currentRankId]
@@ -236,9 +162,6 @@ export default function TaskTimerAppFrame({
   const rankSummary = useMemo(() => buildRankLadderSummary(rewardsHeader.totalXp), [rewardsHeader.totalXp]);
   const xpProgressSubtext = getXpProgressSubtext(rewardsHeader.totalXp, rewardsHeader.xpToNext);
   const topbarUserLabel = currentUserLabel.toLocaleLowerCase();
-  const brainDumpHref = resolveTaskTimerRouteHref("/brain-dump");
-  const brainDumpEntryLabel = canUseExecutiveFunction ? "Brain Dump" : "Brain Dump (PLUS)";
-  const brainDumpEntryTitle = canUseExecutiveFunction ? "Brain Dump" : "PLUS feature: Brain Dump";
   const rankThumbnailSrc = useMemo(() => getRankLadderThumbnailSrc(currentRankId, ""), [currentRankId]);
   const isDesktopInsigniaUpgradeActive = shouldRenderDesktopInsigniaUpgrade(
     desktopInsigniaUpgrade,
@@ -261,204 +184,17 @@ export default function TaskTimerAppFrame({
   }, [achievementSoundsEnabled, desktopInsigniaUpgrade]);
 
   useEffect(() => {
-    const syncPlan = () => {
-      setCanUseExecutiveFunction(hasTaskTimerEntitlement(readTaskTimerPlanFromStorage(), "executiveFunction"));
-    };
-    syncPlan();
-    window.addEventListener(TASKTIMER_PLAN_CHANGED_EVENT, syncPlan);
-    return () => window.removeEventListener(TASKTIMER_PLAN_CHANGED_EVENT, syncPlan);
-  }, []);
-
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname, searchParamsKey]);
-
-  useEffect(() => {
     document.body.setAttribute("data-app-page", activePage);
   }, [activePage]);
-
-  useEffect(() => {
-    if (!mobileMenuOpen || typeof window === "undefined") return;
-    const closeMobileMenuWithFlipAudio = () => {
-      playTaskFlipClickAudio();
-      setMobileMenuOpen(false);
-    };
-    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as Node | null;
-      if (!target) return;
-      if (mobileMenuRef.current?.contains(target)) return;
-      if (mobileMenuBtnRef.current?.contains(target)) return;
-      closeMobileMenuWithFlipAudio();
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeMobileMenuWithFlipAudio();
-    };
-    window.addEventListener("mousedown", handlePointerDown);
-    window.addEventListener("touchstart", handlePointerDown);
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("mousedown", handlePointerDown);
-      window.removeEventListener("touchstart", handlePointerDown);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [mobileMenuOpen]);
-
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    document.body.classList.toggle("taskLaunchMobileMenuOpen", mobileMenuOpen);
-    return () => {
-      document.body.classList.remove("taskLaunchMobileMenuOpen");
-    };
-  }, [mobileMenuOpen]);
 
   const handleOpenMobileAccount = useCallback(() => {
     if (typeof window === "undefined") return;
     window.location.href = resolveTaskTimerRouteHref("/account");
   }, []);
 
-  const handleMobileMenuSignOut = useCallback(() => {
-    setMobileMenuOpen(false);
-    setShowSignOutConfirm(true);
-  }, []);
-
-  const handleOpenBrainDumpEntry = useCallback((event: ReactMouseEvent<HTMLAnchorElement>) => {
-    event.stopPropagation();
-    if (!canUseExecutiveFunction) {
-      event.preventDefault();
-      window.location.href = resolveTaskTimerRouteHref("/account");
-      return;
-    }
-    void trackEvent("brain_dump_entry_opened", {
-      entry_point: "executive_function_image",
-    });
-  }, [canUseExecutiveFunction]);
-
-  const handleConfirmSignOut = useCallback(async () => {
-    if (signOutBusy) return;
-    setSignOutBusy(true);
-    setSignOutError("");
-    try {
-      await handleSignOutFlow();
-    } catch (error: unknown) {
-      setSignOutError(getErrorMessage(error, "Could not sign out."));
-      setSignOutBusy(false);
-      setShowSignOutConfirm(false);
-    }
-  }, [signOutBusy]);
-
-  const resetMobileMenuSwipeClose = useCallback(() => {
-    mobileMenuSwipeCloseRef.current = getResetMobileSwipeCloseState();
-    setMobileMenuDragY(0);
-    setIsMobileMenuDragging(false);
-  }, []);
-
-  const closeMobileMenuWithFlipAudio = useCallback(() => {
-    playTaskFlipClickAudio();
-    setMobileMenuDragY(0);
-    setIsMobileMenuDragging(false);
-    setMobileMenuOpen(false);
-  }, []);
-
   const openRankLadderWithDropdownAudio = useCallback(() => {
     setShowRankLadderModal(true);
   }, []);
-
-  const handleMobileMenuPanelPointerDown = useCallback((event: PointerEvent<HTMLDivElement>) => {
-    resetMobileMenuSwipeClose();
-    if (event.button !== 0) return;
-
-    const panelRect = event.currentTarget.getBoundingClientRect();
-    const isInTopZone = event.clientY - panelRect.top <= MOBILE_MENU_SWIPE_CLOSE_START_ZONE_PX;
-    if (!isInTopZone) return;
-
-    mobileMenuSwipeCloseRef.current = getStartMobileSwipeCloseState(event.pointerId, event.clientX, event.clientY);
-    setMobileMenuDragY(0);
-    setIsMobileMenuDragging(true);
-
-    try {
-      event.currentTarget.setPointerCapture(event.pointerId);
-    } catch {
-      // Ignore pointer capture failures on older embedded browsers.
-    }
-  }, [resetMobileMenuSwipeClose]);
-
-  const handleMobileMenuPanelPointerMove = useCallback((event: PointerEvent<HTMLDivElement>) => {
-    const swipeClose = mobileMenuSwipeCloseRef.current;
-    if (!swipeClose.active || swipeClose.consumed || swipeClose.pointerId !== event.pointerId) return;
-
-    const nextSwipeClose = getUpdatedMobileSwipeCloseState(swipeClose, event.pointerId, event.clientX, event.clientY);
-    mobileMenuSwipeCloseRef.current = nextSwipeClose;
-
-    const dragY = getMobileSwipeCloseDragY(nextSwipeClose);
-    if (dragY <= 0) return;
-
-    event.preventDefault();
-    setMobileMenuDragY(dragY);
-  }, []);
-
-  const handleMobileMenuPanelPointerEnd = useCallback((event: PointerEvent<HTMLDivElement>) => {
-    const swipeClose = mobileMenuSwipeCloseRef.current;
-    if (swipeClose.pointerId !== event.pointerId) return;
-
-    if (shouldCloseFromMobileSwipe(swipeClose, MOBILE_MENU_SWIPE_CLOSE_THRESHOLD_PX)) {
-      mobileMenuSwipeCloseRef.current.consumed = true;
-      closeMobileMenuWithFlipAudio();
-      return;
-    }
-
-    resetMobileMenuSwipeClose();
-  }, [closeMobileMenuWithFlipAudio, resetMobileMenuSwipeClose]);
-
-  const handleMobileMenuPanelTouchStart = useCallback((event: ReactTouchEvent<HTMLDivElement>) => {
-    resetMobileMenuSwipeClose();
-    if (event.touches.length !== 1) return;
-
-    const touch = event.touches[0];
-    const panelRect = event.currentTarget.getBoundingClientRect();
-    const isInTopZone = touch.clientY - panelRect.top <= MOBILE_MENU_SWIPE_CLOSE_START_ZONE_PX;
-    if (!isInTopZone) return;
-
-    mobileMenuSwipeCloseRef.current = getStartMobileSwipeCloseState(touch.identifier, touch.clientX, touch.clientY);
-    setMobileMenuDragY(0);
-    setIsMobileMenuDragging(true);
-  }, [resetMobileMenuSwipeClose]);
-
-  const handleMobileMenuPanelTouchMove = useCallback((event: ReactTouchEvent<HTMLDivElement>) => {
-    const swipeClose = mobileMenuSwipeCloseRef.current;
-    if (!swipeClose.active || swipeClose.consumed || swipeClose.pointerId == null) return;
-
-    const touch = Array.from(event.touches).find((currentTouch) => currentTouch.identifier === swipeClose.pointerId);
-    if (!touch) return;
-    const nextSwipeClose = getUpdatedMobileSwipeCloseState(swipeClose, touch.identifier, touch.clientX, touch.clientY);
-    mobileMenuSwipeCloseRef.current = nextSwipeClose;
-
-    const dragY = getMobileSwipeCloseDragY(nextSwipeClose);
-    if (dragY <= 0) return;
-
-    event.preventDefault();
-    setMobileMenuDragY(dragY);
-  }, []);
-
-  const handleMobileMenuPanelTouchEnd = useCallback((event: ReactTouchEvent<HTMLDivElement>) => {
-    const swipeClose = mobileMenuSwipeCloseRef.current;
-    if (swipeClose.pointerId == null) return;
-    if (!Array.from(event.changedTouches).some((touch) => touch.identifier === swipeClose.pointerId)) return;
-
-    if (shouldCloseFromMobileSwipe(swipeClose, MOBILE_MENU_SWIPE_CLOSE_THRESHOLD_PX)) {
-      mobileMenuSwipeCloseRef.current.consumed = true;
-      closeMobileMenuWithFlipAudio();
-      return;
-    }
-
-    resetMobileMenuSwipeClose();
-  }, [closeMobileMenuWithFlipAudio, resetMobileMenuSwipeClose]);
-
-  const mobileMenuPanelStyle = useMemo(
-    () => ({
-      "--mobile-sheet-drag-y": `${mobileMenuDragY}px`,
-    }) as CSSProperties,
-    [mobileMenuDragY]
-  );
 
   return (
     <div className={`wrap${isXpAwardSpotlightActive ? " isXpAwardSpotlightActive" : ""}`} id="app" aria-label="TaskLaunch App">
@@ -528,93 +264,6 @@ export default function TaskTimerAppFrame({
               </div>
             </section>
         </div>
-        <div className="taskLaunchTopbarControls">
-          <a
-            className="taskLaunchBrainDumpEntry taskLaunchTopbarBrainDumpEntry"
-            href={brainDumpHref}
-            aria-label={brainDumpEntryLabel}
-            title={brainDumpEntryTitle}
-            data-brain-dump-entry="topbar-executive-function-image"
-            data-plan-locked={canUseExecutiveFunction ? undefined : "executiveFunction"}
-            onClick={handleOpenBrainDumpEntry}
-          >
-            <AppImg className="taskLaunchTopbarExecutiveFunctionImg" src="/executive_function.png" alt="" aria-hidden="true" />
-          </a>
-          <button
-            ref={mobileMenuBtnRef}
-            className={`menuIcon taskLaunchMobileMenuBtn${mobileMenuOpen ? " isHidden" : ""}`}
-            id="menuIcon"
-            type="button"
-            aria-label="Open app menu"
-            aria-expanded={mobileMenuOpen}
-            aria-controls="mobileSettingsMenu"
-            onClick={() => setMobileMenuOpen((current) => !current)}
-          >
-            <span className="taskLaunchMobileMenuBars" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </span>
-          </button>
-        </div>
-      </div>
-      <div
-        className={`taskLaunchMobileMenu${mobileMenuOpen ? " isOpen" : ""}`}
-        id="mobileSettingsMenu"
-        aria-hidden={mobileMenuOpen ? "false" : "true"}
-        onClick={closeMobileMenuWithFlipAudio}
-      >
-        <div
-          ref={mobileMenuRef}
-          className={`taskLaunchMobileMenuPanel${isMobileMenuDragging ? " isDragging" : ""}`}
-          style={mobileMenuPanelStyle}
-          role="dialog"
-          aria-modal="true"
-          aria-label="App menu"
-          onClick={(event) => event.stopPropagation()}
-          onPointerDown={handleMobileMenuPanelPointerDown}
-          onPointerMove={handleMobileMenuPanelPointerMove}
-          onPointerUp={handleMobileMenuPanelPointerEnd}
-          onPointerCancel={handleMobileMenuPanelPointerEnd}
-          onTouchStart={handleMobileMenuPanelTouchStart}
-          onTouchMove={handleMobileMenuPanelTouchMove}
-          onTouchEnd={handleMobileMenuPanelTouchEnd}
-          onTouchCancel={handleMobileMenuPanelTouchEnd}
-        >
-          <div className="taskLaunchMobileMenuSwipeHandle" aria-hidden="true" />
-          <div className="taskLaunchMobileMenuList" role="menu" aria-label="App menu">
-            {getTaskLaunchMobileMenuItems().map((item) =>
-              item.kind === "link" ? (
-                <a
-                  key={item.label}
-                  className="menuItem taskLaunchMobileMenuItem"
-                  href={item.href}
-                  role="menuitem"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <AppImg className="taskLaunchMobileMenuItemIcon" src={item.iconSrc} alt="" aria-hidden="true" />
-                  <span className="taskLaunchMobileMenuItemText">{item.label}</span>
-                </a>
-              ) : (
-                <button
-                  key={item.label}
-                  className="menuItem taskLaunchMobileMenuItem"
-                  type="button"
-                  role="menuitem"
-                  onClick={handleMobileMenuSignOut}
-                >
-                  <AppImg className="taskLaunchMobileMenuItemIcon" src={item.iconSrc} alt="" aria-hidden="true" />
-                  <span className="taskLaunchMobileMenuItemText">{item.label}</span>
-                </button>
-              )
-            )}
-          </div>
-          {signOutError ? (
-            <div className="settingsDetailNote desktopRailProfileMenuError" role="alert" aria-live="polite">
-              {signOutError}
-            </div>
-          ) : null}
-        </div>
       </div>
       {mobileToolbar ? <div className="taskLaunchMobileToolbar">{mobileToolbar}</div> : null}
       <div className="desktopAppShell">
@@ -622,17 +271,6 @@ export default function TaskTimerAppFrame({
         <div className="desktopAppMain">
           <div className="appShellHeader">
             <div className="appShellHeaderSpacer" aria-hidden="true" />
-            <a
-              className="taskLaunchBrainDumpEntry appShellHeaderBrainDumpEntry"
-              href={brainDumpHref}
-              aria-label={brainDumpEntryLabel}
-              title={brainDumpEntryTitle}
-              data-brain-dump-entry="desktop-executive-function-image"
-              data-plan-locked={canUseExecutiveFunction ? undefined : "executiveFunction"}
-              onClick={handleOpenBrainDumpEntry}
-            >
-              <AppImg className="appShellHeaderExecutiveFunctionImg" src="/executive_function.png" alt="" aria-hidden="true" />
-            </a>
             <section className={`appShellHeaderXp${isXpAwardSpotlightActive ? " isXpAwardSpotlightTarget" : ""}`} aria-label="XP progress">
               <div className="appShellHeaderXpBody">
                 <button
@@ -727,12 +365,6 @@ export default function TaskTimerAppFrame({
       />
       <DesktopAppRail activePage={railPage} useClientNavButtons={useClientNavButtons} showDesktopRail={false} showMobileFooter />
       <ModuleIntroTour />
-      <SignOutConfirmModal
-        open={showSignOutConfirm}
-        busy={signOutBusy}
-        onCancel={() => setShowSignOutConfirm(false)}
-        onConfirm={() => void handleConfirmSignOut()}
-      />
       <div
         className={`initialAuthBusyOverlay${isLeaderboardPage ? "" : " isOn"}`}
         id="initialAuthBusyOverlay"

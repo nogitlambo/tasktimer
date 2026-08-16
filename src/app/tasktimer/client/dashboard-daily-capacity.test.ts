@@ -38,4 +38,24 @@ describe("Daily Capacity dashboard parser", () => {
   it("rejects malformed capacity responses", () => {
     expect(parseDailyCapacityResponse({ ok: true, snapshot: { state: "INVALID" } })).toEqual({ kind: "invalid" });
   });
+
+  it("accepts zero remaining availability", () => {
+    expect(parseDailyCapacityResponse({
+      ok: true,
+      snapshot: {
+        localDate: "2026-08-15",
+        remainingRange: { min: 0, max: 0 },
+        state: "USER_DEFINED",
+        confidence: "MEDIUM",
+        primarySource: "USER_CUSTOM",
+        sourceSignals: ["USER_OVERRIDE", "AVAILABLE_TIME_CAP"],
+        availableMinutesCeiling: 0,
+        completedMinutesToday: 5,
+        manualOverride: { type: "MINUTES", minutes: 60 },
+      },
+    })).toMatchObject({
+      kind: "capacity",
+      capacity: { availableMinutesCeiling: 0, remainingRange: { min: 0, max: 0 } },
+    });
+  });
 });

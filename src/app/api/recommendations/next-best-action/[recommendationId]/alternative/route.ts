@@ -27,6 +27,8 @@ function responseRecommendation(recommendation: ReturnType<typeof createRecommen
     title: recommendation.payload.title,
     estimatedMinutes: recommendation.payload.durationMinutes,
     durationSource: recommendation.payload.durationSource,
+    timeGoalMinutes: recommendation.payload.timeGoalMinutes,
+    dailyProgressPercent: recommendation.payload.dailyProgressPercent,
     score: recommendation.payload.score,
     confidence: recommendation.payload.confidence,
     reasonCodes: recommendation.payload.reasonCodes,
@@ -75,8 +77,11 @@ export async function POST(req: Request, context: RouteContext) {
     if (skipResult === "expired") return withAuthenticatedApiCors(req, NextResponse.json({ error: "This recommendation has expired. Refresh to choose again.", code: "recommendation/expired" }, { status: 409 }));
     if (skipResult === "not-active" || skipResult === "not-found") return withAuthenticatedApiCors(req, NextResponse.json({ error: "This recommendation is no longer active. Refresh to choose again.", code: "recommendation/not-active" }, { status: 409 }));
     const nowMs = Date.now();
-    const excludedTaskIds = Array.from(new Set([...normalizeExcludedTaskIds(body.excludeTaskIds), previous.taskId]));
-    const candidates = await repository.loadCandidates({ uid, nowMs, timezone });
+    const [candidates, suppressedTaskIds] = await Promise.all([
+      repository.loadCandidates({ uid, nowMs, timezone }),
+      repository.loadSuppressedTaskIds({ uid, nowMs }),
+    ]);
+    const excludedTaskIds = Array.from(new Set([...normalizeExcludedTaskIds(body.excludeTaskIds), previous.taskId, ...suppressedTaskIds]));
     const ranked = rankNextBestActionCandidates({ userId: uid, nowMs, todayDate: localDateForRecommendationTimezone(timezone, nowMs), availableMinutes, excludedTaskIds, candidates });
     if (!ranked.primary) return withAuthenticatedApiCors(req, NextResponse.json({ ok: true, recommendation: null, empty: true, alternativeIndex: nextIndex }));
     const deterministicExplanation = buildNextBestActionExplanation(ranked.primary.reasonCodes, availableMinutes);

@@ -164,8 +164,6 @@ import {
   stopRankPromotionCelebration,
   type RankPromotion,
 } from "./client/rank-promotion";
-import "./tasktimer.css";
-
 type TaskTimerMainAppClientProps = {
   initialPage: AppPage;
 };

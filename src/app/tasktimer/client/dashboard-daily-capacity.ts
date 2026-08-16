@@ -2,6 +2,7 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { trackDailyCapacity } from "@/app/adaptivecapacity/lib/dailyCapacityTelemetry";
 
 import { getApiUrl } from "../lib/apiClient";
+import type { ExecutiveRequestCoordinator } from "./executive-request-coordinator";
 import { getExecutiveFunctionLockedActionLabel } from "../lib/executiveFunctionAvailability";
 
 const PLUS_REQUIRED_MESSAGE = "Upgrade to PLUS to use executive function features.";
@@ -83,7 +84,7 @@ export function parseDailyCapacityResponse(payload: unknown): ParsedCapacityResp
   const primarySource = snapshot.primarySource as DailyCapacityPrimarySource;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(localDate) || !remainingRange || !states.has(state) || !confidences.has(confidence) || !sources.has(primarySource)) return { kind: "invalid" };
   if (!Number.isInteger(completedMinutesToday) || completedMinutesToday < 0 || completedMinutesToday > 1440) return { kind: "invalid" };
-  if (ceiling != null && (!Number.isInteger(ceiling) || ceiling < 1 || ceiling > 1440)) return { kind: "invalid" };
+  if (ceiling != null && (!Number.isInteger(ceiling) || ceiling < 0 || ceiling > 1440)) return { kind: "invalid" };
   if (manualOverride && manualOverride.type !== "STATE" && manualOverride.type !== "MINUTES") return { kind: "invalid" };
   return {
     kind: "capacity",
@@ -95,7 +96,7 @@ function element(documentRef: Document, id: string) {
   return documentRef.getElementById(id) as HTMLElement | null;
 }
 
-type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; getCurrentAppPage: () => string; canUseExecutiveFunction?: () => boolean; getExecutiveFunctionUnavailableMessage?: () => string; showUpgradePrompt?: (featureName: string, plan?: "plus") => void; getIdToken?: () => Promise<string | null> };
+type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; requestCoordinator?: ExecutiveRequestCoordinator; getCurrentAppPage: () => string; canUseExecutiveFunction?: () => boolean; getExecutiveFunctionUnavailableMessage?: () => string; showUpgradePrompt?: (featureName: string, plan?: "plus") => void; getIdToken?: () => Promise<string | null> };
 
 export function createDashboardDailyCapacity(options: Options) {
   const documentRef = options.documentRef ?? document;
@@ -203,7 +204,7 @@ export function createDashboardDailyCapacity(options: Options) {
     return options.getIdToken ? options.getIdToken() : getFirebaseAuthClient()?.currentUser?.getIdToken() ?? null;
   }
 
-  async function refresh(forceRefresh = false) {
+  async function refresh(forceRefresh = false, mode: "automatic" | "user" = "automatic") {
     if (!card || !["dashboard", "executive"].includes(options.getCurrentAppPage())) return;
     if (lockIfNeeded()) return;
     abortController?.abort();
@@ -214,7 +215,9 @@ export function createDashboardDailyCapacity(options: Options) {
       if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
       const timezone = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
       const forceQuery = forceRefresh ? "&forceRefresh=true" : "";
-      const response = await fetchImpl(getApiUrl(`/api/executive-function/capacity/today?timezone=${timezone}${forceQuery}`), { headers: { "x-firebase-auth": idToken }, signal: abortController.signal });
+      const input = getApiUrl(`/api/executive-function/capacity/today?timezone=${timezone}${forceQuery}`);
+      const init = { headers: { "x-firebase-auth": idToken }, signal: abortController.signal };
+      const response = options.requestCoordinator ? await options.requestCoordinator.request({ input, init, mode }) : await fetchImpl(input, init);
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(asString((payload as Record<string, unknown>).error, 240) || "Could not load today's capacity.");
       const parsed = parseDailyCapacityResponse(payload);
@@ -270,7 +273,7 @@ export function createDashboardDailyCapacity(options: Options) {
         options.showUpgradePrompt?.("Today's capacity", "plus");
         return;
       }
-      if (action === "refresh") void refresh(true);
+      if (action === "refresh") void refresh(true, "user");
       if (action === "adjust") {
         if (lockIfNeeded()) {
           options.showUpgradePrompt?.("Today's capacity", "plus");

@@ -138,6 +138,8 @@ import { createDashboardScheduleRepair } from "./client/dashboard-schedule-repai
 import { createDashboardRecovery } from "./client/dashboard-recovery";
 import { createDashboardExecutiveSummary } from "./client/dashboard-executive-summary";
 import { createExecutiveSurface } from "./client/executive-surface";
+import { createExecutiveRequestCoordinator } from "./client/executive-request-coordinator";
+import { launchRecommendedTaskById } from "./client/recommended-task-launcher";
 import { dispatchTaskCompletionChangedEvent } from "./client/task-completion-events";
 import { getRichNoteEditorValue, setRichNoteEditorValue } from "./client/rich-session-notes";
 import { normalizeInteractionHapticsIntensity } from "./lib/interactionHapticsIntensity";
@@ -324,6 +326,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let dashboardRecoveryApi: ReturnType<typeof createDashboardRecovery> | null = null;
   let dashboardExecutiveSummaryApi: ReturnType<typeof createDashboardExecutiveSummary> | null = null;
   let executiveSurfaceApi: ReturnType<typeof createExecutiveSurface> | null = null;
+  const executiveRequestCoordinator = createExecutiveRequestCoordinator(window.fetch.bind(window));
 
   const destroy = () => {
     delete document.body.dataset.tasktimerNativeRuntime;
@@ -849,16 +852,20 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
     canUseExecutiveFunction,
+    startTaskById: launchRecommendedTask,
     getExecutiveFunctionUnavailableMessage,
     showUpgradePrompt,
+    requestCoordinator: executiveRequestCoordinator,
   });
   dashboardDailyExecutiveBriefApi = createDashboardDailyExecutiveBrief({
     documentRef: document,
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
     canUseExecutiveFunction,
+    startTaskById: launchRecommendedTask,
     getExecutiveFunctionUnavailableMessage,
     showUpgradePrompt,
+    requestCoordinator: executiveRequestCoordinator,
   });
   dashboardDailyCapacityApi = createDashboardDailyCapacity({
     documentRef: document,
@@ -867,14 +874,18 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     canUseExecutiveFunction,
     getExecutiveFunctionUnavailableMessage,
     showUpgradePrompt,
+    requestCoordinator: executiveRequestCoordinator,
   });
   dashboardScheduleRepairApi = createDashboardScheduleRepair({
     documentRef: document,
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
+    getTaskName: (taskId) =>
+      String(taskCollectionBindings.getTasks().find((task) => task.id === taskId)?.name || "").trim(),
     canUseExecutiveFunction,
     getExecutiveFunctionUnavailableMessage,
     showUpgradePrompt,
+    requestCoordinator: executiveRequestCoordinator,
   });
   dashboardRecoveryApi = createDashboardRecovery({
     documentRef: document,
@@ -883,6 +894,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     canUseExecutiveFunction,
     getExecutiveFunctionUnavailableMessage,
     showUpgradePrompt,
+    requestCoordinator: executiveRequestCoordinator,
     getTasks: () => taskCollectionBindings.getTasks(),
     jumpToTaskById: (taskId) => runtimeActions.jumpToTaskById(taskId),
   });
@@ -891,8 +903,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
     canUseExecutiveFunction,
+    startTaskById: launchRecommendedTask,
     getExecutiveFunctionUnavailableMessage,
     showUpgradePrompt,
+    requestCoordinator: executiveRequestCoordinator,
   });
   executiveSurfaceApi = createExecutiveSurface({
     documentRef: document,
@@ -901,6 +915,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     canUseExecutiveFunction,
     getExecutiveFunctionUnavailableMessage,
     getIdToken: () => getFirebaseAuthClient()?.currentUser?.getIdToken() ?? Promise.resolve(null),
+    requestCoordinator: executiveRequestCoordinator,
   });
   on(window, EXECUTIVE_FUNCTION_PREFERENCE_CHANGED_EVENT, (event) => {
     const detail = (event as CustomEvent<{ enabled?: unknown }>).detail || {};
@@ -1151,6 +1166,15 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     resetTaskStateImmediate: resetTaskStateImmediateApi,
     registerTaskEvents,
   } = tasksApi;
+
+  function launchRecommendedTask(taskId: string) {
+    return launchRecommendedTaskById(taskId, {
+      getTasks: taskCollectionBindings.getTasks,
+      jumpToTaskById: runtimeActions.jumpToTaskById,
+      startTask: startTaskApi,
+    });
+  }
+
   addTaskApi = createTaskTimerAddTask(
     createTaskTimerAddTaskContext({
       els,

@@ -1,7 +1,5 @@
 "use client";
 
-import "../tasktimer/tasktimer.css";
-
 import type { PluginListenerHandle } from "@capacitor/core";
 import {
   deleteUser,

@@ -20,6 +20,18 @@ describe("BrainDumpClient", () => {
     expect(source).toContain("{session.review.items.length}");
   });
 
+  it("applies primitive styling across the embedded Brain Dump surface", () => {
+    const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
+
+    expect(source).toContain("brainDumpEmbeddedPanel brainDumpEmbeddedHeader brainDumpPrimitivePanel");
+    expect(source).toContain("brainDumpEmbeddedPanel brainDumpPrimitivePanel");
+    expect(source).toContain("brainDumpPrimitiveReviewItem");
+    expect(source).toContain("brainDumpPrimitiveInput");
+    expect(source).toContain("brainDumpPrimitiveTextarea");
+    expect(source).toContain("brainDumpPrimitiveCheckbox");
+    expect(source).toContain("brainDumpPrimitiveAction brainDumpPrimitiveLink");
+  });
+
   it("turns a voice recording into an editable transcript before the normal review session", () => {
     const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
 
@@ -187,7 +199,7 @@ describe("BrainDumpClient", () => {
   it("uses history-aware Back links with a TaskLaunch fallback", () => {
     const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
 
-    expect(source).toContain('resolveTaskTimerRouteHref("/tasklaunch")');
+    expect(source).toContain('resolveTaskTimerRouteHref(onBack ? "/executive" : "/tasklaunch")');
     expect(source).toContain('resolveStandaloneRouteBackTarget("/tasklaunch")');
     expect(source).toContain("function handleBackNavigation");
     expect(source).toContain("window.location.href = resolveTaskTimerRouteHref(backTarget)");

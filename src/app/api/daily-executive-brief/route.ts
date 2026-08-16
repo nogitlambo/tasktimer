@@ -92,7 +92,7 @@ export async function POST(req: Request) {
     const status = errorStatus(error);
     const code = asString((error as { code?: unknown })?.code, 120) || (status === 401 ? "auth/invalid-session" : "brief/internal");
     const message = status < 500 && error instanceof Error ? error.message : "TaskLaunch could not prepare the daily brief right now.";
-    if (status >= 500) console.error("[api/daily-executive-brief] Request failed", { code, status });
+    if (status >= 500) console.error("[api/daily-executive-brief] Request failed", { code, status, cause: error });
     return withAuthenticatedApiCors(req, NextResponse.json({ error: message, code }, { status }));
   }
 }

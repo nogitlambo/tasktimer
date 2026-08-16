@@ -154,10 +154,8 @@ export default function Landing(props: LandingProps) {
             </h1>
 
             <p className="landingV2HeroCopy">
-              Built for neurodivergent brains, TaskLaunch bridges the gap between{" "}
-              <strong>knowing what needs to be done and actually getting started</strong> &mdash; breaking down the
-              overwhelming, finding your next move, keeping plans realistic, and helping you adapt when life gets in
-              the way.
+              Bridge the gap between knowing what needs to be done and getting started. Simplify the overwhelming,
+              find your next best action, build realistic plans, and adapt when life gets in the way.
             </p>
 
             <div className={`landingV2Actions ${showHeroActions ? "isVisible" : ""}`}>

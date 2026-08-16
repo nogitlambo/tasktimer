@@ -4,6 +4,7 @@ import { dispatchTaskClarificationOpenEvent } from "./task-clarification-events"
 import { trackRecovery } from "@/app/recovery/lib/recoveryTelemetry";
 
 import { getApiUrl } from "../lib/apiClient";
+import type { ExecutiveRequestCoordinator } from "./executive-request-coordinator";
 import { getExecutiveFunctionLockedActionLabel } from "../lib/executiveFunctionAvailability";
 
 const PLUS_REQUIRED_MESSAGE = "Upgrade to PLUS to use executive function features.";
@@ -43,6 +44,7 @@ type Options = {
   documentRef?: Document;
   windowRef?: Window;
   fetchImpl?: typeof fetch;
+  requestCoordinator?: ExecutiveRequestCoordinator;
   getCurrentAppPage: () => string;
   canUseExecutiveFunction?: () => boolean;
   getExecutiveFunctionUnavailableMessage?: () => string;
@@ -137,6 +139,8 @@ export function createDashboardRecovery(options: Options) {
     card?.setAttribute("data-recovery-state", state);
     const status = element(documentRef, "dashboardRecoveryStatus");
     if (status) status.textContent = message;
+    const modalStatus = element(documentRef, "dashboardRecoveryModalStatus");
+    if (modalStatus) modalStatus.textContent = message;
     const retry = card?.querySelector<HTMLButtonElement>('[data-recovery="refresh"]');
     if (retry) {
       retry.disabled = state === "loading";
@@ -195,7 +199,7 @@ export function createDashboardRecovery(options: Options) {
       const checkbox = documentRef.createElement("input");
       checkbox.type = "checkbox";
       checkbox.checked = action.selected;
-      checkbox.disabled = action.status !== "PROPOSED" || action.type === "KEEP_ACTIVE" || action.type === "CLARIFY_TASK";
+      checkbox.disabled = action.status !== "PROPOSED" || action.type === "CLARIFY_TASK" || action.type === "REVIEW_DEADLINE";
       checkbox.setAttribute("data-recovery-action-id", action.id);
       checkbox.setAttribute("aria-label", `Select ${actionLabel(action)}`);
       const copy = documentRef.createElement("span");
@@ -278,12 +282,14 @@ export function createDashboardRecovery(options: Options) {
     try {
       const idToken = await getIdToken();
       if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-      const response = await fetchImpl(getApiUrl("/api/executive-function/recovery"), {
+      const input = getApiUrl("/api/executive-function/recovery");
+      const init = {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
         body: JSON.stringify({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", forceRefresh, userRequested }),
         signal: abortController.signal,
-      });
+      };
+      const response = options.requestCoordinator ? await options.requestCoordinator.request({ input, init, mode: userRequested ? "user" : "automatic" }) : await fetchImpl(input, init);
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(asString((payload as Record<string, unknown>).error, 240) || "Could not prepare Recovery Mode.");
       const parsed = parseRecoveryResponse(payload);
@@ -437,7 +443,10 @@ export function createDashboardRecovery(options: Options) {
       }
       if (action === "open") {
         if (session) setOverlay(true);
-        else void refresh(true, true);
+        else {
+          setOverlay(true);
+          void refresh(true, true);
+        }
       }
       if (action === "refresh") void refresh(true, false);
       if (action === "close") void dismiss();

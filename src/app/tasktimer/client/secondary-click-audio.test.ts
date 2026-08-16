@@ -67,7 +67,7 @@ describe("secondary click audio", () => {
       "[data-nav-page]",
       ".dashboardRailMenuBtn",
       ".settingsNavTile",
-      ".taskLaunchMobileMenuItem",
+      ".appFooterSheetUtility",
       "#openAddTaskBtn",
       '[data-action="openAddTask"]',
       '[data-action="reset"]',
@@ -276,15 +276,14 @@ describe("secondary click audio", () => {
   });
 
   it("matches modal preview dropdown trigger for dedicated dropdown audio", () => {
-    const dropdownSelector = '.modalPreviewDropdownButton,#menuIcon,[data-action="history"]';
+    const dropdownSelector = '.modalPreviewDropdownButton,.appFooterSheetHandle,[data-action="history"]';
     const modalOpenSelector = "[data-friend-profile-open],[data-leaderboard-profile-open],[data-rank-ladder-open]";
     const dropdownTrigger = makeElement({
       selectorMatches: { [dropdownSelector]: true, ".modalPreviewDropdownButton": true, "button,a": true },
       textContent: "Standard option",
     });
-    const mobileMenuTrigger = makeElement({
-      selectorMatches: { [dropdownSelector]: true, "#menuIcon": true, "button,a": true },
-      attributes: { id: "menuIcon" },
+    const footerSheetHandle = makeElement({
+      selectorMatches: { [dropdownSelector]: true, ".appFooterSheetHandle": true, "button,a": true },
     });
     const rankLadderTrigger = makeElement({
       selectorMatches: { [modalOpenSelector]: true, "[data-rank-ladder-open]": true, "button,a": true },
@@ -298,8 +297,8 @@ describe("secondary click audio", () => {
 
     expect(getDropdownClickTarget(dropdownTrigger)).toBe(dropdownTrigger);
     expect(getSecondaryClickTarget(dropdownTrigger)).toBeNull();
-    expect(getDropdownClickTarget(mobileMenuTrigger)).toBe(mobileMenuTrigger);
-    expect(getSecondaryClickTarget(mobileMenuTrigger)).toBeNull();
+    expect(getDropdownClickTarget(footerSheetHandle)).toBe(footerSheetHandle);
+    expect(getSecondaryClickTarget(footerSheetHandle)).toBeNull();
     expect(getDropdownClickTarget(rankLadderTrigger)).toBeNull();
     expect(getModalOpenClickTarget(rankLadderTrigger)).toBe(rankLadderTrigger);
     expect(getSecondaryClickTarget(rankLadderTrigger)).toBeNull();
@@ -393,7 +392,7 @@ describe("secondary click audio", () => {
   });
 
   it("ignores unrelated and disabled controls", () => {
-    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
+    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.dashboardRailMenuBtn,.settingsNavTile,.appFooterSheetUtility,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
     const unrelated = makeElement({ textContent: "Done" });
     const disabled = makeElement({ selectorMatches: { [directSelector]: true }, disabled: true });
     const ariaDisabled = makeElement({
@@ -407,7 +406,7 @@ describe("secondary click audio", () => {
   });
 
   it("does not blanket-exclude accent controls from default secondary audio", () => {
-    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
+    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.dashboardRailMenuBtn,.settingsNavTile,.appFooterSheetUtility,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
     const accentDirectTarget = makeElement({
       selectorMatches: { [directSelector]: true, ".btn-accent": true },
       textContent: "Done",
@@ -506,10 +505,10 @@ describe("secondary click audio", () => {
     const handler = on.mock.calls[0]?.[2] as EventListener;
     expect(on).toHaveBeenCalledWith(documentRef, "click", expect.any(Function), { capture: true });
 
-    handler({ defaultPrevented: true, target: makeElement({ selectorMatches: { "#menuIcon": true } }) } as unknown as Event);
+    handler({ defaultPrevented: true, target: makeElement({ selectorMatches: { ".appFooterSheetHandle": true } }) } as unknown as Event);
     expect(playAudio).not.toHaveBeenCalled();
 
-    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
+    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.dashboardRailMenuBtn,.settingsNavTile,.appFooterSheetUtility,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
     handler({ defaultPrevented: false, isTrusted: false, target: makeElement({ selectorMatches: { [directSelector]: true } }) } as unknown as Event);
     expect(playAudio).not.toHaveBeenCalled();
 
@@ -850,7 +849,7 @@ describe("secondary click audio", () => {
     handler({
       defaultPrevented: false,
       target: makeElement({
-        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"]']: true, ".modalPreviewDropdownButton": true, "button,a": true },
+        selectorMatches: { ['.modalPreviewDropdownButton,.appFooterSheetHandle,[data-action="history"]']: true, ".modalPreviewDropdownButton": true, "button,a": true },
         textContent: "Standard option",
       }),
     } as unknown as Event);
@@ -859,7 +858,7 @@ describe("secondary click audio", () => {
     expect(playAudio).not.toHaveBeenCalled();
   });
 
-  it("routes mobile hamburger menu panel toggles to dropdown audio instead of default secondary audio", () => {
+  it("routes mobile footer-sheet handle activation to dropdown audio instead of default secondary audio", () => {
     const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
     const on = vi.fn();
     const playAudio = vi.fn();
@@ -877,8 +876,7 @@ describe("secondary click audio", () => {
     handler({
       defaultPrevented: false,
       target: makeElement({
-        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"]']: true, "#menuIcon": true, "button,a": true },
-        attributes: { id: "menuIcon" },
+        selectorMatches: { ['.modalPreviewDropdownButton,.appFooterSheetHandle,[data-action="history"]']: true, ".appFooterSheetHandle": true, "button,a": true },
       }),
     } as unknown as Event);
 
@@ -904,7 +902,7 @@ describe("secondary click audio", () => {
     handler({
       defaultPrevented: false,
       target: makeElement({
-        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"]']: true, '[data-action="history"]': true, "button,a": true },
+        selectorMatches: { ['.modalPreviewDropdownButton,.appFooterSheetHandle,[data-action="history"]']: true, '[data-action="history"]': true, "button,a": true },
         textContent: "View Chart",
       }),
     } as unknown as Event);

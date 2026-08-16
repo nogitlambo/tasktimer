@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   loadRecommendation: vi.fn(),
   skipRecommendation: vi.fn(),
   loadCandidates: vi.fn(),
+  loadSuppressedTaskIds: vi.fn(),
   saveRecommendation: vi.fn(),
   rank: vi.fn(),
   enforceUidRateLimit: vi.fn(),
@@ -22,6 +23,7 @@ vi.mock("@/app/nextbestaction/lib/nextBestActionRepository", async () => ({
     loadRecommendation: mocks.loadRecommendation,
     skipRecommendation: mocks.skipRecommendation,
     loadCandidates: mocks.loadCandidates,
+    loadSuppressedTaskIds: mocks.loadSuppressedTaskIds,
     saveRecommendation: mocks.saveRecommendation,
   })),
 }));
@@ -51,12 +53,13 @@ describe("POST /api/recommendations/next-best-action/[recommendationId]/alternat
     mocks.loadRecommendation.mockResolvedValue(previous);
     mocks.skipRecommendation.mockResolvedValue("skipped");
     mocks.loadCandidates.mockResolvedValue([]);
+    mocks.loadSuppressedTaskIds.mockResolvedValue(["task-4"]);
     mocks.rank.mockReturnValue({ primary: { taskId: "task-2", title: "Second task", taskVersion: "version-2", score: 70, confidence: "MEDIUM", reasonCodes: [], durationMinutes: 10, durationSource: "DEFAULT", firstAction: null, focusWindowMatched: false } });
 
     const response = await POST(request({ excludeTaskIds: ["task-1", "task-3"] }), { params: Promise.resolve({ recommendationId: "nba-1" }) });
 
     expect(response.status).toBe(200);
-    expect(mocks.rank).toHaveBeenCalledWith(expect.objectContaining({ excludedTaskIds: ["task-1", "task-3"] }));
+    expect(mocks.rank).toHaveBeenCalledWith(expect.objectContaining({ excludedTaskIds: ["task-1", "task-3", "task-4"] }));
     expect(mocks.saveRecommendation).toHaveBeenCalledWith("uid-1", expect.objectContaining({ taskId: "task-2", payload: expect.objectContaining({ alternativeIndex: 1 }) }));
   });
 

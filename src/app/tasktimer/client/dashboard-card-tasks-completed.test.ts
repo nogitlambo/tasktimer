@@ -114,6 +114,61 @@ describe("dashboard tasks completed card module", () => {
     expect(model.items[0]).toMatchObject({ progress: 1, complete: true });
   });
 
+  it("uses a reached daily time goal for reset completions instead of the longer scheduled duration", () => {
+    const nowMs = new Date("2026-05-05T12:00:00Z").getTime();
+    const resetTask = task({
+      id: "task-1",
+      name: "Tidy small area",
+      timeGoalMinutes: 5,
+      timeGoalCompletedDayKey: "2026-05-05",
+      timeGoalCompletedAtMs: nowMs,
+      timeGoalCompletedReason: "reset",
+      timeGoalCompletedElapsedMs: 5 * 60 * 1000,
+    });
+    const model = buildDashboardTasksCompletedModel({
+      opportunities: [opportunity(resetTask, { goalMinutes: 15 })],
+      historyByTaskId: {
+        "task-1": [{ ts: nowMs - 1000, name: "Tidy small area", ms: 5 * 60 * 1000 }],
+      },
+      nowMs,
+      weekStartMs: nowMs - 86400000,
+      todayKey: "2026-05-05",
+      fallbackColor: "#00ffff",
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.totalCompleted).toBe(1);
+    expect(model.items[0]).toMatchObject({ progress: 1, complete: true });
+  });
+
+  it("keeps under-goal daily reset completions partial against their time goal", () => {
+    const nowMs = new Date("2026-05-05T12:00:00Z").getTime();
+    const resetTask = task({
+      id: "task-1",
+      timeGoalMinutes: 5,
+      timeGoalCompletedDayKey: "2026-05-05",
+      timeGoalCompletedAtMs: nowMs,
+      timeGoalCompletedReason: "reset",
+      timeGoalCompletedElapsedMs: 4 * 60 * 1000,
+    });
+    const model = buildDashboardTasksCompletedModel({
+      opportunities: [opportunity(resetTask, { goalMinutes: 15 })],
+      historyByTaskId: {},
+      nowMs,
+      weekStartMs: nowMs - 86400000,
+      todayKey: "2026-05-05",
+      fallbackColor: "#00ffff",
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.totalCompleted).toBe(0);
+    expect(model.items[0]).toMatchObject({ progress: 0.8, complete: false });
+  });
+
   it("keeps normal logged goal completion as completed", () => {
     const nowMs = new Date("2026-05-05T12:00:00Z").getTime();
     const goalFocus = task({ id: "task-1", name: "Goal Focus" });

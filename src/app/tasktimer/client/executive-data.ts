@@ -1,4 +1,5 @@
 import { getApiUrl } from "../lib/apiClient";
+import type { ExecutiveRequestCoordinator } from "./executive-request-coordinator";
 import { parseDailyCapacityResponse, type DailyCapacityDashboardSnapshot } from "./dashboard-daily-capacity";
 import { parseBriefResponse, type DailyExecutiveBriefDashboard } from "./dashboard-daily-executive-brief";
 import { parseNextBestActionDashboardResponse, type NextBestActionDashboardRecommendation } from "./dashboard-next-best-action";
@@ -25,6 +26,7 @@ type LoadExecutiveDataOptions = {
   timezone?: string;
   nowMs?: () => number;
   forceRefresh?: boolean;
+  requestCoordinator?: ExecutiveRequestCoordinator;
 };
 
 const SAFE_ERROR_MESSAGE = "This Executive section is unavailable right now.";
@@ -42,10 +44,13 @@ async function requestJson(options: LoadExecutiveDataOptions, path: string, init
   const fetchImpl = options.fetchImpl ?? fetch;
   const token = await options.getIdToken();
   if (!token) throw new Error("missing-session");
-  const response = await fetchImpl(getApiUrl(path), {
+  const request = {
     ...init,
     headers: { "Content-Type": "application/json", ...(init.headers || {}), "x-firebase-auth": token },
-  });
+  };
+  const response = options.requestCoordinator
+    ? await options.requestCoordinator.request({ input: getApiUrl(path), init: request, mode: options.forceRefresh ? "user" : "automatic" })
+    : await fetchImpl(getApiUrl(path), request);
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error("request-failed");
   return payload;

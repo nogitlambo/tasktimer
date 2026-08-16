@@ -64,4 +64,17 @@ describe("POST /api/daily-executive-brief", () => {
     expect(await response.json()).toMatchObject({ code: "brief/invalid-available-time" });
     expect(mocks.generate).not.toHaveBeenCalled();
   });
+
+  it("keeps internal generation errors private while logging their cause server-side", async () => {
+    const error = new Error("Firestore write to dailyBriefs failed");
+    mocks.generate.mockRejectedValueOnce(error);
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await POST(request());
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toMatchObject({ code: "brief/internal", error: "TaskLaunch could not prepare the daily brief right now." });
+    expect(consoleError).toHaveBeenCalledWith("[api/daily-executive-brief] Request failed", expect.objectContaining({ code: "brief/internal", status: 500, cause: error }));
+    consoleError.mockRestore();
+  });
 });

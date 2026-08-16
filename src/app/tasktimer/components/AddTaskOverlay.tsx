@@ -2,7 +2,7 @@ import TaskColorPickerPopover from "./TaskColorPickerPopover";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 
 export default function AddTaskOverlay() {
-  const brainDumpHref = resolveTaskTimerRouteHref("/brain-dump");
+  const brainDumpHref = resolveTaskTimerRouteHref("/executive?view=brain-dump");
 
   return (
     <div className="overlay" id="addTaskOverlay">

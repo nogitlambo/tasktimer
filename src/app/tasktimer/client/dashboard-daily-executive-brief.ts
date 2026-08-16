@@ -1,7 +1,9 @@
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getApiUrl } from "../lib/apiClient";
+import type { ExecutiveRequestCoordinator } from "./executive-request-coordinator";
 import { getExecutiveFunctionLockedActionLabel } from "../lib/executiveFunctionAvailability";
 import { dispatchTaskClarificationOpenEvent, dispatchTaskClarificationStartTaskEvent } from "./task-clarification-events";
+import type { TaskLaunchResult } from "./task-timer-lifecycle";
 import { trackDailyExecutiveBrief } from "@/app/dailyexecutivebrief/lib/dailyExecutiveBriefTelemetry";
 
 const PLUS_REQUIRED_MESSAGE = "Upgrade to PLUS to use executive function features.";
@@ -81,7 +83,7 @@ function element(documentRef: Document, id: string) {
   return documentRef.getElementById(id) as HTMLElement | null;
 }
 
-type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; getCurrentAppPage: () => string; canUseExecutiveFunction?: () => boolean; getExecutiveFunctionUnavailableMessage?: () => string; showUpgradePrompt?: (featureName: string, plan?: "plus") => void; getIdToken?: () => Promise<string | null> };
+type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; requestCoordinator?: ExecutiveRequestCoordinator; getCurrentAppPage: () => string; canUseExecutiveFunction?: () => boolean; getExecutiveFunctionUnavailableMessage?: () => string; showUpgradePrompt?: (featureName: string, plan?: "plus") => void; getIdToken?: () => Promise<string | null>; startTaskById?: (taskId: string) => TaskLaunchResult };
 
 export function createDashboardDailyExecutiveBrief(options: Options) {
   const documentRef = options.documentRef ?? document;
@@ -216,7 +218,15 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
       const response = await fetchImpl(getApiUrl(`/api/recommendations/next-best-action/${encodeURIComponent(recommendation.recommendationId)}/start`), { method: "POST", headers: { "Content-Type": "application/json", "x-firebase-auth": idToken }, body: "{}" });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(asString((payload as Record<string, unknown>).error, 240) || "This recommendation can no longer be started.");
-      dispatchTaskClarificationStartTaskEvent({ taskId: recommendation.taskId });
+      const launchResult = options.startTaskById?.(recommendation.taskId);
+      if (!options.startTaskById) {
+        dispatchTaskClarificationStartTaskEvent({ taskId: recommendation.taskId });
+      } else if (launchResult === "requires-confirmation") {
+        setState("ready", "Confirm the active timer switch to launch this task.");
+        return;
+      } else if (launchResult === "blocked" || launchResult === "not-found") {
+        throw new Error("This task is no longer available to start.");
+      }
       void trackDailyExecutiveBrief("started", { planHealth: currentBrief?.plan.planHealth });
       setState("ready", "Task started from the daily brief.");
     } catch (error) {
@@ -239,7 +249,7 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
     return value && value !== "any" ? Number(value) : null;
   }
 
-  async function refresh(forceRefresh = false, selectedMinutes = getSelectedMinutes()) {
+  async function refresh(forceRefresh = false, selectedMinutes = getSelectedMinutes(), mode: "automatic" | "user" = "automatic") {
     if (!["dashboard", "executive"].includes(options.getCurrentAppPage()) || !card) return;
     if (lockIfNeeded()) return;
     abortController?.abort(); abortController = new AbortController(); const sequence = ++requestSequence;
@@ -249,7 +259,9 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
       if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
       const body: Record<string, unknown> = { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, forceRefresh };
       if (selectedMinutes != null) body.availableMinutes = selectedMinutes;
-      const response = await fetchImpl(getApiUrl("/api/daily-executive-brief"), { method: "POST", headers: { "Content-Type": "application/json", "x-firebase-auth": idToken }, body: JSON.stringify(body), signal: abortController.signal });
+      const input = getApiUrl("/api/daily-executive-brief");
+      const init = { method: "POST", headers: { "Content-Type": "application/json", "x-firebase-auth": idToken }, body: JSON.stringify(body), signal: abortController.signal };
+      const response = options.requestCoordinator ? await options.requestCoordinator.request({ input, init, mode }) : await fetchImpl(input, init);
       const payload = await response.json().catch(() => ({}));
       if (sequence !== requestSequence) return;
       if (!response.ok) throw new Error(asString((payload as Record<string, unknown>)?.error, 240) || "Could not load the daily brief.");
@@ -284,10 +296,10 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
       if (action === "start") { void startRecommendation(); return; }
       if (action === "clarify") { clarifyRecommendation(); return; }
       if (action === "toggle") toggle();
-      if (action === "refresh") void refresh(true);
+      if (action === "refresh") void refresh(true, getSelectedMinutes(), "user");
     });
     documentRef.addEventListener("change", (event) => {
-      if ((event.target as HTMLElement | null)?.id === "dashboardDailyExecutiveBriefTimeSelect") void refresh(true);
+      if ((event.target as HTMLElement | null)?.id === "dashboardDailyExecutiveBriefTimeSelect") void refresh(true, getSelectedMinutes(), "user");
     });
     windowRef.addEventListener("tasklaunch:app-page-changed", (event) => { if (["dashboard", "executive"].includes((event as CustomEvent<{ page?: string }>).detail?.page || "")) void refresh(); });
     windowRef.addEventListener("tasklaunch:schedule-repair-applied", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(true); });

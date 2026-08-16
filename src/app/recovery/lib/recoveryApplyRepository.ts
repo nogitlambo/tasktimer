@@ -162,7 +162,7 @@ export function createFirestoreRecoveryApplyRepository(db: Firestore = getFireba
           }
           const scheduleAction = recoveryActionToScheduleAction(action, requestedAction.toDate || null);
           if (!scheduleAction) {
-            const outcome = action.type === "MARK_FOR_LATER_REVIEW" ? "APPLIED" : "SKIPPED";
+            const outcome = action.type === "MARK_FOR_LATER_REVIEW" || action.type === "KEEP_ACTIVE" ? "APPLIED" : "SKIPPED";
             results.push({ actionId: action.id, taskId: action.taskId, outcome, reason: outcome === "APPLIED" ? "Recorded for later review." : "This action must be completed through its existing workflow." });
             return outcome === "APPLIED" ? { ...action, selected: false, status: "APPLIED" as const } : action;
           }

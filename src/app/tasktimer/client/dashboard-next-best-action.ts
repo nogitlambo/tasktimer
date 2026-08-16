@@ -1,8 +1,9 @@
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getApiUrl } from "../lib/apiClient";
+import type { ExecutiveRequestCoordinator } from "./executive-request-coordinator";
 import { getExecutiveFunctionLockedActionLabel } from "../lib/executiveFunctionAvailability";
-import { dispatchTaskClarificationStartTaskEvent } from "./task-clarification-events";
 import { TASK_COMPLETION_CHANGED_EVENT } from "./task-completion-events";
+import type { TaskLaunchResult } from "./task-timer-lifecycle";
 
 export type NextBestActionDashboardRecommendation = {
   recommendationId: string;
@@ -13,6 +14,7 @@ export type NextBestActionDashboardRecommendation = {
   estimatedMinutes: number;
   durationSource?: string;
   timeGoalMinutes?: number;
+  dailyProgressPercent?: number;
   latestHistoryEntry?: { ts: number; ms: number };
   confidence?: string;
   reasonCodes?: string[];
@@ -23,20 +25,29 @@ export type NextBestActionDashboardRecommendation = {
 };
 
 export type NextBestActionDashboardResponse =
-  | { kind: "recommendation"; recommendation: NextBestActionDashboardRecommendation }
+  | {
+      kind: "recommendation";
+      recommendation: NextBestActionDashboardRecommendation;
+    }
   | { kind: "empty" }
   | { kind: "stale" }
   | { kind: "invalid" };
 
 const TIME_OPTIONS = [10, 20, 30, 60, null] as const;
-const PLUS_REQUIRED_MESSAGE = "Upgrade to PLUS to use executive function features.";
+const PLUS_REQUIRED_MESSAGE =
+  "Upgrade to PLUS to use executive function features.";
 
 function asString(value: unknown, maxLength = 240) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
 
 function asPositiveMinutes(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value) && value > 0 && value <= 1440 ? Math.round(value) : null;
+  return typeof value === "number" &&
+    Number.isFinite(value) &&
+    value > 0 &&
+    value <= 1440
+    ? Math.round(value)
+    : null;
 }
 
 function asPositiveMillis(value: unknown) {
@@ -45,14 +56,19 @@ function asPositiveMillis(value: unknown) {
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
 }
 
 export function getNextBestActionTimeOptions() {
   return [...TIME_OPTIONS];
 }
 
-export function parseNextBestActionDashboardResponse(value: unknown, nowMs = Date.now()): NextBestActionDashboardResponse {
+export function parseNextBestActionDashboardResponse(
+  value: unknown,
+  nowMs = Date.now(),
+): NextBestActionDashboardResponse {
   const root = asRecord(value);
   if (!root || root.ok !== true) return { kind: "invalid" };
   if (root.recommendation == null) return { kind: "empty" };
@@ -64,9 +80,21 @@ export function parseNextBestActionDashboardResponse(value: unknown, nowMs = Dat
   const estimatedMinutes = asPositiveMinutes(raw.estimatedMinutes);
   const expiresAt = asString(raw.expiresAt, 80);
   const expiresAtMs = Date.parse(expiresAt);
-  if (!recommendationId || !taskId || !title || !estimatedMinutes || !expiresAt || !Number.isFinite(expiresAtMs)) return { kind: "invalid" };
+  if (
+    !recommendationId ||
+    !taskId ||
+    !title ||
+    !estimatedMinutes ||
+    !expiresAt ||
+    !Number.isFinite(expiresAtMs)
+  )
+    return { kind: "invalid" };
   if (expiresAtMs <= nowMs) return { kind: "stale" };
-  const reasonCodes = Array.isArray(raw.reasonCodes) ? raw.reasonCodes.filter((reason): reason is string => typeof reason === "string").slice(0, 8) : [];
+  const reasonCodes = Array.isArray(raw.reasonCodes)
+    ? raw.reasonCodes
+        .filter((reason): reason is string => typeof reason === "string")
+        .slice(0, 8)
+    : [];
   const latestHistory = asRecord(raw.latestHistoryEntry);
   const latestHistoryTs = asPositiveMillis(latestHistory?.ts);
   const latestHistoryMs = asPositiveMillis(latestHistory?.ms);
@@ -81,10 +109,17 @@ export function parseNextBestActionDashboardResponse(value: unknown, nowMs = Dat
       estimatedMinutes,
       durationSource: asString(raw.durationSource, 80) || undefined,
       timeGoalMinutes: asPositiveMinutes(raw.timeGoalMinutes) || undefined,
-      latestHistoryEntry: latestHistoryTs && latestHistoryMs ? { ts: latestHistoryTs, ms: latestHistoryMs } : undefined,
+      dailyProgressPercent: typeof raw.dailyProgressPercent === "number" && Number.isInteger(raw.dailyProgressPercent) && raw.dailyProgressPercent >= 0 && raw.dailyProgressPercent <= 100 ? raw.dailyProgressPercent : undefined,
+      latestHistoryEntry:
+        latestHistoryTs && latestHistoryMs
+          ? { ts: latestHistoryTs, ms: latestHistoryMs }
+          : undefined,
       confidence: asString(raw.confidence, 40) || undefined,
       reasonCodes,
-      focusWindowMatched: typeof raw.focusWindowMatched === "boolean" ? raw.focusWindowMatched : null,
+      focusWindowMatched:
+        typeof raw.focusWindowMatched === "boolean"
+          ? raw.focusWindowMatched
+          : null,
       explanation: asString(raw.explanation, 360) || undefined,
       createdAt: asString(raw.createdAt, 80) || undefined,
       expiresAt,
@@ -96,12 +131,32 @@ function durationSourceLabel(source: string | undefined) {
   return source ? source.toLowerCase().replaceAll("_", " ") : "estimated";
 }
 
-export function formatNextBestActionDuration(recommendation: Pick<NextBestActionDashboardRecommendation, "estimatedMinutes" | "durationSource">) {
+export function formatNextBestActionDuration(
+  recommendation: Pick<
+    NextBestActionDashboardRecommendation,
+    "estimatedMinutes" | "durationSource"
+  >,
+) {
   return `${recommendation.estimatedMinutes}m · ${durationSourceLabel(recommendation.durationSource)}`;
 }
 
 function formatMinutesDetail(minutes: number) {
   return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+}
+
+export function formatNextBestActionTimeGoalPill(
+  minutes: number | null | undefined,
+) {
+  const safeMinutes = asPositiveMinutes(minutes);
+  return safeMinutes ? formatMinutesDetail(safeMinutes) : "";
+}
+
+export function formatNextBestActionDailyProgressPill(
+  percent: number | null | undefined,
+) {
+  return typeof percent === "number" && Number.isInteger(percent) && percent >= 0 && percent <= 100
+    ? `${percent}% today`
+    : "";
 }
 
 function formatHistoryDuration(ms: number) {
@@ -118,15 +173,28 @@ function formatHistoryDate(ts: number) {
   }).format(new Date(ts));
 }
 
-export function formatNextBestActionExplanation(recommendation: Pick<NextBestActionDashboardRecommendation, "estimatedMinutes" | "durationSource" | "timeGoalMinutes" | "latestHistoryEntry" | "confidence" | "explanation">) {
-  const summary = recommendation.explanation || "This is the most useful next step for right now.";
+export function formatNextBestActionExplanation(
+  recommendation: Pick<
+    NextBestActionDashboardRecommendation,
+    | "estimatedMinutes"
+    | "durationSource"
+    | "timeGoalMinutes"
+    | "latestHistoryEntry"
+    | "confidence"
+    | "explanation"
+  >,
+) {
+  const summary =
+    recommendation.explanation ||
+    "This is the most useful next step for right now.";
   const duration = `${recommendation.estimatedMinutes} minutes, ${durationSourceLabel(recommendation.durationSource)} duration`;
-  const confidence = recommendation.confidence ? `${recommendation.confidence.toLowerCase()} confidence` : "confidence available";
-  const timeGoal = recommendation.timeGoalMinutes ? ` Current time goal: ${formatMinutesDetail(recommendation.timeGoalMinutes)}.` : "";
+  const confidence = recommendation.confidence
+    ? `${recommendation.confidence.toLowerCase()} confidence`
+    : "confidence available";
   const latestHistory = recommendation.latestHistoryEntry
     ? ` Last history entry: ${formatHistoryDuration(recommendation.latestHistoryEntry.ms)} on ${formatHistoryDate(recommendation.latestHistoryEntry.ts)}.`
     : "";
-  return `${summary} Estimated effort: ${duration}.${timeGoal}${latestHistory} Recommendation confidence: ${confidence}.`;
+  return `${summary} Estimated effort: ${duration}.${latestHistory} Recommendation confidence: ${confidence}.`;
 }
 
 function setHidden(element: HTMLElement | null, hidden: boolean) {
@@ -149,14 +217,18 @@ type CreateDashboardNextBestActionOptions = {
   documentRef?: Document;
   windowRef?: Window;
   fetchImpl?: typeof fetch;
+  requestCoordinator?: ExecutiveRequestCoordinator;
   getCurrentAppPage: () => string;
   canUseExecutiveFunction?: () => boolean;
   getExecutiveFunctionUnavailableMessage?: () => string;
   showUpgradePrompt?: (featureName: string, plan?: "plus") => void;
   getIdToken?: () => Promise<string | null>;
+  startTaskById?: (taskId: string) => TaskLaunchResult;
 };
 
-export function createDashboardNextBestAction(options: CreateDashboardNextBestActionOptions) {
+export function createDashboardNextBestAction(
+  options: CreateDashboardNextBestActionOptions,
+) {
   const documentRef = options.documentRef ?? document;
   const windowRef = options.windowRef ?? window;
   const fetchImpl = options.fetchImpl ?? windowRef.fetch.bind(windowRef);
@@ -165,64 +237,128 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
   let abortController: AbortController | null = null;
   const shownTaskIds = new Set<string>();
 
-  function setStatus(message: string, state: "loading" | "empty" | "error" | "stale" | "ready" | "locked" | "started") {
+  function setStatus(
+    message: string,
+    state:
+      "loading" | "empty" | "error" | "stale" | "ready" | "locked" | "started",
+  ) {
     const status = getElement(documentRef, "dashboardNextBestActionStatus");
     if (status) {
       status.textContent = message;
       setHidden(status, state !== "loading");
     }
     card?.setAttribute("data-next-best-action-state", state);
-    setHidden(getElement(documentRef, "dashboardNextBestActionContent"), state !== "ready" && state !== "started");
-    setHidden(getElement(documentRef, "dashboardNextBestActionEmpty"), state !== "empty");
-    setHidden(getElement(documentRef, "dashboardNextBestActionError"), state !== "error" && state !== "stale" && state !== "locked");
-    const retry = getElement(documentRef, "dashboardNextBestActionRetry") as HTMLButtonElement | null;
+    setHidden(
+      getElement(documentRef, "dashboardNextBestActionContent"),
+      state !== "ready" && state !== "started",
+    );
+    setHidden(
+      getElement(documentRef, "dashboardNextBestActionEmpty"),
+      state !== "empty",
+    );
+    setHidden(
+      getElement(documentRef, "dashboardNextBestActionError"),
+      state !== "error" && state !== "stale" && state !== "locked",
+    );
+    const retry = getElement(
+      documentRef,
+      "dashboardNextBestActionRetry",
+    ) as HTMLButtonElement | null;
     if (retry) {
-      retry.hidden = state !== "error" && state !== "stale" && state !== "locked";
+      retry.hidden =
+        state !== "error" && state !== "stale" && state !== "locked";
       retry.disabled = false;
-      retry.textContent = state === "locked" ? getExecutiveFunctionLockedActionLabel(message, "Retry") : "Retry";
+      retry.textContent =
+        state === "locked"
+          ? getExecutiveFunctionLockedActionLabel(message, "Retry")
+          : "Retry";
       retry.dataset.planLocked = state === "locked" ? "executiveFunction" : "";
     }
-    const actionButtons = documentRef.querySelectorAll<HTMLButtonElement>("[data-next-best-action-action]");
+    const actionButtons = documentRef.querySelectorAll<HTMLButtonElement>(
+      "[data-next-best-action-action]",
+    );
     actionButtons.forEach((button) => {
       button.disabled = state !== "ready";
     });
     card?.classList.toggle("isPlanLocked", state === "locked");
-    if (state === "locked") card?.setAttribute("data-plan-locked", "executiveFunction");
+    if (state === "locked")
+      card?.setAttribute("data-plan-locked", "executiveFunction");
     else card?.removeAttribute("data-plan-locked");
   }
 
   function lockIfNeeded() {
     if (options.canUseExecutiveFunction?.() !== false) return false;
     abortController?.abort();
-    setStatus(options.getExecutiveFunctionUnavailableMessage?.() || PLUS_REQUIRED_MESSAGE, "locked");
+    setStatus(
+      options.getExecutiveFunctionUnavailableMessage?.() ||
+        PLUS_REQUIRED_MESSAGE,
+      "locked",
+    );
     return true;
   }
 
-  function renderRecommendation(recommendation: NextBestActionDashboardRecommendation) {
+  function renderRecommendation(
+    recommendation: NextBestActionDashboardRecommendation,
+  ) {
     shownTaskIds.add(recommendation.taskId);
     const title = getElement(documentRef, "dashboardNextBestActionTitle");
-    const firstAction = getElement(documentRef, "dashboardNextBestActionFirstAction");
-    const explanation = getElement(documentRef, "dashboardNextBestActionExplanation");
+    const timeGoal = getElement(documentRef, "dashboardNextBestActionTimeGoal");
+    const dailyProgress = getElement(documentRef, "dashboardNextBestActionDailyProgress");
+    const firstAction = getElement(
+      documentRef,
+      "dashboardNextBestActionFirstAction",
+    );
+    const explanation = getElement(
+      documentRef,
+      "dashboardNextBestActionExplanation",
+    );
     if (title) title.textContent = recommendation.title;
+    if (timeGoal) {
+      const timeGoalText = formatNextBestActionTimeGoalPill(
+        recommendation.timeGoalMinutes,
+      );
+      timeGoal.textContent = timeGoalText;
+      setHidden(timeGoal, !timeGoalText);
+    }
+    if (dailyProgress) {
+      const dailyProgressText = formatNextBestActionDailyProgressPill(
+        recommendation.dailyProgressPercent,
+      );
+      dailyProgress.textContent = dailyProgressText;
+      setHidden(dailyProgress, !dailyProgressText);
+    }
     if (firstAction) {
-      firstAction.textContent = recommendation.firstAction || "Start with the smallest visible step.";
+      firstAction.textContent =
+        recommendation.firstAction || "Start with the smallest visible step.";
       firstAction.hidden = !recommendation.firstAction;
     }
-    if (explanation) explanation.textContent = formatNextBestActionExplanation(recommendation);
-    const actionButtons = documentRef.querySelectorAll<HTMLButtonElement>("[data-next-best-action-action]");
+    if (explanation)
+      explanation.textContent = formatNextBestActionExplanation(recommendation);
+    const actionButtons = documentRef.querySelectorAll<HTMLButtonElement>(
+      "[data-next-best-action-action]",
+    );
     actionButtons.forEach((button) => {
       button.hidden = false;
       button.disabled = false;
-      if (button.getAttribute("data-next-best-action-action") === "start") setStartNowButtonLabel(button, "LAUNCH");
-      button.setAttribute("data-next-best-action-task-id", recommendation.taskId);
-      button.setAttribute("data-next-best-action-recommendation-id", recommendation.recommendationId);
+      if (button.getAttribute("data-next-best-action-action") === "start")
+        setStartNowButtonLabel(button, "LAUNCH");
+      button.setAttribute(
+        "data-next-best-action-task-id",
+        recommendation.taskId,
+      );
+      button.setAttribute(
+        "data-next-best-action-recommendation-id",
+        recommendation.recommendationId,
+      );
     });
     setStatus("Recommendation ready", "ready");
   }
 
   function renderRecommendationStarted() {
     setStatus("Task in progress.", "started");
-    const actionButtons = documentRef.querySelectorAll<HTMLButtonElement>("[data-next-best-action-action]");
+    const actionButtons = documentRef.querySelectorAll<HTMLButtonElement>(
+      "[data-next-best-action-action]",
+    );
     actionButtons.forEach((button) => {
       const action = button.getAttribute("data-next-best-action-action");
       button.disabled = true;
@@ -240,8 +376,15 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
     return getFirebaseAuthClient()?.currentUser?.getIdToken() ?? null;
   }
 
-  async function refresh(availableMinutes?: number | null) {
-    if (!["dashboard", "executive"].includes(options.getCurrentAppPage()) || !card) return;
+  async function refresh(
+    availableMinutes?: number | null,
+    mode: "automatic" | "user" = "automatic",
+  ) {
+    if (
+      !["dashboard", "executive"].includes(options.getCurrentAppPage()) ||
+      !card
+    )
+      return;
     if (lockIfNeeded()) return;
     shownTaskIds.clear();
     abortController?.abort();
@@ -250,103 +393,242 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
     setStatus("Loading your next best action...", "loading");
     try {
       const idToken = await getIdToken();
-      if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-      const body: Record<string, unknown> = { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
+      if (!idToken)
+        throw new Error(
+          "Your sign-in session is no longer valid. Please sign in again.",
+        );
+      const body: Record<string, unknown> = {
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      };
       if (availableMinutes != null) body.availableMinutes = availableMinutes;
-      const response = await fetchImpl(getApiUrl("/api/recommendations/next-best-action"), {
+      const input = getApiUrl("/api/recommendations/next-best-action");
+      const init = {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
+        headers: {
+          "Content-Type": "application/json",
+          "x-firebase-auth": idToken,
+        },
         body: JSON.stringify(body),
         signal: abortController.signal,
-      });
+      };
+      const response = options.requestCoordinator
+        ? await options.requestCoordinator.request({ input, init, mode })
+        : await fetchImpl(input, init);
       const payload = await response.json().catch(() => ({}));
       if (sequence !== requestSequence) return;
-      if (!response.ok) throw new Error(asString(asRecord(payload)?.error, 200) || "Could not load a next best action.");
+      if (!response.ok)
+        throw new Error(
+          asString(asRecord(payload)?.error, 200) ||
+            "Could not load a next best action.",
+        );
       const parsed = parseNextBestActionDashboardResponse(payload);
-      if (parsed.kind === "recommendation") renderRecommendation(parsed.recommendation);
-      else if (parsed.kind === "empty") setStatus("Nothing needs your attention right now.", "empty");
-      else if (parsed.kind === "stale") setStatus("That recommendation is out of date. Refresh to choose again.", "stale");
-      else setStatus("Could not read the recommendation. Please try again.", "error");
+      if (parsed.kind === "recommendation")
+        renderRecommendation(parsed.recommendation);
+      else if (parsed.kind === "empty")
+        setStatus("Nothing needs your attention right now.", "empty");
+      else if (parsed.kind === "stale")
+        setStatus(
+          "That recommendation is out of date. Refresh to choose again.",
+          "stale",
+        );
+      else
+        setStatus(
+          "Could not read the recommendation. Please try again.",
+          "error",
+        );
     } catch (error) {
-      if (abortController.signal.aborted || sequence !== requestSequence) return;
-      setStatus(error instanceof Error ? error.message : "Could not load a next best action.", "error");
+      if (abortController.signal.aborted || sequence !== requestSequence)
+        return;
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "Could not load a next best action.",
+        "error",
+      );
     }
   }
 
   async function startRecommendation(target: HTMLElement) {
-    const recommendationId = asString(target.getAttribute("data-next-best-action-recommendation-id"), 160);
-    const taskId = asString(target.getAttribute("data-next-best-action-task-id"), 160);
+    const recommendationId = asString(
+      target.getAttribute("data-next-best-action-recommendation-id"),
+      160,
+    );
+    const taskId = asString(
+      target.getAttribute("data-next-best-action-task-id"),
+      160,
+    );
     if (!recommendationId || !taskId) return;
     setStatus("Revalidating recommendation...", "loading");
     try {
       const idToken = await getIdToken();
-      if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-      const response = await fetchImpl(getApiUrl(`/api/recommendations/next-best-action/${encodeURIComponent(recommendationId)}/start`), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
-        body: JSON.stringify({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC" }),
-      });
+      if (!idToken)
+        throw new Error(
+          "Your sign-in session is no longer valid. Please sign in again.",
+        );
+      const response = await fetchImpl(
+        getApiUrl(
+          `/api/recommendations/next-best-action/${encodeURIComponent(recommendationId)}/start`,
+        ),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-firebase-auth": idToken,
+          },
+          body: JSON.stringify({
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          }),
+        },
+      );
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const error = new Error(asString(asRecord(payload)?.error, 240) || "This recommendation can no longer be started.");
-        (error as Error & { code?: string }).code = asString(asRecord(payload)?.code, 120);
+        const error = new Error(
+          asString(asRecord(payload)?.error, 240) ||
+            "This recommendation can no longer be started.",
+        );
+        (error as Error & { code?: string }).code = asString(
+          asRecord(payload)?.code,
+          120,
+        );
         throw error;
       }
-      dispatchTaskClarificationStartTaskEvent({ taskId });
+      const launchResult = options.startTaskById?.(taskId);
+      if (launchResult === "requires-confirmation") {
+        setStatus("Confirm the active timer switch to launch this task.", "ready");
+        return;
+      }
+      if (launchResult === "blocked" || launchResult === "not-found") {
+        throw new Error("This task is no longer available to start. Refresh to choose again.");
+      }
       renderRecommendationStarted();
     } catch (error) {
       const code = (error as Error & { code?: string })?.code;
-      setStatus(code === "recommendation/stale" || code === "recommendation/expired" ? "This recommendation is out of date. Refresh to choose again." : error instanceof Error ? error.message : "Could not start the recommended task.", code === "recommendation/stale" || code === "recommendation/expired" ? "stale" : "error");
+      setStatus(
+        code === "recommendation/stale" || code === "recommendation/expired"
+          ? "This recommendation is out of date. Refresh to choose again."
+          : error instanceof Error
+            ? error.message
+            : "Could not start the recommended task.",
+        code === "recommendation/stale" || code === "recommendation/expired"
+          ? "stale"
+          : "error",
+      );
     }
   }
 
   async function requestAlternative(target: HTMLElement) {
-    const recommendationId = asString(target.getAttribute("data-next-best-action-recommendation-id"), 160);
+    const recommendationId = asString(
+      target.getAttribute("data-next-best-action-recommendation-id"),
+      160,
+    );
     if (!recommendationId) return;
     setStatus("Finding an alternative...", "loading");
     try {
       const idToken = await getIdToken();
-      if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-      const response = await fetchImpl(getApiUrl(`/api/recommendations/next-best-action/${encodeURIComponent(recommendationId)}/alternative`), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
-        body: JSON.stringify({
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          availableMinutes: getSelectedMinutes(),
-          excludeTaskIds: Array.from(shownTaskIds),
-        }),
-      });
+      if (!idToken)
+        throw new Error(
+          "Your sign-in session is no longer valid. Please sign in again.",
+        );
+      const response = await fetchImpl(
+        getApiUrl(
+          `/api/recommendations/next-best-action/${encodeURIComponent(recommendationId)}/alternative`,
+        ),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-firebase-auth": idToken,
+          },
+          body: JSON.stringify({
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            availableMinutes: getSelectedMinutes(),
+            excludeTaskIds: Array.from(shownTaskIds),
+          }),
+        },
+      );
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(asString(asRecord(payload)?.error, 240) || "Could not find an alternative right now.");
+      if (!response.ok)
+        throw new Error(
+          asString(asRecord(payload)?.error, 240) ||
+            "Could not find an alternative right now.",
+        );
       const parsed = parseNextBestActionDashboardResponse(payload);
-      if (parsed.kind === "recommendation") renderRecommendation(parsed.recommendation);
-      else setStatus("No more alternatives are available. Review your task list for more options.", "empty");
+      if (parsed.kind === "recommendation")
+        renderRecommendation(parsed.recommendation);
+      else
+        setStatus(
+          "No more alternatives are available. Review your task list for more options.",
+          "empty",
+        );
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Could not find an alternative right now.", "error");
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "Could not find an alternative right now.",
+        "error",
+      );
     }
   }
 
   async function dismissRecommendation(target: HTMLElement) {
-    const recommendationId = asString(target.getAttribute("data-next-best-action-recommendation-id"), 160);
+    const recommendationId = asString(
+      target.getAttribute("data-next-best-action-recommendation-id"),
+      160,
+    );
     if (!recommendationId) return;
     try {
       const idToken = await getIdToken();
-      if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-      const response = await fetchImpl(getApiUrl(`/api/recommendations/next-best-action/${encodeURIComponent(recommendationId)}/dismiss`), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
-        body: JSON.stringify({}),
-      });
+      if (!idToken)
+        throw new Error(
+          "Your sign-in session is no longer valid. Please sign in again.",
+        );
+      const response = await fetchImpl(
+        getApiUrl(
+          `/api/recommendations/next-best-action/${encodeURIComponent(recommendationId)}/dismiss`,
+        ),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-firebase-auth": idToken,
+          },
+          body: JSON.stringify({}),
+        },
+      );
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(asString(asRecord(payload)?.error, 240) || "Could not dismiss the recommendation.");
-      setStatus("Recommendation dismissed. You can refresh for another choice.", "empty");
+      if (!response.ok)
+        throw new Error(
+          asString(asRecord(payload)?.error, 240) ||
+            "Could not dismiss the recommendation.",
+        );
+      setStatus(
+        "Task hidden for an hour, or until another task is completed. Refresh then to choose again.",
+        "empty",
+      );
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Could not dismiss the recommendation.", "error");
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "Could not dismiss the recommendation.",
+        "error",
+      );
     }
   }
 
+  async function releaseSuppressionsAfterCompletion(taskId: string) {
+    const idToken = await getIdToken();
+    if (!idToken) return;
+    await fetchImpl(getApiUrl("/api/recommendations/next-best-action/suppressions/release"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
+      body: JSON.stringify({ completedTaskId: taskId }),
+    });
+  }
+
   function handleAction(event: Event) {
-    const target = (event.target as HTMLElement | null)?.closest?.("[data-next-best-action-action]") as HTMLElement | null;
+    const target = (event.target as HTMLElement | null)?.closest?.(
+      "[data-next-best-action-action]",
+    ) as HTMLElement | null;
     if (!target) return;
     if (lockIfNeeded()) {
       options.showUpgradePrompt?.("Next Best Action", "plus");
@@ -365,59 +647,114 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
       void dismissRecommendation(target);
       return;
     }
-    windowRef.dispatchEvent(new CustomEvent("tasklaunch:next-best-action", {
-      detail: {
-        action,
-        taskId: target.getAttribute("data-next-best-action-task-id"),
-        recommendationId: target.getAttribute("data-next-best-action-recommendation-id"),
-      },
-    }));
-    if (action === "dismiss") setStatus("Recommendation snoozed. Choose another time to refresh.", "empty");
+    windowRef.dispatchEvent(
+      new CustomEvent("tasklaunch:next-best-action", {
+        detail: {
+          action,
+          taskId: target.getAttribute("data-next-best-action-task-id"),
+          recommendationId: target.getAttribute(
+            "data-next-best-action-recommendation-id",
+          ),
+        },
+      }),
+    );
+    if (action === "dismiss")
+      setStatus(
+        "Recommendation snoozed. Choose another time to refresh.",
+        "empty",
+      );
   }
 
   function handlePageChange(event: Event) {
     const page = (event as CustomEvent<{ page?: unknown }>).detail?.page;
-    if (page === "dashboard" || page === "executive") void refresh(getSelectedMinutes());
+    if (page === "dashboard" || page === "executive")
+      void refresh(getSelectedMinutes());
   }
 
   function getSelectedMinutes() {
-    const value = (getElement(documentRef, "dashboardNextBestActionTimeSelect") as HTMLSelectElement | null)?.value;
+    const value = (
+      getElement(
+        documentRef,
+        "dashboardNextBestActionTimeSelect",
+      ) as HTMLSelectElement | null
+    )?.value;
     return value && value !== "any" ? Number(value) : null;
   }
 
   function setSelectedTime(value: string) {
-    const normalized = TIME_OPTIONS.some((option) => String(option ?? "any") === value) ? value : "any";
-    const select = getElement(documentRef, "dashboardNextBestActionTimeSelect") as HTMLSelectElement | null;
+    const normalized = TIME_OPTIONS.some(
+      (option) => String(option ?? "any") === value,
+    )
+      ? value
+      : "any";
+    const select = getElement(
+      documentRef,
+      "dashboardNextBestActionTimeSelect",
+    ) as HTMLSelectElement | null;
     if (select) select.value = normalized;
-    documentRef.querySelectorAll<HTMLButtonElement>("[data-next-best-action-time]").forEach((button) => {
-      button.setAttribute("aria-pressed", button.getAttribute("data-next-best-action-time") === normalized ? "true" : "false");
-    });
+    documentRef
+      .querySelectorAll<HTMLButtonElement>("[data-next-best-action-time]")
+      .forEach((button) => {
+        button.setAttribute(
+          "aria-pressed",
+          button.getAttribute("data-next-best-action-time") === normalized
+            ? "true"
+            : "false",
+        );
+      });
   }
 
   function register() {
     if (!card) return;
-    setSelectedTime((getElement(documentRef, "dashboardNextBestActionTimeSelect") as HTMLSelectElement | null)?.value || "any");
+    setSelectedTime(
+      (
+        getElement(
+          documentRef,
+          "dashboardNextBestActionTimeSelect",
+        ) as HTMLSelectElement | null
+      )?.value || "any",
+    );
     documentRef.addEventListener("change", (event) => {
       const target = event.target as HTMLSelectElement | null;
       if (target?.id === "dashboardNextBestActionTimeSelect") {
         setSelectedTime(target.value);
-        void refresh(getSelectedMinutes());
+        void refresh(getSelectedMinutes(), "user");
       }
     });
     documentRef.addEventListener("click", (event) => {
-      const target = (event.target as HTMLElement | null)?.closest?.("[data-next-best-action-time]") as HTMLElement | null;
+      const target = (event.target as HTMLElement | null)?.closest?.(
+        "[data-next-best-action-time]",
+      ) as HTMLElement | null;
       if (!target) return;
-      setSelectedTime(target.getAttribute("data-next-best-action-time") || "any");
-      void refresh(getSelectedMinutes());
+      setSelectedTime(
+        target.getAttribute("data-next-best-action-time") || "any",
+      );
+      void refresh(getSelectedMinutes(), "user");
     });
-    documentRef.addEventListener("click", handleAction);
+    card.addEventListener?.("click", handleAction);
     windowRef.addEventListener("tasklaunch:app-page-changed", handlePageChange);
-    windowRef.addEventListener("tasklaunch:schedule-repair-applied", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(getSelectedMinutes()); });
-    windowRef.addEventListener("tasklaunch:schedule-repair-undone", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(getSelectedMinutes()); });
-    windowRef.addEventListener("tasklaunch:recovery-applied", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(getSelectedMinutes()); });
-    windowRef.addEventListener("tasklaunch:recovery-undone", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(getSelectedMinutes()); });
-    windowRef.addEventListener(TASK_COMPLETION_CHANGED_EVENT, () => {
-      if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(getSelectedMinutes());
+    windowRef.addEventListener("tasklaunch:schedule-repair-applied", () => {
+      if (["dashboard", "executive"].includes(options.getCurrentAppPage()))
+        void refresh(getSelectedMinutes());
+    });
+    windowRef.addEventListener("tasklaunch:schedule-repair-undone", () => {
+      if (["dashboard", "executive"].includes(options.getCurrentAppPage()))
+        void refresh(getSelectedMinutes());
+    });
+    windowRef.addEventListener("tasklaunch:recovery-applied", () => {
+      if (["dashboard", "executive"].includes(options.getCurrentAppPage()))
+        void refresh(getSelectedMinutes());
+    });
+    windowRef.addEventListener("tasklaunch:recovery-undone", () => {
+      if (["dashboard", "executive"].includes(options.getCurrentAppPage()))
+        void refresh(getSelectedMinutes());
+    });
+    windowRef.addEventListener(TASK_COMPLETION_CHANGED_EVENT, (event) => {
+      const taskId = asString((event as CustomEvent<{ taskId?: unknown }>).detail?.taskId, 160);
+      if (!taskId || !["dashboard", "executive"].includes(options.getCurrentAppPage())) return;
+      void releaseSuppressionsAfterCompletion(taskId).finally(() => {
+        void refresh(getSelectedMinutes());
+      });
     });
     const retry = getElement(documentRef, "dashboardNextBestActionRetry");
     retry?.addEventListener("click", () => {
@@ -425,14 +762,16 @@ export function createDashboardNextBestAction(options: CreateDashboardNextBestAc
         options.showUpgradePrompt?.("Next Best Action", "plus");
         return;
       }
-      void refresh(getSelectedMinutes());
+      void refresh(getSelectedMinutes(), "user");
     });
-    if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(getSelectedMinutes());
+    if (["dashboard", "executive"].includes(options.getCurrentAppPage()))
+      void refresh(getSelectedMinutes());
   }
 
   function destroy() {
     abortController?.abort();
     requestSequence += 1;
+    card?.removeEventListener?.("click", handleAction);
   }
 
   return { register, refresh, destroy };

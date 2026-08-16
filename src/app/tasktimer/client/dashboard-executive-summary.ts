@@ -1,8 +1,9 @@
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getApiUrl } from "../lib/apiClient";
-import { dispatchTaskClarificationStartTaskEvent } from "./task-clarification-events";
 import { loadExecutiveData, type ExecutiveDataSnapshot } from "./executive-data";
+import type { ExecutiveRequestCoordinator } from "./executive-request-coordinator";
 import { TASK_COMPLETION_CHANGED_EVENT } from "./task-completion-events";
+import type { TaskLaunchResult } from "./task-timer-lifecycle";
 
 type Options = {
   documentRef?: Document;
@@ -12,6 +13,8 @@ type Options = {
   getExecutiveFunctionUnavailableMessage?: () => string;
   showUpgradePrompt?: (featureName: string, plan?: "plus") => void;
   getIdToken?: () => Promise<string | null>;
+  startTaskById?: (taskId: string) => TaskLaunchResult;
+  requestCoordinator?: ExecutiveRequestCoordinator;
 };
 
 function getElement(documentRef: Document, id: string) {
@@ -124,6 +127,7 @@ export function createDashboardExecutiveSummary(options: Options) {
       const snapshot = await loadExecutiveData({
         getIdToken,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+        requestCoordinator: options.requestCoordinator,
       });
       if (sequence !== requestSequence) return;
       renderDashboardExecutiveSummary(documentRef, snapshot);
@@ -153,7 +157,16 @@ export function createDashboardExecutiveSummary(options: Options) {
       if (!token) throw new Error("missing-session");
       const response = await fetch(getApiUrl(`/api/recommendations/next-best-action/${encodeURIComponent(recommendationId)}/start`), { method: "POST", headers: { "Content-Type": "application/json", "x-firebase-auth": token }, body: JSON.stringify({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC" }) });
       if (!response.ok) throw new Error("recommendation-stale");
-      dispatchTaskClarificationStartTaskEvent({ taskId });
+      const launchResult = options.startTaskById?.(taskId);
+      if (launchResult === "requires-confirmation") {
+        const status = getElement(documentRef, "dashboardExecutiveSummaryStatus");
+        setPlainStatus(status, "Confirm the active timer switch to launch this task.");
+        button.disabled = false;
+        return;
+      }
+      if (launchResult === "blocked" || launchResult === "not-found") {
+        throw new Error("task-unavailable");
+      }
       setStartNowButtonLabel(button, "In Progress");
       button.disabled = true;
       button.hidden = false;
