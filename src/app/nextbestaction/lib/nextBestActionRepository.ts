@@ -107,6 +107,8 @@ export function localWeekStartDateForRecommendationTimezone(timezone: string, no
 }
 
 export function isTaskCompletedForRecommendationPeriod(raw: RawRow, nowMs: number, timezone = "UTC", weekStarting: unknown = "mon") {
+  if (raw.timeGoalCompletedReason !== "goal") return false;
+  if (raw.taskType === "once-off") return true;
   const period = raw.timeGoalPeriod === "week" ? "week" : "day";
   const completionKey = asString(period === "week" ? raw.timeGoalCompletedWeekKey : raw.timeGoalCompletedDayKey, 40);
   if (!completionKey) return false;

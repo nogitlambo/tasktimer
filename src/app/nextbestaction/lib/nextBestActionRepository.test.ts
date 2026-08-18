@@ -58,27 +58,41 @@ function startHarness(options: { task?: Record<string, unknown>; recommendation?
 }
 
 describe("Next Best Action recommendation persistence", () => {
-  it("excludes current daily completions, including reset completions, but allows prior days", () => {
+  it("excludes current goal completions but allows reset completions and prior days", () => {
     const currentDay = {
       timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
       timeGoalCompletedDayKey: "2026-08-07",
-      timeGoalCompletedReason: "reset",
+      timeGoalCompletedReason: "goal",
     };
 
     expect(isTaskCompletedForRecommendationPeriod(currentDay, Date.parse("2026-08-07T09:00:00.000Z"), "UTC")).toBe(true);
+    expect(isTaskCompletedForRecommendationPeriod({ ...currentDay, timeGoalCompletedReason: "reset" }, Date.parse("2026-08-07T09:00:00.000Z"), "UTC")).toBe(false);
     expect(isTaskCompletedForRecommendationPeriod(currentDay, Date.parse("2026-08-08T09:00:00.000Z"), "UTC")).toBe(false);
     expect(isTaskCompletedForRecommendationPeriod({ ...currentDay, timeGoalCompletedDayKey: "2026-08-06" }, Date.parse("2026-08-07T09:00:00.000Z"), "UTC")).toBe(false);
   });
 
   it("respects Monday and Sunday weekly period boundaries", () => {
-    const weekly = { timeGoalPeriod: "week", timeGoalCompletedWeekKey: "2026-08-03" };
-    const sundayWeek = { timeGoalPeriod: "week", timeGoalCompletedWeekKey: "2026-08-09" };
+    const weekly = { timeGoalPeriod: "week", timeGoalCompletedWeekKey: "2026-08-03", timeGoalCompletedReason: "goal" };
+    const sundayWeek = { timeGoalPeriod: "week", timeGoalCompletedWeekKey: "2026-08-09", timeGoalCompletedReason: "goal" };
     const sunday = Date.parse("2026-08-09T12:00:00.000Z");
 
     expect(isTaskCompletedForRecommendationPeriod(weekly, sunday, "UTC", "mon")).toBe(true);
     expect(isTaskCompletedForRecommendationPeriod(weekly, sunday, "UTC", "sun")).toBe(false);
     expect(isTaskCompletedForRecommendationPeriod(sundayWeek, sunday, "UTC", "sun")).toBe(true);
     expect(isTaskCompletedForRecommendationPeriod(sundayWeek, Date.parse("2026-08-16T12:00:00.000Z"), "UTC", "sun")).toBe(false);
+  });
+
+  it("keeps once-off goal completions excluded after their original period until reset", () => {
+    const onceOff = {
+      taskType: "once-off",
+      timeGoalPeriod: "day",
+      timeGoalCompletedDayKey: "2026-08-07",
+      timeGoalCompletedReason: "goal",
+    };
+
+    expect(isTaskCompletedForRecommendationPeriod(onceOff, Date.parse("2026-08-08T09:00:00.000Z"), "UTC")).toBe(true);
+    expect(isTaskCompletedForRecommendationPeriod({ ...onceOff, timeGoalCompletedReason: "reset" }, Date.parse("2026-08-08T09:00:00.000Z"), "UTC")).toBe(false);
   });
 
   it("writes the discriminated record to the existing user-scoped recommendation area", async () => {
@@ -133,7 +147,7 @@ describe("Next Best Action recommendation persistence", () => {
       timeGoalMinutes: 45,
       timeGoalPeriod: "day",
       timeGoalCompletedDayKey: "2026-08-07",
-      timeGoalCompletedReason: "reset",
+      timeGoalCompletedReason: "goal",
     };
     const taskDoc = {
       id: "task-1",
@@ -220,6 +234,16 @@ describe("Next Best Action recommendation persistence", () => {
       blocked: false,
       completed: false,
       timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      timeGoalCompletedDayKey: "2026-08-07",
+      timeGoalCompletedReason: "goal",
+    } });
+    const resetCompleted = startHarness({ task: {
+      id: "task-1",
+      name: "Prepare launch",
+      active: true,
+      actionable: true,
+      timeGoalPeriod: "day",
       timeGoalCompletedDayKey: "2026-08-07",
       timeGoalCompletedReason: "reset",
     } });
@@ -229,9 +253,27 @@ describe("Next Best Action recommendation persistence", () => {
     await expect(blocked.repository.startRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs: Date.parse("2026-08-07T09:05:00.000Z") })).resolves.toMatchObject({ kind: "ineligible" });
     await expect(started.repository.startRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs: Date.parse("2026-08-07T09:05:00.000Z") })).resolves.toMatchObject({ kind: "idempotent" });
     await expect(completed.repository.startRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs: Date.parse("2026-08-07T09:05:00.000Z"), timezone: "UTC" })).resolves.toMatchObject({ kind: "ineligible" });
+    await expect(resetCompleted.repository.startRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs: Date.parse("2026-08-07T09:05:00.000Z"), timezone: "UTC" })).resolves.toMatchObject({ kind: "started" });
     expect(stale.updates).toHaveLength(0);
     expect(blocked.updates).toHaveLength(0);
     expect(completed.updates).toHaveLength(0);
+  });
+
+  it("keeps an orphaned current-period completion marker authoritative", async () => {
+    const completedWithoutHistory = startHarness({ task: {
+      id: "task-1",
+      name: "Prepare launch",
+      active: true,
+      actionable: true,
+      timeGoalEnabled: true,
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      timeGoalCompletedDayKey: "2026-08-07",
+      timeGoalCompletedReason: "goal",
+    } });
+
+    await expect(completedWithoutHistory.repository.startRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs: Date.parse("2026-08-07T09:05:00.000Z"), timezone: "UTC" })).resolves.toMatchObject({ kind: "ineligible" });
+    expect(completedWithoutHistory.updates).toHaveLength(0);
   });
 
   it("rejects a recommendation whose envelope ownership does not match the authenticated user", async () => {

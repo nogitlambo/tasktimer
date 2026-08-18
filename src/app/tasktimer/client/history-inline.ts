@@ -13,7 +13,6 @@ import {
 } from "./history-inline-selection-interaction";
 import { isRichNoteFileInputTarget } from "./rich-session-notes";
 import { TASKTIMER_OVERLAY_CLOSED_EVENT } from "./xp-award-events";
-import { clearStaleTaskTimeGoalCompletionForPeriod } from "../lib/timeGoalCompletion";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -783,14 +782,6 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     };
     ctx.setHistoryByTaskId(nextHistory);
     ctx.saveHistory(nextHistory, { allowDestructiveReplace: true });
-    const task = ctx.getTasks().find((entry) => String(entry?.id || "").trim() === taskId) || null;
-    const clearedCompletion = clearStaleTaskTimeGoalCompletionForPeriod(
-      task,
-      nextHistory,
-      ctx.nowMs(),
-      ctx.getWeekStarting()
-    );
-    if (clearedCompletion) ctx.save({ forceCloudFlush: true });
     const selectionView = refreshHistoryInlineSelectionView(taskId, state);
     if (
       state.visualSelectedRenderKey &&
@@ -804,7 +795,6 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
 
     const maxPage = Math.max(0, Math.ceil(selectionView.rows.length / historyPageSize(taskId)) - 1);
     state.page = Math.min(state.page, maxPage);
-    if (clearedCompletion) ctx.render();
     renderHistory(taskId);
     ctx.renderDashboardWidgets();
     return true;

@@ -189,7 +189,7 @@ describe("task timer lifecycle", () => {
     expect(harness.calls).toContain("sync-checkpoints:task-1:600:301000:sound:still:once|task-1:1200:901000:sound:still:once");
   });
 
-  it("does not start a current-period goal-completed task when today's goal history is missing", () => {
+  it("does not start a current-period goal-completed task when goal history is missing", () => {
     const harness = createHarness({
       tasks: [
         task({
@@ -203,9 +203,37 @@ describe("task timer lifecycle", () => {
       ],
     });
 
-    harness.lifecycle.startTask(0);
+    expect(harness.lifecycle.startTask(0)).toBe("blocked");
 
-    expect(harness.tasks[0]).toMatchObject({ running: false, startMs: null, hasStarted: false });
+    expect(harness.tasks[0]).toMatchObject({
+      running: false,
+      startMs: null,
+      hasStarted: false,
+      timeGoalCompletedDayKey: "1970-01-01",
+      timeGoalCompletedAtMs: 123,
+      timeGoalCompletedReason: "goal",
+    });
+    expect(harness.calls).toEqual([]);
+  });
+
+  it("keeps a goal-completed once-off task blocked after its completion day", () => {
+    const completedAtMs = new Date(2026, 7, 7, 9, 0, 0).getTime();
+    const harness = createHarness({
+      nowMs: new Date(2026, 7, 8, 9, 0, 0).getTime(),
+      tasks: [
+        task({
+          taskType: "once-off",
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+          timeGoalCompletedDayKey: "2026-08-07",
+          timeGoalCompletedAtMs: completedAtMs,
+          timeGoalCompletedReason: "goal",
+        }),
+      ],
+    });
+
+    expect(harness.lifecycle.startTask(0)).toBe("blocked");
     expect(harness.calls).toEqual([]);
   });
 

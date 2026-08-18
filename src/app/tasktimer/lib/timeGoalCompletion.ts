@@ -37,7 +37,9 @@ export function isTaskTimeGoalCompletedForPeriod(
 }
 
 export function isTaskTimeGoalStartLockedToday(task: Task | null | undefined, nowValue = Date.now()): boolean {
-  return isTaskTimeGoalCompletedToday(task, nowValue) && task?.timeGoalCompletedReason !== "reset";
+  if (task?.timeGoalCompletedReason !== "goal") return false;
+  if (task.taskType === "once-off") return true;
+  return isTaskTimeGoalCompletedToday(task, nowValue);
 }
 
 export function isTaskTimeGoalStartLockedForPeriod(
@@ -45,7 +47,9 @@ export function isTaskTimeGoalStartLockedForPeriod(
   nowValue = Date.now(),
   weekStarting: DashboardWeekStart = "mon"
 ): boolean {
-  return isTaskTimeGoalCompletedForPeriod(task, nowValue, weekStarting) && task?.timeGoalCompletedReason !== "reset";
+  if (task?.timeGoalCompletedReason !== "goal") return false;
+  if (task.taskType === "once-off") return true;
+  return isTaskTimeGoalCompletedForPeriod(task, nowValue, weekStarting);
 }
 
 export function hasRecordedTaskGoalCompletion(task: Task | null | undefined): boolean {
@@ -190,24 +194,6 @@ export function isTaskTimeGoalStartLockedByHistoryForPeriod(
     isTaskTimeGoalStartLockedForPeriod(task, nowValue, weekStarting) &&
     hasTaskGoalHistoryEntryForPeriod(task, historyByTaskId, nowValue, weekStarting)
   );
-}
-
-export function clearStaleTaskTimeGoalCompletionForPeriod(
-  task: Task | null | undefined,
-  historyByTaskId: HistoryByTaskId | null | undefined,
-  nowValue = Date.now(),
-  weekStarting: DashboardWeekStart = "mon"
-): boolean {
-  if (!task || task.timeGoalCompletedReason !== "goal") return false;
-  if (!isTaskTimeGoalCompletedForPeriod(task, nowValue, weekStarting)) return false;
-  if (hasTaskGoalHistoryEntryForPeriod(task, historyByTaskId, nowValue, weekStarting)) return false;
-
-  task.timeGoalCompletedDayKey = null;
-  task.timeGoalCompletedWeekKey = null;
-  task.timeGoalCompletedAtMs = null;
-  task.timeGoalCompletedReason = null;
-  task.timeGoalCompletedElapsedMs = null;
-  return true;
 }
 
 function normalizeCompletedElapsedMs(value: unknown): number | null {

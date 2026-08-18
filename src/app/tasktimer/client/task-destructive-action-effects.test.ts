@@ -246,6 +246,9 @@ describe("task destructive action effects", () => {
       timeGoalCompletedReason: "reset",
       timeGoalCompletedElapsedMs: 60 * 60 * 1000,
     });
+    expect(harness.history["task-1"]).toEqual([
+      { ts: completedAtMs, name: "Task 1", ms: 60 * 60 * 1000 },
+    ]);
   });
 
   it("allows reset for stale completion metadata without qualifying history", () => {
