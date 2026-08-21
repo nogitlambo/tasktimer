@@ -36,8 +36,6 @@ const pruneRelativePaths = [
   "favicon-16x16.png",
   "favicon-32x32.png",
   "gradient1.png",
-  "landing_arrowhead.svg",
-  "landing_arrowhead_vector.svg",
   "opengraph-image.png",
   "rocket_breaking_chains4_opticalflow_60fps_50pct.mp4",
   "rocket_breaking_chains4_opticalflow_60fps_50pct_lastframe_mobile.webp",

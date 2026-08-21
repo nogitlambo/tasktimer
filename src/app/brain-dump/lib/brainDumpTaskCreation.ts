@@ -64,6 +64,7 @@ function hashCreationPayload(updates: ReturnType<typeof normalizeBrainDumpReview
     .map((update) => ({
       itemId: update.itemId,
       selected: update.selected === true,
+      taskType: update.taskType ?? null,
       title: update.title ?? "",
       date: update.date ?? null,
       enrichment: update.enrichment ?? null,
@@ -94,18 +95,28 @@ function buildTaskFromReviewItem(input: {
   const sharedTasks = createTaskTimerSharedTask({ createId: () => input.taskId });
   const task = sharedTasks.makeTask(input.item.title, input.order);
   task.createdAtMs = input.createdAtMs;
-  task.plannedStartPushRemindersEnabled = false;
-  if (dateCanAffectTask(input.item.date)) {
+  const taskType = input.item.taskType ?? (dateCanAffectTask(input.item.date) ? "once-off" : "recurring");
+  task.taskType = taskType;
+  if (taskType === "once-off" && dateCanAffectTask(input.item.date)) {
     task.taskType = "once-off";
     task.onceOffTargetDate = input.item.date.resolvedDate;
     task.onceOffDay = null;
+  } else if (taskType === "recurring") {
+    task.onceOffTargetDate = null;
+    task.onceOffDay = null;
   }
-  const durationMinutes = input.item.enrichment.estimatedDurationMinutes;
-  if (durationMinutes && durationMinutes > 0) {
+  const timeGoalUnit = input.item.enrichment.timeGoalUnit === "hour" ? "hour" : "minute";
+  const timeGoalPeriod = input.item.enrichment.timeGoalPeriod === "week" ? "week" : "day";
+  const timeGoalValue =
+    Number.isFinite(Number(input.item.enrichment.timeGoalValue)) && Number(input.item.enrichment.timeGoalValue) > 0
+      ? Math.floor(Number(input.item.enrichment.timeGoalValue))
+      : input.item.enrichment.estimatedDurationMinutes || 0;
+  const durationMinutes = timeGoalUnit === "hour" ? timeGoalValue * 60 : timeGoalValue;
+  if (durationMinutes > 0 && timeGoalValue > 0) {
     task.timeGoalEnabled = true;
-    task.timeGoalValue = durationMinutes;
-    task.timeGoalUnit = "minute";
-    task.timeGoalPeriod = "day";
+    task.timeGoalValue = timeGoalValue;
+    task.timeGoalUnit = timeGoalUnit;
+    task.timeGoalPeriod = timeGoalPeriod;
     task.timeGoalMinutes = durationMinutes;
   }
   return task;

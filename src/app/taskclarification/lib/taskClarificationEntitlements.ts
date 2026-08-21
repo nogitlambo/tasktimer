@@ -21,7 +21,7 @@ export function getTaskClarificationQuota(plan: TaskClarificationPlan) {
 
 export function normalizeTaskClarificationPlan(value: unknown): TaskClarificationPlan {
   const plan = typeof value === "string" ? value.trim().toLowerCase() : "";
-  return plan === "plus" || plan === "plus_lifetime" || plan === "pro" ? "plus" : "free";
+  return plan === "plus" || plan === "plus_monthly" || plan === "plus_yearly" || plan === "plus_lifetime" || plan === "pro" ? "plus" : "free";
 }
 
 export async function loadTaskClarificationPlan(uid: string, db: Firestore = getFirebaseAdminDb()): Promise<TaskClarificationPlan> {

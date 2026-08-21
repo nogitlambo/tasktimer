@@ -288,6 +288,7 @@ function createRenderHarness(
     rewardProgress?: object;
     includeHeaderXpCard?: boolean;
     mobileViewport?: boolean;
+    wideViewport?: boolean;
     weekStarting?: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
     optimalProductivityDays?: Array<"sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat">;
     dashboardPreviousWeekVisible?: boolean;
@@ -323,7 +324,21 @@ function createRenderHarness(
       configurable: true,
       value: {
         matchMedia: (query: string) => ({
-          matches: query === "(max-width: 640px)" ? !!options.mobileViewport : false,
+          matches:
+            query === "(max-width: 640px)"
+              ? !!options.mobileViewport
+              : query === "(min-width: 1601px)"
+                ? !!options.wideViewport
+                : false,
+        }),
+      },
+    });
+  } else if (options?.wideViewport != null) {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        matchMedia: (query: string) => ({
+          matches: query === "(min-width: 1601px)" ? !!options.wideViewport : false,
         }),
       },
     });
@@ -693,6 +708,78 @@ describe("dashboard activity overview card", () => {
       expect(previousBars?.style.display).toBe("none");
       expect(previousBars?.children).toHaveLength(0);
       expect(Number.parseFloat(String(currentBar?.getAttribute("height") || "0"))).toBeGreaterThan(0);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("renders previous and current weeks in the expanded wide Activity Overview chart", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 20, 10));
+    const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus", timeGoalPeriod: "week", timeGoalMinutes: 840 })],
+      {
+        wideViewport: true,
+        optimalProductivityDays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
+        historyByTaskId: {
+          focus: [
+            { ts: weekStart - 7 * 86400000 + 9 * 60 * 60 * 1000, name: "Focus", ms: 180 * 60000 },
+            { ts: weekStart + 9 * 60 * 60 * 1000, name: "Focus", ms: 60 * 60000 },
+          ],
+        },
+      }
+    );
+
+    try {
+      harness.renderActivityOverview();
+      const axisHtml = harness.byId.get("dashboardActivityXAxis")?.innerHTML || "";
+      const axisDayCount = axisHtml.match(/class="dashboardActivityAxisDay/g)?.length || 0;
+      const bars = getActivityBarGroups(harness.byId.get("dashboardActivityBars"));
+      const previousBars = harness.byId.get("dashboardActivityPreviousBars");
+      const chart = harness.byId.get("dashboardActivityChart");
+
+      expect(axisDayCount).toBe(14);
+      expect(bars).toHaveLength(14);
+      expect(harness.byId.get("dashboardActivityXAxis")?.style["--dashboard-activity-visible-days"]).toBe("14");
+      expect(axisHtml).toContain("11 May");
+      expect(axisHtml).toContain("24 May");
+      expect(previousBars?.style.display).toBe("none");
+      expect(previousBars?.children).toHaveLength(0);
+      expect(chart?.getAttribute("aria-label")).toContain("14-day activity chart");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("keeps wide Activity Overview pagination moving through previous two-week ranges", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 20, 10));
+    const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus", timeGoalPeriod: "week", timeGoalMinutes: 840 })],
+      {
+        wideViewport: true,
+        optimalProductivityDays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
+        historyByTaskId: {
+          focus: [
+            { ts: weekStart - 14 * 86400000 + 9 * 60 * 60 * 1000, name: "Focus", ms: 120 * 60000 },
+            { ts: weekStart - 7 * 86400000 + 9 * 60 * 60 * 1000, name: "Focus", ms: 180 * 60000 },
+            { ts: weekStart + 9 * 60 * 60 * 1000, name: "Focus", ms: 60 * 60000 },
+          ],
+        },
+      }
+    );
+
+    try {
+      harness.renderActivityOverview();
+      harness.pageActivityOverview("older");
+      const axisHtml = harness.byId.get("dashboardActivityXAxis")?.innerHTML || "";
+      const bars = getActivityBarGroups(harness.byId.get("dashboardActivityBars"));
+
+      expect(bars).toHaveLength(14);
+      expect(axisHtml).toContain("4 May");
+      expect(axisHtml).toContain("17 May");
     } finally {
       harness.restore();
     }
@@ -1528,11 +1615,11 @@ describe("weekly goals dashboard card", () => {
 });
 
 describe("dashboard completed card", () => {
-  it("keeps desktop Activity Overview to one integrated grid column", () => {
+  it("keeps desktop Activity Overview across two integrated grid columns", () => {
     const css = readFileSync("src/app/tasktimer/styles/03-dashboard.css", "utf8").replace(/\r\n/g, "\n");
-    const desktopOrderCss = css.slice(css.indexOf("/* Desktop dashboard panel order: Activity Overview, Momentum, Task Overview + Focus Heatmap. */"));
-    expect(desktopOrderCss).toContain("grid-column:1 !important;");
-    expect(desktopOrderCss).not.toContain("grid-column:1 / 3 !important;");
+    const desktopOrderCss = css.slice(css.indexOf("/* Desktop dashboard panel order: Time Tracked spans two columns, Momentum starts row two. */"));
+    expect(desktopOrderCss).toContain("grid-column:1 / span 2 !important;");
+    expect(desktopOrderCss).toContain("grid-row:1 !important;");
   });
 
   it("keeps mobile activity summaries side by side with state-colored progress fills", () => {
@@ -1603,29 +1690,29 @@ describe("dashboard completed card", () => {
     const referenceCss = css.slice(css.indexOf("/* Activity Overview and Momentum reference redesign. */"));
     const sharedPanelRule =
       referenceCss.match(
-        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardExecutiveSummary,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n\}/
+        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardActivityOverviewCard,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n\}/
       )?.[0] || "";
     const sharedPanelTopLineRule =
       referenceCss.match(
-        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardExecutiveSummary::before,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard::before\{[\s\S]*?\n\}/
+        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardActivityOverviewCard::before,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard::before\{[\s\S]*?\n\}/
       )?.[0] || "";
     const mobileSharedPanelRule =
       referenceCss.match(
-        /@media \(max-width: 640px\)\{\n\s+body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardExecutiveSummary,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n  \}/
+        /@media \(max-width: 640px\)\{\n\s+body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel \.dashboardActivityOverviewCard > \.dashboardExecutiveSummary,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n  \}/
       )?.[0] || "";
 
-    expect(sharedPanelRule).toContain(".dashboardIntegratedPanel > .dashboardExecutiveSummary,");
+    expect(sharedPanelRule).toContain(".dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardExecutiveSummary,");
     expect(sharedPanelRule).toContain(".dashboardSupportGrid > .dashboardTasksCompletedCard,");
     expect(sharedPanelRule).toContain(".dashboardSupportGrid > .dashboardHeatCard{");
     expect(sharedPanelRule).toContain("border-radius:18px !important;");
     expect(referenceCss).toContain("--dashboard-reference-panel-bg-top:#0d0f13;");
     expect(referenceCss).toContain("--dashboard-reference-panel-bg-bottom:#0d0f13;");
     expect(sharedPanelRule).toContain("background:linear-gradient(180deg, var(--dashboard-reference-panel-bg-top), var(--dashboard-reference-panel-bg-bottom)) !important;");
-    expect(sharedPanelTopLineRule).toContain(".dashboardIntegratedPanel > .dashboardExecutiveSummary::before,");
+    expect(sharedPanelTopLineRule).toContain(".dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardExecutiveSummary::before,");
     expect(sharedPanelTopLineRule).toContain(".dashboardSupportGrid > .dashboardHeatCard::before{");
     expect(sharedPanelTopLineRule).toContain("background:linear-gradient(90deg, transparent, var(--dashboard-reference-border-strong), transparent) !important;");
     expect(referenceCss).toContain("background:linear-gradient(180deg, #0d0f13 0%, #0d0f13 100%) !important;");
-    expect(mobileSharedPanelRule).toContain(".dashboardIntegratedPanel > .dashboardExecutiveSummary,");
+    expect(mobileSharedPanelRule).toContain(".dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardExecutiveSummary,");
     expect(mobileSharedPanelRule).toContain(".dashboardSupportGrid > .dashboardTasksCompletedCard,");
     expect(mobileSharedPanelRule).toContain(".dashboardSupportGrid > .dashboardHeatCard{");
     expect(mobileSharedPanelRule).toContain("border-radius:16px !important;");

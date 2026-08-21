@@ -13,6 +13,23 @@ describe("Next Best Action explanation provider", () => {
   it("falls back by rejecting invented or unsupported claims", () => {
     expect(validateNextBestActionAiExplanation({ explanation: "It has an urgent deadline tomorrow." }, input)).toBeNull();
     expect(validateNextBestActionAiExplanation({ explanation: "It is high priority and due soon." }, input)).toBeNull();
+    expect(validateNextBestActionAiExplanation({ explanation: "No deterministic reason codes were provided." }, input)).toBeNull();
+    expect(
+      validateNextBestActionAiExplanation(
+        { explanation: "It has a clear first action." },
+        {
+          ...input,
+          productivityWindow: {
+            plannedDay: "tue",
+            plannedStartTime: "09:30",
+            days: ["tue"],
+            startTime: "09:00",
+            endTime: "12:00",
+            matched: true,
+          },
+        },
+      ),
+    ).toBeNull();
   });
 
   it("rejects malformed provider output and provider failures", async () => {

@@ -27,14 +27,17 @@ describe("DashboardPageContent momentum dial markers", () => {
     const html = renderDashboardMarkup();
 
     expect(html).toContain('id="dashboardExecutiveSummary"');
-    expect(html).toContain('class="dashboardPanelLabelRow dashboardExecutiveSummaryTitleRow"');
-    expect(html).toContain('class="dashboardCardTitle dashboardPanelTitle dashboardExecutiveSummaryTitle" id="dashboardExecutiveSummaryHeading"');
-    expect(html).toContain('class="dashboardPanelTitleDot dashboardPanelTitleDotExecutive"');
-    expect(html).toContain(">Executive Summary<");
-    expect(html).toContain(">NEXT BEST ACTION<");
-    expect(html).toContain('id="dashboardExecutiveSummaryStart"');
-    expect(html).toContain('class="dashboardExecutiveSummaryDivider"');
-    expect(html.indexOf('id="dashboardExecutiveSummaryStart"')).toBeGreaterThan(html.indexOf('id="dashboardExecutiveSummaryNext"'));
+    expect(html).toContain('aria-label="Executive summary"');
+    expect(html).toContain('class="dashboardExecutiveSummaryStatusRow"');
+    expect(html).toContain('class="dashboardExecutiveSummaryStatusLabel">Workload Assessment<');
+    expect(html).not.toContain('id="dashboardExecutiveSummaryHeading"');
+    expect(html).not.toContain(">Executive Summary<");
+    expect(html.indexOf('id="dashboardExecutiveSummary"')).toBeGreaterThan(html.indexOf('data-dashboard-id="activity-overview"'));
+    expect(html.indexOf('id="dashboardExecutiveSummary"')).toBeLessThan(html.indexOf('class="dashboardActivityOverviewHead"'));
+    expect(html).not.toContain(">NEXT BEST ACTION<");
+    expect(html).not.toContain('id="dashboardExecutiveSummaryNext"');
+    expect(html).not.toContain('id="dashboardExecutiveSummaryStart"');
+    expect(html).not.toContain('class="dashboardExecutiveSummaryDivider"');
     expect(html).not.toContain('href="/executive"');
     expect(html).not.toContain(">Open Executive<");
     expect(html).not.toContain('class="dashboardExecutiveSummaryActions"');
@@ -50,25 +53,25 @@ describe("DashboardPageContent momentum dial markers", () => {
     const referenceCss = css.slice(css.indexOf("/* Activity Overview and Momentum reference redesign. */"));
     const sharedPanelRule =
       referenceCss.match(
-        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardExecutiveSummary,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n\}/
+        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardActivityOverviewCard,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n\}/
       )?.[0] || "";
     const sharedPanelTopLineRule =
       referenceCss.match(
-        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardExecutiveSummary::before,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard::before\{[\s\S]*?\n\}/
+        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardActivityOverviewCard::before,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard::before\{[\s\S]*?\n\}/
       )?.[0] || "";
     const executivePanelRule =
       referenceCss.match(
-        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardExecutiveSummary\{[\s\S]*?\n\}/
+        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel \.dashboardActivityOverviewCard > \.dashboardExecutiveSummary\{[\s\S]*?\n\}/
       )?.[0] || "";
     const mobileSharedPanelRule =
       referenceCss.match(
-        /@media \(max-width: 640px\)\{\n\s+body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardExecutiveSummary,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n  \}/
+        /@media \(max-width: 640px\)\{\n\s+body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel \.dashboardActivityOverviewCard > \.dashboardExecutiveSummary,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n  \}/
       )?.[0] || "";
 
-    expect(sharedPanelRule).toContain(".dashboardIntegratedPanel > .dashboardExecutiveSummary,");
+    expect(sharedPanelRule).toContain(".dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardExecutiveSummary,");
     expect(sharedPanelRule).toContain("border-radius:18px !important;");
     expect(sharedPanelRule).toContain("background:linear-gradient(180deg, var(--dashboard-reference-panel-bg-top), var(--dashboard-reference-panel-bg-bottom)) !important;");
-    expect(sharedPanelTopLineRule).toContain(".dashboardIntegratedPanel > .dashboardExecutiveSummary::before,");
+    expect(sharedPanelTopLineRule).toContain(".dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardExecutiveSummary::before,");
     expect(sharedPanelTopLineRule).toContain("background:linear-gradient(90deg, transparent, var(--dashboard-reference-border-strong), transparent) !important;");
     expect(executivePanelRule).toContain("padding:26px 28px !important;");
     expect(referenceCss).toContain(".dashboardExecutiveSummaryStatus[data-plan-health]{");
@@ -77,16 +80,34 @@ describe("DashboardPageContent momentum dial markers", () => {
     expect(mobileSharedPanelRule).toContain("border-radius:16px !important;");
   });
 
-  it("keeps the Executive Summary launch action at the shared primitive button size on mobile", () => {
+  it("places Time Tracked across two desktop columns and moves Momentum to the second row", () => {
     const css = readFileSync("src/app/tasktimer/styles/03-dashboard.css", "utf8").replace(/\r\n/g, "\n");
-    const mobileExecutiveStyles = css.slice(css.lastIndexOf("@media (max-width: 640px){"));
-    const mobileLaunchRule =
-      mobileExecutiveStyles.match(/\.dashboardExecutiveSummaryNext \.btn\{[\s\S]*?\n  \}/)?.[0] || "";
+    const desktopOrderCss = css.slice(css.indexOf("/* Desktop dashboard panel order: Time Tracked spans two columns, Momentum starts row two. */"));
+    const activityRule =
+      desktopOrderCss.match(/\.dashboardIntegratedPanel > \.dashboardActivityOverviewCard\{[\s\S]*?\n  \}/)?.[0] || "";
+    const momentumRule =
+      desktopOrderCss.match(/\.dashboardSupportGrid > \.dashboardMomentumCard\{[\s\S]*?\n  \}/)?.[0] || "";
+    const tasksRule =
+      desktopOrderCss.match(/\.dashboardSupportGrid > \.dashboardTasksCompletedCard\{[\s\S]*?\n  \}/)?.[0] || "";
+    const executiveRule =
+      desktopOrderCss.match(/\.dashboardIntegratedPanel \.dashboardActivityOverviewCard > \.dashboardExecutiveSummary\{[\s\S]*?\n  \}/)?.[0] || "";
+    const activityHeadRule =
+      desktopOrderCss.match(/\.dashboardIntegratedPanel \.dashboardActivityOverviewHead\{[\s\S]*?\n  \}/)?.[0] || "";
+    const activityBodyRule =
+      desktopOrderCss.match(/\.dashboardIntegratedPanel \.dashboardActivityOverviewBody\{[\s\S]*?\n  \}/)?.[0] || "";
 
-    expect(mobileLaunchRule).toContain("flex:0 0 auto !important;");
-    expect(mobileLaunchRule).toContain("align-self:flex-start !important;");
-    expect(mobileLaunchRule).toContain("min-height:48px !important;");
-    expect(mobileLaunchRule).not.toContain("flex:1 1 140px !important;");
+    expect(activityRule).toContain("grid-column:1 / span 2 !important;");
+    expect(activityRule).toContain("grid-row:1 !important;");
+    expect(executiveRule).toContain("grid-column:1 !important;");
+    expect(executiveRule).toContain("grid-row:2 !important;");
+    expect(activityHeadRule).toContain("grid-column:2 !important;");
+    expect(activityHeadRule).toContain("grid-row:2 !important;");
+    expect(activityBodyRule).toContain("grid-column:1 / -1 !important;");
+    expect(activityBodyRule).toContain("grid-row:3 !important;");
+    expect(momentumRule).toContain("grid-column:2 !important;");
+    expect(momentumRule).toContain("grid-row:2 !important;");
+    expect(tasksRule).toContain("grid-column:3 !important;");
+    expect(tasksRule).toContain("grid-row:1 !important;");
   });
 
   it("renders multiplier threshold markers at 40, 70, and 90", () => {

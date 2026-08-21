@@ -23,13 +23,17 @@ describe("BrainDumpClient", () => {
   it("applies primitive styling across the embedded Brain Dump surface", () => {
     const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
 
-    expect(source).toContain("brainDumpEmbeddedPanel brainDumpEmbeddedHeader brainDumpPrimitivePanel");
+    expect(source).toContain("brainDumpEmbeddedHeader");
+    expect(source).not.toContain("brainDumpEmbeddedPanel brainDumpEmbeddedHeader brainDumpPrimitivePanel");
+    expect(source).toContain('aria-label="Back"');
+    expect(source).toContain("styles.backIcon");
+    expect(source).toContain("styles.srOnly");
     expect(source).toContain("brainDumpEmbeddedPanel brainDumpPrimitivePanel");
     expect(source).toContain("brainDumpPrimitiveReviewItem");
     expect(source).toContain("brainDumpPrimitiveInput");
     expect(source).toContain("brainDumpPrimitiveTextarea");
     expect(source).toContain("brainDumpPrimitiveCheckbox");
-    expect(source).toContain("brainDumpPrimitiveAction brainDumpPrimitiveLink");
+    expect(source).toContain("const primitiveBackLinkClass = styles.backLink");
   });
 
   it("turns a voice recording into an editable transcript before the normal review session", () => {
@@ -181,6 +185,19 @@ describe("BrainDumpClient", () => {
     expect(source).not.toContain("source_text");
   });
 
+  it("restores stored drafts after mount to keep hydration deterministic", () => {
+    const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
+
+    expect(source).toContain('const [captureMode, setCaptureMode] = useState<BrainDumpCaptureMode>("typed")');
+    expect(source).toContain('const [text, setText] = useState("")');
+    expect(source).not.toContain("useState<BrainDumpCaptureMode>(() => readStoredCaptureMode())");
+    expect(source).not.toContain("useState(() => readStoredDraft())");
+    expect(source).toContain("const timer = window.setTimeout(() => {");
+    expect(source).toContain("setCaptureMode(readStoredCaptureMode())");
+    expect(source).toContain("setText(readStoredDraft())");
+    expect(source).toContain("return () => window.clearTimeout(timer)");
+  });
+
   it("handles expired review sessions with a fresh-start path and no stale completion state", () => {
     const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
 
@@ -208,30 +225,60 @@ describe("BrainDumpClient", () => {
     expect(source).not.toContain('href="/tasklaunch"');
   });
 
-  it("renders editable review dates without hiding source provenance", () => {
+  it("renders editable review dates inside the visible optional details", () => {
     const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
 
     expect(source).toContain("BrainDumpReviewDate");
     expect(source).toContain('type="date"');
     expect(source).toContain('aria-label={`Date for ${item.title}`}');
-    expect(source).toContain("date: {");
-    expect(source).toContain("userConfirmedDate: true");
     expect(source).toContain("Remove date");
-    expect(source).toContain("item.date.dateSource");
-    expect(source).toContain("item.date.originalDateText");
-    expect(source).toContain("item.date.ambiguityFlags");
+    expect(source).toContain("styles.dateReview");
+    expect(source.indexOf("Time Goal/Estimate")).toBeLessThan(source.indexOf('htmlFor={`brainDumpDate-${item.id}`}'));
+    expect(source.indexOf('htmlFor={`brainDumpDate-${item.id}`}')).toBeLessThan(source.indexOf("brainDumpPriority"));
+    expect(source).not.toContain("item.date.dateSource");
+    expect(source).not.toContain("item.date.originalDateText");
   });
 
-  it("keeps optional enrichment collapsed, accessible, editable, saveable, and clearable", () => {
+  it("keeps optional enrichment visible, accessible, editable, saveable, and clearable", () => {
     const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
 
     expect(source).toContain("BrainDumpReviewEnrichment");
-    expect(source).toContain("<details");
-    expect(source).toContain("<summary");
-    expect(source).toContain("Optional details");
-    expect(source).toContain('aria-label={`Notes for ${item.title}`}');
-    expect(source).toContain('aria-label={`Estimated duration minutes for ${item.title}`}');
+    expect(source).not.toContain("<details");
+    expect(source).not.toContain("<summary");
+    expect(source).toContain("styles.optionalDetails");
+    expect(source).not.toContain('aria-label={`Notes for ${item.title}`}');
+    expect(source).not.toContain("brainDumpNotes");
+    expect(source).toContain("Task Type");
+    expect(source).toContain('aria-label={`Task type for ${item.title}`}');
+    expect(source).toContain('["recurring", "Recurring"]');
+    expect(source).toContain('["once-off", "Once-off"]');
+    expect(source).toContain("styles.taskTypePills");
+    expect(source).toContain("updateReviewItem(item.id, { taskType: nextTaskType })");
+    expect(source).toContain("Time Goal/Estimate");
+    expect(source).toContain('aria-label={`Time goal or estimate for ${item.title}`}');
+    expect(source).toContain('aria-label={`Time goal unit for ${item.title}`}');
+    expect(source).toContain('aria-label={`Time goal period for ${item.title}`}');
+    expect(source).toContain("Min");
+    expect(source).toContain("Hour");
+    expect(source).toContain("Day");
+    expect(source).toContain("Week");
+    expect(source).toContain("addTaskDurationRow editTaskDurationRow");
+    expect(source).toContain("unitButtons addTaskDurationPills taskScreenPillGroup");
+    expect(source).toContain("btn btn-ghost small unitBtn taskScreenPill taskScreenHeaderBtn");
+    expect(source).toContain(" isOn");
+    expect(source).toContain("buildTimeGoalEnrichment");
+    expect(source).toContain("timeGoalValue");
+    expect(source).toContain("timeGoalUnit");
+    expect(source).toContain("timeGoalPeriod");
+    expect(source).toContain('aria-label={`Date for ${item.title}`}');
     expect(source).toContain('aria-label={`Priority for ${item.title}`}');
+    expect(source).toContain("styles.priorityPills");
+    expect(source).not.toContain('["", "None"]');
+    expect(source).toContain('["low", "Low"]');
+    expect(source).toContain('["medium", "Normal"]');
+    expect(source).toContain('["high", "High"]');
+    expect(source).toContain('(item.enrichment.priority || "medium") === priority');
+    expect(source).toContain("priority: \"medium\"");
     expect(source).toContain('aria-label={`First action for ${item.title}`}');
     expect(source).toContain("Clear optional details");
     expect(source).toContain('fetch(getApiUrl(`/api/brain-dump/sessions/${session.id}`), {');
@@ -239,7 +286,7 @@ describe("BrainDumpClient", () => {
     expect(source).toContain("validationErrors");
   });
 
-  it("renders duplicate warnings with explicit Create anyway and Skip actions", () => {
+  it("renders duplicate warnings with explicit Select anyway and removable Skip actions", () => {
     const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
 
     expect(source).toContain("BrainDumpDuplicateWarning");
@@ -248,10 +295,38 @@ describe("BrainDumpClient", () => {
     expect(source).toContain('aria-label={`Possible duplicates for ${item.title}`}');
     expect(source).toContain("warning.matchedState");
     expect(source).toContain("warning.matchedTitle");
-    expect(source).toContain("Create anyway");
+    expect(source).toContain("Select anyway");
     expect(source).toContain('duplicateDecision: "create_anyway"');
     expect(source).toContain("Skip");
+    expect(source).toContain("function removeDuplicateReviewItem");
+    expect(source).toContain("removedReviewItemIds.has(item.id)");
     expect(source).toContain('duplicateDecision: "skip"');
+  });
+
+  it("shows a create-only executive loading overlay while generating tasks", () => {
+    const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
+    const stylesSource = readFileSync(resolve(__dirname, "BrainDump.module.css"), "utf8");
+
+    expect(source).toContain("const [creatingTasks, setCreatingTasks] = useState(false)");
+    expect(source).toContain("setCreatingTasks(true)");
+    expect(source).toContain("setCreatingTasks(false)");
+    expect(source).toContain('setStatus("Generating tasks...")');
+    expect(source).toContain("creatingTasks ? (");
+    expect(source).toContain("styles.createOverlay");
+    expect(source).toContain('role="status"');
+    expect(source).toContain('aria-label="Generating tasks..."');
+    expect(source).toContain('src="/icons/icons_default/executive.webp"');
+    expect(source).toContain("styles.createOverlayIcon");
+    expect(source).toContain("Generating tasks...");
+    expect(source).toContain('{creatingTasks ? "Generating" : `Create ${selectedCount}`}');
+    expect(source).not.toContain('setStatus("Creating tasks")');
+    expect(source).not.toContain('{busy ? "Creating" : `Create ${selectedCount}`}');
+    expect(source.indexOf("async function handleConfirm")).toBeLessThan(source.indexOf("setCreatingTasks(true)"));
+    expect(source.indexOf("setCreatingTasks(false)")).toBeLessThan(source.indexOf("async function handleUndoBatch"));
+    expect(stylesSource).toContain(".createOverlay");
+    expect(stylesSource).toContain(".createOverlayIcon");
+    expect(stylesSource).toContain("animation: brainDumpCreateSpin");
+    expect(stylesSource).toContain("@keyframes brainDumpCreateSpin");
   });
 
   it("exposes an accessible 30-second undo action after successful creation", () => {

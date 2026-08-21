@@ -9,6 +9,7 @@ import {
   markTaskTimeGoalCompleted,
 } from "../lib/timeGoalCompletion";
 import type { HistoryByTaskId, Task } from "../lib/types";
+import { isTaskMarkedDone } from "../lib/taskManualCompletion";
 import { getTelemetryPlanTier, trackEvent } from "@/lib/firebaseTelemetry";
 import { buildNativeCheckpointSchedule } from "../lib/nativeCheckpointSchedule";
 import { clearNativeRunningTimerNotification, showNativeRunningTimerNotification, syncNativeCheckpointAlarms } from "../lib/nativeTimerNotification";
@@ -282,6 +283,7 @@ export function createTaskTimerLifecycle(options: TaskTimerLifecycleOptions) {
     const task = options.getTasks()[index];
     if (!task) return "not-found";
     if (isActivelyRunning(task)) return "already-running";
+    if (isTaskMarkedDone(task, options.nowMs())) return "blocked";
     if (
       isTaskTimeGoalStartLockedForPeriod(
         task,

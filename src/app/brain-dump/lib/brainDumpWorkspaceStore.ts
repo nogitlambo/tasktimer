@@ -29,6 +29,16 @@ function normalizeLocalDate(value: unknown) {
   return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
 }
 
+function normalizeScheduleStoredTime(value: unknown) {
+  const text = asString(value, 16);
+  const match = text.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
 function normalizePlannedStartByDay(value: unknown) {
   if (!value || typeof value !== "object") return null;
   const next: Record<string, string | null> = {};
@@ -44,6 +54,165 @@ function normalizePlannedStartByDay(value: unknown) {
   return Object.keys(next).length ? next : null;
 }
 
+const SCHEDULE_DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+type ScheduleDay = (typeof SCHEDULE_DAY_ORDER)[number];
+
+function getPersistedPlannedStartTime(task: Task): string | null {
+  const plannedStartTime = normalizeScheduleStoredTime(task.plannedStartTime);
+  if (plannedStartTime) return plannedStartTime;
+
+  const byDay = normalizePlannedStartByDay(task.plannedStartByDay);
+  if (!byDay) return null;
+
+  const times = SCHEDULE_DAY_ORDER.flatMap((day) => {
+    const time = normalizeScheduleStoredTime(byDay[day]);
+    return time ? [time] : [];
+  });
+  const uniqueTimes = Array.from(new Set(times));
+  return uniqueTimes.length === 1 ? uniqueTimes[0] || null : null;
+}
+
+function getTaskPlannedStartByDay(task: Task): Record<ScheduleDay, string | null> | null {
+  const explicitByDay = normalizePlannedStartByDay(task.plannedStartByDay) as Record<ScheduleDay, string | null> | null;
+  if (explicitByDay) return explicitByDay;
+
+  const plannedStartTime = normalizeScheduleStoredTime(task.plannedStartTime);
+  if (!plannedStartTime) return null;
+  const plannedStartDay = normalizePlannedStartDay(task.plannedStartDay) as ScheduleDay | null;
+  if (plannedStartDay) {
+    return {
+      mon: null,
+      tue: null,
+      wed: null,
+      thu: null,
+      fri: null,
+      sat: null,
+      sun: null,
+      [plannedStartDay]: plannedStartTime,
+    };
+  }
+  return {
+    mon: plannedStartTime,
+    tue: plannedStartTime,
+    wed: plannedStartTime,
+    thu: plannedStartTime,
+    fri: plannedStartTime,
+    sat: plannedStartTime,
+    sun: plannedStartTime,
+  };
+}
+
+function localDateKey(ms = Date.now()) {
+  const date = new Date(ms);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isTaskTimeGoalCompletedToday(task: Task, nowMs = Date.now()) {
+  return task.timeGoalCompletedReason === "goal" && task.timeGoalCompletedDayKey === localDateKey(nowMs);
+}
+
+function normalizeDayTimeGoalMinutes(task: Task): number | null {
+  if (!task.timeGoalEnabled || task.timeGoalPeriod !== "day") return null;
+  const minutes = Number(task.timeGoalMinutes);
+  return Number.isFinite(minutes) && minutes > 0 ? Math.floor(minutes) : null;
+}
+
+function computePlannedStartPushDueAtMs(task: Task): number | null {
+  if (task.plannedStartPushRemindersEnabled === false) return null;
+  const byDay = getTaskPlannedStartByDay(task);
+  if (!byDay) return null;
+  const dayMap: Record<ScheduleDay, number> = {
+    sun: 0,
+    mon: 1,
+    tue: 2,
+    wed: 3,
+    thu: 4,
+    fri: 5,
+    sat: 6,
+  };
+  const now = new Date();
+  if (isTaskTimeGoalCompletedToday(task, now.getTime())) now.setHours(24, 0, 0, 0);
+  let nextDueAtMs: number | null = null;
+  for (const day of SCHEDULE_DAY_ORDER) {
+    const time = normalizeScheduleStoredTime(byDay[day]);
+    if (!time) continue;
+    const [, rawHours = "0", rawMinutes = "0"] = time.match(/^(\d{1,2}):(\d{2})$/) || [];
+    const scheduled = new Date(now);
+    const diffDays = (dayMap[day] - scheduled.getDay() + 7) % 7;
+    scheduled.setDate(scheduled.getDate() + diffDays);
+    scheduled.setHours(Number(rawHours), Number(rawMinutes), 0, 0);
+    if (scheduled.getTime() <= now.getTime()) scheduled.setDate(scheduled.getDate() + 7);
+    const dueAtMs = scheduled.getTime();
+    if (nextDueAtMs == null || dueAtMs < nextDueAtMs) nextDueAtMs = dueAtMs;
+  }
+  return nextDueAtMs;
+}
+
+function isUnscheduledGapPushCandidate(task: Task) {
+  return (
+    normalizeDayTimeGoalMinutes(task) != null &&
+    !getTaskPlannedStartByDay(task) &&
+    task.plannedStartOpenEnded !== true &&
+    !isTaskTimeGoalCompletedToday(task)
+  );
+}
+
+function buildScheduledPushPayload(uid: string, task: Task) {
+  const taskId = asString(task.id, 120);
+  const plannedStartDueAtMs = computePlannedStartPushDueAtMs(task);
+  const unscheduledGapCandidate = isUnscheduledGapPushCandidate(task);
+  const dueAtMs = plannedStartDueAtMs ?? (unscheduledGapCandidate ? Date.now() : null);
+  if (!taskId || dueAtMs == null) return null;
+  const notificationKind = plannedStartDueAtMs != null ? "plannedStart" : "unscheduledGap";
+  const eventType = plannedStartDueAtMs != null ? "plannedStartReminder" : "unscheduledGapReminder";
+  return stripUndefinedValues({
+    ownerUid: uid,
+    taskId,
+    taskName: asString(task.name, 200) || "Task",
+    notificationKind,
+    eventType,
+    baseEventType: eventType,
+    effectiveEventType: eventType,
+    dueAtMs,
+    timeGoalMinutes: normalizeDayTimeGoalMinutes(task),
+    timeGoalPeriod: null,
+    timeGoalGoalMs: null,
+    timeGoalCompletionDayKey: null,
+    timeGoalCompletionWeekKey: null,
+    weekStarting: null,
+    plannedStartDay: normalizePlannedStartDay(task.plannedStartDay),
+    plannedStartTime: getPersistedPlannedStartTime(task),
+    plannedStartByDay: normalizePlannedStartByDay(task.plannedStartByDay),
+    plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
+    route: "/tasklaunch",
+    snoozedUntilMs: null,
+    sentAtMs: null,
+    sentDueAtMs: null,
+    missedCheckDueAtMs: null,
+    missedScheduledStartDueAtMs: null,
+    nextPlannedStartDueAtMs: null,
+    lastMissedAtMs: null,
+    lastMissedDueAtMs: null,
+    lastActionAtMs: null,
+    lastActionByDeviceId: null,
+    lastGapAlertDayKey: null,
+    lastGapAlertStartMs: null,
+    lastGapAlertEndMs: null,
+    activeGapDayKey: null,
+    activeGapStartMs: null,
+    activeGapEndMs: null,
+    postponedGapDayKey: null,
+    postponedGapStartMs: null,
+    postponedGapEndMs: null,
+    updatedAt: Timestamp.now(),
+    createdAt: Timestamp.now(),
+    schemaVersion: 1,
+  });
+}
+
 function taskFirestoreTimestamp(task: Task) {
   const createdAtMs = Number.isFinite(Number(task.createdAtMs)) && Number(task.createdAtMs) > 0 ? Math.floor(Number(task.createdAtMs)) : Date.now();
   return Timestamp.fromMillis(createdAtMs);
@@ -51,6 +220,7 @@ function taskFirestoreTimestamp(task: Task) {
 
 function mapBrainDumpTaskToFirestore(task: Task) {
   const taskType = normalizeTaskType(task.taskType);
+  const plannedStartPushDueAtMs = computePlannedStartPushDueAtMs(task);
   const milestones = Array.isArray(task.milestones)
     ? task.milestones.map((milestone) => ({
         hours: Number.isFinite(Number(milestone?.hours)) ? Math.max(0, Number(milestone.hours)) : 0,
@@ -99,7 +269,7 @@ function mapBrainDumpTaskToFirestore(task: Task) {
     onceOffDay: taskType === "once-off" ? normalizePlannedStartDay(task.onceOffDay) : null,
     onceOffTargetDate: taskType === "once-off" ? normalizeLocalDate(task.onceOffTargetDate) : null,
     plannedStartDay: normalizePlannedStartDay(task.plannedStartDay),
-    plannedStartTime: task.plannedStartTime == null ? null : asString(task.plannedStartTime, 16) || null,
+    plannedStartTime: getPersistedPlannedStartTime(task),
     plannedStartByDay: normalizePlannedStartByDay(task.plannedStartByDay),
     plannedStartOpenEnded: !!task.plannedStartOpenEnded,
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
@@ -110,8 +280,8 @@ function mapBrainDumpTaskToFirestore(task: Task) {
       task.sharedSourceImportedAtMs == null || !Number.isFinite(Number(task.sharedSourceImportedAtMs))
         ? null
         : Math.max(0, Math.floor(Number(task.sharedSourceImportedAtMs))),
-    bgTimeGoalPushEligible: false,
-    bgTimeGoalPushDueAtMs: null,
+    bgTimeGoalPushEligible: plannedStartPushDueAtMs != null,
+    bgTimeGoalPushDueAtMs: plannedStartPushDueAtMs,
     bgTimeGoalPushSentAtMs: null,
     bgTimeGoalPushSentDueAtMs: null,
     createdAt,
@@ -139,6 +309,19 @@ export function createFirestoreBrainDumpWorkspaceRepository(): BrainDumpWorkspac
 
   function deletedTasksCollection(uid: string) {
     return db.collection("users").doc(uid).collection("deletedTasks");
+  }
+
+  function scheduledPushDoc(uid: string, taskId: string) {
+    return db.collection("scheduled_time_goal_pushes").doc(`${uid}__${taskId}`);
+  }
+
+  function writeScheduledPushToBatch(batch: ReturnType<typeof db.batch>, uid: string, task: Task) {
+    const taskId = asString(task.id, 120);
+    if (!taskId) return;
+    const payload = buildScheduledPushPayload(uid, task);
+    const ref = scheduledPushDoc(uid, taskId);
+    if (payload) batch.set(ref, payload, { merge: true });
+    else batch.delete(ref);
   }
 
   return {
@@ -178,6 +361,7 @@ export function createFirestoreBrainDumpWorkspaceRepository(): BrainDumpWorkspac
         const taskId = asString(task.id, 120);
         if (!taskId) continue;
         batch.set(tasksCollection(safeUid).doc(taskId), mapBrainDumpTaskToFirestore(task), { merge: true });
+        writeScheduledPushToBatch(batch, safeUid, task);
       }
       await batch.commit();
     },
@@ -185,7 +369,10 @@ export function createFirestoreBrainDumpWorkspaceRepository(): BrainDumpWorkspac
       const safeUid = asString(uid, 120);
       const taskId = asString(task.id, 120);
       if (!safeUid || !taskId) return;
-      await tasksCollection(safeUid).doc(taskId).set(mapBrainDumpTaskToFirestore(task), { merge: true });
+      const batch = db.batch();
+      batch.set(tasksCollection(safeUid).doc(taskId), mapBrainDumpTaskToFirestore(task), { merge: true });
+      writeScheduledPushToBatch(batch, safeUid, task);
+      await batch.commit();
     },
     async deleteTasks(uid: string, taskIds: string[]) {
       const safeUid = asString(uid, 120);

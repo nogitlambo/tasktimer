@@ -14,7 +14,7 @@ function asString(value: unknown) {
 
 function resolveCheckoutOffer(value: unknown): TaskTimerPaidOffer | null {
   const raw = asString(value).toLowerCase();
-  if (raw === "plus_monthly" || raw === "plus_lifetime") return raw;
+  if (raw === "plus_monthly" || raw === "plus_yearly") return raw;
   return null;
 }
 
@@ -85,16 +85,16 @@ export async function POST(req: Request) {
     });
 
     const offer = resolveCheckoutOffer(body.offer) || "plus_monthly";
-    const monthlyPriceId = asString(process.env.STRIPE_PRICE_ID_PRO_MONTHLY);
-    const lifetimePriceId = asString(process.env.STRIPE_PRICE_ID_PLUS_LIFETIME);
-    const priceId = offer === "plus_lifetime" ? lifetimePriceId : monthlyPriceId;
+    const monthlyPriceId = asString(process.env.STRIPE_PRICE_ID_PLUS_MONTHLY);
+    const yearlyPriceId = asString(process.env.STRIPE_PRICE_ID_PLUS_YEARLY);
+    const priceId = offer === "plus_yearly" ? yearlyPriceId : monthlyPriceId;
     if (!priceId) {
       return withAuthenticatedApiCors(
         req,
         NextResponse.json(
           {
             error:
-              offer === "plus_lifetime" ? "Missing STRIPE_PRICE_ID_PLUS_LIFETIME." : "Missing STRIPE_PRICE_ID_PRO_MONTHLY.",
+              offer === "plus_yearly" ? "Missing STRIPE_PRICE_ID_PLUS_YEARLY." : "Missing STRIPE_PRICE_ID_PLUS_MONTHLY.",
           },
           { status: 500 }
         )
@@ -109,7 +109,7 @@ export async function POST(req: Request) {
     const cancelReturnPath = resolveSafeReturnPath(body.cancelReturnPath, returnTarget === "native" ? successReturnPath : "/login");
 
     const checkoutSessionParams: Stripe.Checkout.SessionCreateParams = {
-      mode: offer === "plus_lifetime" ? "payment" : "subscription",
+      mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: buildReturnUrl(successReturnPath, returnTarget, appBaseUrl, {
         checkout: "success",
@@ -122,14 +122,10 @@ export async function POST(req: Request) {
       customer_email: existingCustomerId ? undefined : email || undefined,
       client_reference_id: uid,
       allow_promotion_codes: true,
-      ...(offer === "plus_monthly"
-        ? {
-            subscription_data: {
-              metadata: { uid, offer },
-            },
-          }
-        : {}),
-      metadata: { uid, offer },
+      subscription_data: {
+        metadata: { uid, offer, priceId },
+      },
+      metadata: { uid, offer, priceId },
     };
 
     let session;

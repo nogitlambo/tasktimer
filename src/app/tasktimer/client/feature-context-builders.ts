@@ -106,7 +106,7 @@ type CreatePreferencesOptionsArgs = {
 type CreatePersistenceOptionsArgs = {
   workspaceRepository: Parameters<typeof createTaskTimerPersistence>[0]["workspaceRepository"];
   historyPersistence: Parameters<typeof createTaskTimerPersistence>[0]["historyPersistence"];
-  focusSessionNotesKey: string;
+  focusSessionDrafts: Parameters<typeof createTaskTimerPersistence>[0]["focusSessionDrafts"];
   pendingTimeGoalCompletionsKey: string;
   pendingTaskJumpKey: string;
   taskCollectionBindings: {
@@ -118,7 +118,6 @@ type CreatePersistenceOptionsArgs = {
     setLiveSessionsByTaskId: (value: LiveSessionsByTaskId) => void;
   };
   historyUiState: MutableStore;
-  focusState: MutableStore;
   preferencesState: MutableStore;
   rewardState: MutableStore;
   runtimeDestroyed: () => boolean;
@@ -126,9 +125,6 @@ type CreatePersistenceOptionsArgs = {
   getCurrentUid: () => string;
   pendingTaskJumpMemory: () => string | null;
   setPendingTaskJumpMemory: (value: string | null) => void;
-  getFocusSessionNotesInputValue: () => string;
-  setFocusSessionNotesInputValue: (value: string) => void;
-  setFocusSessionNotesSectionOpen: (open: boolean) => void;
   getCurrentAppPage: () => AppPage;
   getInitialAppPageFromLocation: (fallback: AppPage) => AppPage;
   initialAppPage: AppPage;
@@ -137,7 +133,6 @@ type CreatePersistenceOptionsArgs = {
   loadDeletedMeta: Parameters<typeof createTaskTimerPersistence>[0]["loadDeletedMeta"];
   setDeletedTaskMeta: (value: DeletedTaskMeta) => void;
   primeDashboardCacheFromShadow: () => void;
-  loadFocusSessionNotes: Parameters<typeof createTaskTimerPersistence>[0]["loadFocusSessionNotes"];
   loadAddTaskCustomNames: () => void;
   loadWeekStartingPreference: () => void;
   loadStartupModulePreference: () => void;
@@ -480,6 +475,7 @@ type CreateSessionOptionsArgs = {
   on: Parameters<typeof createTaskTimerSession>[0]["on"];
   runtime: Parameters<typeof createTaskTimerSession>[0]["runtime"];
   sharedTasks: Parameters<typeof createTaskTimerSession>[0]["sharedTasks"];
+  focusSessionDrafts: Parameters<typeof createTaskTimerSession>[0]["focusSessionDrafts"];
   storageKeys: Parameters<typeof createTaskTimerSession>[0]["storageKeys"];
   getTasks: () => Task[];
   appRuntimeState: MutableStore;
@@ -501,8 +497,6 @@ type CreateSessionOptionsArgs = {
     | "setFocusShowCheckpoints"
     | "getFocusCheckpointSig"
     | "setFocusCheckpointSig"
-    | "getFocusSessionNotesByTaskId"
-    | "setFocusSessionNotesByTaskId"
     | "getFocusSessionNoteSaveTimer"
     | "setFocusSessionNoteSaveTimer"
   >;
@@ -1039,7 +1033,7 @@ export function createTaskTimerPersistenceContext(
   return {
     workspaceRepository: args.workspaceRepository,
     historyPersistence: args.historyPersistence,
-    focusSessionNotesKey: args.focusSessionNotesKey,
+    focusSessionDrafts: args.focusSessionDrafts,
     pendingTimeGoalCompletionsKey: args.pendingTimeGoalCompletionsKey,
     pendingTaskJumpKey: args.pendingTaskJumpKey,
     getTasks: args.taskCollectionBindings.getTasks,
@@ -1056,23 +1050,11 @@ export function createTaskTimerPersistenceContext(
     setHistoryRangeModeByTaskId: (value) => {
       args.historyUiState.set("historyRangeModeByTaskId", value);
     },
-    getFocusSessionNotesByTaskId: () => asType<Record<string, string>>(args.focusState.get("focusSessionNotesByTaskId")),
-    setFocusSessionNotesByTaskId: (value) => {
-      args.focusState.set("focusSessionNotesByTaskId", value);
-    },
     getPendingTaskJumpMemory: args.pendingTaskJumpMemory,
     setPendingTaskJumpMemory: args.setPendingTaskJumpMemory,
     getRuntimeDestroyed: args.runtimeDestroyed,
     notifyTaskCompletionChanged: args.notifyTaskCompletionChanged,
     getCurrentUid: args.getCurrentUid,
-    getFocusModeTaskId: () => asType<string | null>(args.focusState.get("focusModeTaskId")),
-    getFocusSessionNoteSaveTimer: () => asType<number | null>(args.focusState.get("focusSessionNoteSaveTimer")),
-    setFocusSessionNoteSaveTimer: (value) => {
-      args.focusState.set("focusSessionNoteSaveTimer", value);
-    },
-    getFocusSessionNotesInputValue: args.getFocusSessionNotesInputValue,
-    setFocusSessionNotesInputValue: args.setFocusSessionNotesInputValue,
-    setFocusSessionNotesSectionOpen: args.setFocusSessionNotesSectionOpen,
     getCurrentAppPage: args.getCurrentAppPage,
     getInitialAppPageFromLocation: args.getInitialAppPageFromLocation,
     initialAppPage: args.initialAppPage,
@@ -1081,7 +1063,6 @@ export function createTaskTimerPersistenceContext(
     loadDeletedMeta: args.loadDeletedMeta,
     setDeletedTaskMeta: args.setDeletedTaskMeta,
     primeDashboardCacheFromShadow: args.primeDashboardCacheFromShadow,
-    loadFocusSessionNotes: args.loadFocusSessionNotes,
     loadAddTaskCustomNames: args.loadAddTaskCustomNames,
     getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
     loadWeekStartingPreference: args.loadWeekStartingPreference,
@@ -1441,6 +1422,7 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
     on: args.on,
     runtime: args.runtime,
     sharedTasks: args.sharedTasks,
+    focusSessionDrafts: args.focusSessionDrafts,
     storageKeys: args.storageKeys,
     getTasks: args.getTasks,
     getCurrentAppPage: () => asType<AppPage>(args.appRuntimeState.get("currentAppPage")),

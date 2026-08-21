@@ -338,6 +338,18 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
       task.timeGoalCompletedElapsedMs == null || !Number.isFinite(Number(task.timeGoalCompletedElapsedMs))
         ? null
         : Math.max(0, Math.floor(Number(task.timeGoalCompletedElapsedMs))),
+    markedDoneAtMs:
+      task.markedDoneAtMs == null || !Number.isFinite(Number(task.markedDoneAtMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.markedDoneAtMs))),
+    markedDoneUntilMs:
+      task.markedDoneUntilMs == null || !Number.isFinite(Number(task.markedDoneUntilMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.markedDoneUntilMs))),
+    nextBestActionSnoozedUntilMs:
+      task.nextBestActionSnoozedUntilMs == null || !Number.isFinite(Number(task.nextBestActionSnoozedUntilMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.nextBestActionSnoozedUntilMs))),
     resumePendingSinceDayKey:
       typeof task.resumePendingSinceDayKey === "string" && /^\d{4}-\d{2}-\d{2}$/.test(task.resumePendingSinceDayKey)
         ? task.resumePendingSinceDayKey
@@ -878,6 +890,18 @@ function taskSignature(task: Task | null | undefined): string {
       task.timeGoalCompletedElapsedMs == null || !Number.isFinite(Number(task.timeGoalCompletedElapsedMs))
         ? null
         : Math.max(0, Math.floor(Number(task.timeGoalCompletedElapsedMs))),
+    markedDoneAtMs:
+      task.markedDoneAtMs == null || !Number.isFinite(Number(task.markedDoneAtMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.markedDoneAtMs))),
+    markedDoneUntilMs:
+      task.markedDoneUntilMs == null || !Number.isFinite(Number(task.markedDoneUntilMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.markedDoneUntilMs))),
+    nextBestActionSnoozedUntilMs:
+      task.nextBestActionSnoozedUntilMs == null || !Number.isFinite(Number(task.nextBestActionSnoozedUntilMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.nextBestActionSnoozedUntilMs))),
     taskType: task.taskType === "once-off" ? "once-off" : "recurring",
     onceOffDay: task.taskType === "once-off" ? String(task.onceOffDay || "").trim().toLowerCase() || null : null,
     onceOffTargetDate: task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,

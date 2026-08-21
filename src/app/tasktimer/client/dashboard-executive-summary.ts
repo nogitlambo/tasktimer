@@ -1,9 +1,7 @@
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
-import { getApiUrl } from "../lib/apiClient";
 import { loadExecutiveData, type ExecutiveDataSnapshot } from "./executive-data";
 import type { ExecutiveRequestCoordinator } from "./executive-request-coordinator";
 import { TASK_COMPLETION_CHANGED_EVENT } from "./task-completion-events";
-import type { TaskLaunchResult } from "./task-timer-lifecycle";
 
 type Options = {
   documentRef?: Document;
@@ -11,20 +9,12 @@ type Options = {
   getCurrentAppPage: () => string;
   canUseExecutiveFunction?: () => boolean;
   getExecutiveFunctionUnavailableMessage?: () => string;
-  showUpgradePrompt?: (featureName: string, plan?: "plus") => void;
   getIdToken?: () => Promise<string | null>;
-  startTaskById?: (taskId: string) => TaskLaunchResult;
   requestCoordinator?: ExecutiveRequestCoordinator;
 };
 
 function getElement(documentRef: Document, id: string) {
   return documentRef.getElementById(id);
-}
-
-function setStartNowButtonLabel(button: HTMLButtonElement, label: string) {
-  const labelElement = button.querySelector?.(".dashboardStartNowButtonLabel");
-  if (labelElement) labelElement.textContent = label;
-  else button.textContent = label;
 }
 
 function setHidden(element: HTMLElement | null, hidden: boolean) {
@@ -71,8 +61,7 @@ export function renderDashboardExecutiveSummary(documentRef: Document, snapshot:
   const status = getElement(documentRef, "dashboardExecutiveSummaryStatus");
   const brief = snapshot.brief.status === "ready" ? snapshot.brief.value : null;
   const capacity = snapshot.capacity.status === "ready" ? snapshot.capacity.value : null;
-  const nba = snapshot.nba.status === "ready" ? snapshot.nba.value : null;
-  const hasPlan = Boolean(brief || capacity || nba);
+  const hasPlan = Boolean(brief || capacity);
   card.setAttribute("data-executive-summary-state", hasPlan ? "ready" : "fallback");
   setHidden(content, !hasPlan);
   setHidden(fallback, hasPlan);
@@ -84,22 +73,6 @@ export function renderDashboardExecutiveSummary(documentRef: Document, snapshot:
   if (range) range.textContent = capacity ? formatRange(capacity.remainingRange.min, capacity.remainingRange.max) : "Capacity unavailable";
   const workload = getElement(documentRef, "dashboardExecutiveSummaryWorkload");
   if (workload) workload.textContent = brief ? `${brief.plan.remainingMinutes}m work remaining` : "Plan workload unavailable";
-  const next = getElement(documentRef, "dashboardExecutiveSummaryNext");
-  setHidden(next, !nba);
-  const title = getElement(documentRef, "dashboardExecutiveSummaryNextTitle");
-  if (title) title.textContent = nba?.title || "";
-  const firstAction = getElement(documentRef, "dashboardExecutiveSummaryNextFirstAction");
-  if (firstAction) firstAction.textContent = nba ? `${nba.estimatedMinutes} min` : "";
-  const start = getElement(documentRef, "dashboardExecutiveSummaryStart") as HTMLButtonElement | null;
-  if (start) {
-    start.disabled = !nba;
-    start.hidden = !nba;
-    setStartNowButtonLabel(start, "LAUNCH");
-    if (nba) {
-      start.dataset.taskId = nba.taskId;
-      start.dataset.recommendationId = nba.recommendationId;
-    }
-  }
 }
 
 export function createDashboardExecutiveSummary(options: Options) {
@@ -137,53 +110,8 @@ export function createDashboardExecutiveSummary(options: Options) {
     }
   }
 
-  async function start() {
-    const button = getElement(documentRef, "dashboardExecutiveSummaryStart") as HTMLButtonElement | null;
-    const recommendationId = button?.dataset.recommendationId;
-    const taskId = button?.dataset.taskId;
-    if (!recommendationId || !taskId) return;
-    if (options.canUseExecutiveFunction?.() === false) {
-      if (options.getExecutiveFunctionUnavailableMessage) {
-        const status = getElement(documentRef, "dashboardExecutiveSummaryStatus");
-        setPlainStatus(status, options.getExecutiveFunctionUnavailableMessage());
-      } else {
-        options.showUpgradePrompt?.("Next Best Action", "plus");
-      }
-      return;
-    }
-    button.disabled = true;
-    try {
-      const token = await getIdToken();
-      if (!token) throw new Error("missing-session");
-      const response = await fetch(getApiUrl(`/api/recommendations/next-best-action/${encodeURIComponent(recommendationId)}/start`), { method: "POST", headers: { "Content-Type": "application/json", "x-firebase-auth": token }, body: JSON.stringify({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC" }) });
-      if (!response.ok) throw new Error("recommendation-stale");
-      const launchResult = options.startTaskById?.(taskId);
-      if (launchResult === "requires-confirmation") {
-        const status = getElement(documentRef, "dashboardExecutiveSummaryStatus");
-        setPlainStatus(status, "Confirm the active timer switch to launch this task.");
-        button.disabled = false;
-        return;
-      }
-      if (launchResult === "blocked" || launchResult === "not-found") {
-        throw new Error("task-unavailable");
-      }
-      setStartNowButtonLabel(button, "In Progress");
-      button.disabled = true;
-      button.hidden = false;
-      const status = getElement(documentRef, "dashboardExecutiveSummaryStatus");
-      setPlainStatus(status, "Task in progress.");
-    } catch {
-      const status = getElement(documentRef, "dashboardExecutiveSummaryStatus");
-      setPlainStatus(status, "That recommendation is no longer available. Refresh the dashboard to choose again.");
-      button.disabled = false;
-    }
-  }
-
   function register() {
     if (!card) return;
-    documentRef.addEventListener("click", (event) => {
-      if ((event.target as HTMLElement | null)?.closest?.("#dashboardExecutiveSummaryStart")) void start();
-    });
     windowRef.addEventListener("tasklaunch:app-page-changed", (event) => {
       if ((event as CustomEvent<{ page?: string }>).detail?.page === "dashboard") void refresh();
     });

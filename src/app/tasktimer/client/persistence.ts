@@ -5,7 +5,7 @@ import type { AppPage, DashboardRenderOptions, MainMode } from "./types";
 import type { TaskTimerAppPageOptions } from "./context";
 import { applyLiveSessionsToTasksWithCompletions } from "./live-session-task-state";
 import { reconcileResumePendingTasks } from "./resume-pending-reset";
-import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
+import type { FocusSessionDrafts } from "./focus-session-drafts";
 import { normalizeRewardProgress, type RewardProgressV1 } from "../lib/rewards";
 import { enqueuePendingTimeGoalCompletion } from "./pending-time-goal-completions";
 import { clearNativeRunningTimerNotification } from "../lib/nativeTimerNotification";
@@ -46,7 +46,7 @@ function preserveLocalRunningTimerIfAhead(snapshotTask: Task, localTask: Task | 
 type CreateTaskTimerPersistenceOptions = {
   workspaceRepository: Pick<TaskTimerWorkspaceRepository, "loadWorkspaceSnapshot" | "loadTimerStateSnapshot" | "saveTasks">;
   historyPersistence: TaskTimerWorkspaceHistoryPersistence;
-  focusSessionNotesKey: string;
+  focusSessionDrafts: FocusSessionDrafts;
   pendingTimeGoalCompletionsKey?: string;
   pendingTaskJumpKey: string;
   getTasks: () => Task[];
@@ -59,19 +59,11 @@ type CreateTaskTimerPersistenceOptions = {
   setHistoryRangeDaysByTaskId: (value: Record<string, 7 | 14>) => void;
   getHistoryRangeModeByTaskId: () => Record<string, "entries" | "day">;
   setHistoryRangeModeByTaskId: (value: Record<string, "entries" | "day">) => void;
-  getFocusSessionNotesByTaskId: () => Record<string, string>;
-  setFocusSessionNotesByTaskId: (value: Record<string, string>) => void;
   getPendingTaskJumpMemory: () => string | null;
   setPendingTaskJumpMemory: (value: string | null) => void;
   getRuntimeDestroyed: () => boolean;
   notifyTaskCompletionChanged?: (taskId: string) => void;
   getCurrentUid: () => string;
-  getFocusModeTaskId: () => string | null;
-  getFocusSessionNoteSaveTimer: () => number | null;
-  setFocusSessionNoteSaveTimer: (value: number | null) => void;
-  getFocusSessionNotesInputValue: () => string;
-  setFocusSessionNotesInputValue: (value: string) => void;
-  setFocusSessionNotesSectionOpen: (open: boolean) => void;
   getCurrentAppPage: () => AppPage;
   getInitialAppPageFromLocation: (fallback: AppPage) => AppPage;
   initialAppPage: AppPage;
@@ -80,7 +72,6 @@ type CreateTaskTimerPersistenceOptions = {
   loadDeletedMeta: () => DeletedTaskMeta;
   setDeletedTaskMeta: (value: DeletedTaskMeta) => void;
   primeDashboardCacheFromShadow: () => void;
-  loadFocusSessionNotes: () => Record<string, string>;
   loadAddTaskCustomNames: () => void;
   getWeekStarting?: () => DashboardWeekStart;
   loadWeekStartingPreference: () => void;
@@ -124,19 +115,7 @@ type CreateTaskTimerPersistenceOptions = {
 };
 
 export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOptions) {
-  const focusSessionDrafts = createFocusSessionDrafts(
-    {
-      getDrafts: options.getFocusSessionNotesByTaskId,
-      setDrafts: options.setFocusSessionNotesByTaskId,
-      getActiveTaskId: options.getFocusModeTaskId,
-      getPendingSaveTimer: options.getFocusSessionNoteSaveTimer,
-      setPendingSaveTimer: options.setFocusSessionNoteSaveTimer,
-      getInputValue: options.getFocusSessionNotesInputValue,
-      setInputValue: options.setFocusSessionNotesInputValue,
-      setSectionOpen: options.setFocusSessionNotesSectionOpen,
-    },
-    createLocalStorageFocusSessionDraftStorage(options.focusSessionNotesKey)
-  );
+  const focusSessionDrafts = options.focusSessionDrafts;
   function applyTaskSnapshot(snapshot: Pick<TaskTimerWorkspaceSnapshot, "tasks" | "liveSessionsByTaskId">) {
     const loaded = snapshot.tasks;
     const liveSessionsByTaskId = snapshot.liveSessionsByTaskId;
@@ -261,27 +240,6 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     focusSessionDrafts.clearDraft(taskId);
   }
 
-  function getPreferredFocusSessionNote(taskId?: string | null) {
-    const normalizedTaskId = String(taskId || "").trim();
-    if (!normalizedTaskId) return "";
-    const liveNote = String(options.getLiveSessionsByTaskId()?.[normalizedTaskId]?.note || "").trim();
-    if (liveNote) return liveNote;
-    return focusSessionDrafts.getDraft(normalizedTaskId);
-  }
-
-  function syncFocusSessionNotesInput(taskId: string | null) {
-    const normalizedTaskId = String(taskId || "").trim();
-    if (!normalizedTaskId) {
-      focusSessionDrafts.syncInput(null);
-      return;
-    }
-    options.setFocusSessionNotesInputValue(getPreferredFocusSessionNote(normalizedTaskId));
-  }
-
-  function syncFocusSessionNotesAccordion(taskId: string | null) {
-    focusSessionDrafts.syncAccordion(taskId);
-  }
-
   function flushPendingFocusSessionNoteSave(taskId?: string | null) {
     focusSessionDrafts.flushPendingSave(taskId);
   }
@@ -341,10 +299,8 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     options.setDeletedTaskMeta(workspaceSnapshot.deletedTaskMeta);
     applyHistorySnapshot(workspaceSnapshot);
     applyTaskSnapshot(workspaceSnapshot);
-    options.setFocusSessionNotesByTaskId(focusSessionDrafts.load());
-    const activeFocusTaskId = options.getFocusModeTaskId();
-    syncFocusSessionNotesInput(activeFocusTaskId);
-    syncFocusSessionNotesAccordion(activeFocusTaskId);
+    focusSessionDrafts.load();
+    focusSessionDrafts.syncActive();
     maybeRepairHistoryNotesInCloud();
     loadHistoryRangePrefs();
     options.loadAddTaskCustomNames();
@@ -385,9 +341,7 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
 
   function hydrateTimerStateFromCaches(opts?: { skipDashboardWidgetsRender?: boolean }) {
     applyTaskSnapshot(options.workspaceRepository.loadTimerStateSnapshot());
-    const activeFocusTaskId = options.getFocusModeTaskId();
-    syncFocusSessionNotesInput(activeFocusTaskId);
-    syncFocusSessionNotesAccordion(activeFocusTaskId);
+    focusSessionDrafts.syncActive();
     options.syncTaskSettingsUi();
     if (!opts?.skipDashboardWidgetsRender && options.getCurrentAppPage() === "dashboard") {
       options.renderDashboardWidgets();
@@ -404,8 +358,8 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     setFocusSessionDraft,
     getFocusSessionDraft,
     clearFocusSessionDraft,
-    syncFocusSessionNotesInput,
-    syncFocusSessionNotesAccordion,
+    syncFocusSessionNotesInput: focusSessionDrafts.syncInput,
+    syncFocusSessionNotesAccordion: focusSessionDrafts.syncAccordion,
     flushPendingFocusSessionNoteSave,
     getLiveFocusSessionNoteValue,
     captureSessionNoteSnapshot,

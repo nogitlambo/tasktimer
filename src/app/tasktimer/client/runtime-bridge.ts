@@ -7,6 +7,7 @@ import { getTaskTimerPushDeviceId, loadPendingPushAction } from "../lib/pushNoti
 import { applyScheduledPushAction } from "../lib/pushFunctions";
 import { setPendingRunningTimerSourceNotification } from "../lib/nativeTimerNotification";
 import { STORAGE_KEY } from "../lib/storage";
+import { hasTaskScheduledSlots } from "../lib/schedule-placement";
 
 const LAST_NATIVE_PUSH_DISPATCH_KEY = `${STORAGE_KEY}:lastNativePushDispatch`;
 
@@ -66,9 +67,14 @@ export async function maybeHandleTaskTimerPendingPushAction(options: HandlePendi
   }
   const taskIndex = options.getTasks().findIndex((row) => String(row.id || "").trim() === taskId);
   if (taskIndex < 0) return;
+  const task = options.getTasks()[taskIndex];
   markNativePushDispatchHandled(pending.dispatchNonce);
   options.clearPendingPushAction();
   if (pending.actionId === "launchTask") {
+    if (!task || !hasTaskScheduledSlots(task)) {
+      options.jumpToTaskById(taskId);
+      return;
+    }
     setPendingRunningTimerSourceNotification(taskId, pending.sourceNotificationId);
     void applyScheduledPushAction({
       actionId: "launchTask",

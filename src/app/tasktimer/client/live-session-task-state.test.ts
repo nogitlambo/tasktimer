@@ -101,6 +101,37 @@ describe("applyLiveSessionsToTasks", () => {
     expect(result?.timeGoalCompletedReason).toBeUndefined();
   });
 
+  it("ignores stale running live sessions for a stopped task with no elapsed time", () => {
+    const source = task({
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      hasStarted: true,
+      resumePendingSinceDayKey: null,
+    });
+    const liveSessionsByTaskId: LiveSessionsByTaskId = {
+      "task-1": {
+        sessionId: "task-1:started",
+        taskId: "task-1",
+        name: "Focus",
+        startedAtMs: 1_000,
+        updatedAtMs: 1_000,
+        elapsedMs: 0,
+        status: "running",
+      },
+    };
+
+    const result = applyLiveSessionsToTasks([source], liveSessionsByTaskId, () => 2_000)[0];
+
+    expect(result).toBe(source);
+    expect(result).toMatchObject({
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      hasStarted: true,
+    });
+  });
+
   it("ignores live sessions whose row task id does not match the target task", () => {
     const source = task({ id: "task-1" });
     const liveSessionsByTaskId: LiveSessionsByTaskId = {

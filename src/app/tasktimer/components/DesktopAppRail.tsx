@@ -39,6 +39,7 @@ import {
 import { getErrorMessage } from "./settings/settingsAccountService";
 import { useSharedProfileSessionActions } from "./settings/useSharedProfileSessionActions";
 import SignOutConfirmModal from "./SignOutConfirmModal";
+import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import {
   getMobileSwipeCloseDragY,
   getResetMobileSwipeCloseState,
@@ -80,6 +81,10 @@ type NavItem = {
   showInMobileFooter?: boolean;
   mobileFooterOrder?: number;
 };
+
+function isPlusSubscriptionPlan(plan: TaskTimerPlan) {
+  return plan === "plus" || plan === "plus_monthly" || plan === "plus_yearly" || plan === "pro";
+}
 
 const NAV_ITEMS: NavItem[] = [
   {
@@ -343,7 +348,7 @@ function renderDesktopNavItem(
       key={item.desktopId}
       {...commonProps}
       id={item.desktopId}
-      href={item.href}
+      href={resolveTaskTimerRouteHref(item.href)}
       onClick={(event) => {
         opts?.onClick?.(event);
         if (event.defaultPrevented) return;
@@ -402,7 +407,7 @@ function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClie
   }
 
   return (
-    <a key={item.mobileId} {...commonProps} id={item.mobileId} href={item.href} onClick={() => rememberRailTransition(activePage, item.page)}>
+    <a key={item.mobileId} {...commonProps} id={item.mobileId} href={resolveTaskTimerRouteHref(item.href)} onClick={() => rememberRailTransition(activePage, item.page)}>
       <AppImg
         className="appFooterIconImage"
         src={item.iconSrc}
@@ -438,7 +443,7 @@ function ProfileMenuLink({
     <a
       key={`profile-${item.page}`}
       className={`btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn${isActive ? " isOn" : ""}`}
-      href={item.href}
+      href={resolveTaskTimerRouteHref(item.href)}
       aria-label={item.ariaLabel}
       data-nav-page={item.page}
       role="menuitem"
@@ -473,7 +478,7 @@ function HelpCenterSubmenuLink({
     <a
       key={`help-center-${item.page}`}
       className={`btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSecondaryMenuBtn${isActive ? " isOn" : ""}`}
-      href={item.href}
+      href={resolveTaskTimerRouteHref(item.href)}
       aria-label={item.ariaLabel}
       data-nav-page={item.page}
       role="menuitem"
@@ -598,7 +603,14 @@ export default function DesktopAppRail({
       setProfileLabel(username || fallbackLabel);
       setProfileAvatarSrc(resolveAvatarSrc(uid, avatarId, avatarCustomSrc, remoteGooglePhotoUrl || googlePhotoUrl));
       const remotePlan = await loadUserRootPlan(uid).catch(() => null);
-      if (remotePlan === "free" || remotePlan === "pro" || remotePlan === "plus" || remotePlan === "plus_lifetime") {
+      if (
+        remotePlan === "free" ||
+        remotePlan === "pro" ||
+        remotePlan === "plus" ||
+        remotePlan === "plus_monthly" ||
+        remotePlan === "plus_yearly" ||
+        remotePlan === "plus_lifetime"
+      ) {
         setCurrentPlan(remotePlan);
       }
     } catch {
@@ -642,12 +654,13 @@ export default function DesktopAppRail({
     };
   }, []);
 
-  const currentPlanLabel = currentPlan === "plus_lifetime" ? "PLUS Lifetime" : currentPlan === "plus" || currentPlan === "pro" ? "PLUS" : "Free";
-  const currentPlanBadgeLabel = currentPlan === "plus_lifetime" ? "PLUS Lifetime" : currentPlan === "plus" || currentPlan === "pro" ? "PLUS" : "FREE";
+  const currentPlanIsPlusSubscription = isPlusSubscriptionPlan(currentPlan);
+  const currentPlanLabel = currentPlan === "plus_lifetime" ? "PLUS Lifetime" : currentPlanIsPlusSubscription ? "PLUS" : "Free";
+  const currentPlanBadgeLabel = currentPlan === "plus_lifetime" ? "PLUS Lifetime" : currentPlanIsPlusSubscription ? "PLUS" : "FREE";
   const profileInitials = useMemo(() => initialsFromLabel(profileLabel), [profileLabel]);
   const mockNextPaymentDateLabel = useMemo(() => {
     if (currentPlan === "plus_lifetime") return "No renewal. Lifetime access is active.";
-    if (currentPlan !== "plus" && currentPlan !== "pro") return "No upcoming charge while on Free.";
+    if (!currentPlanIsPlusSubscription) return "No upcoming charge while on Free.";
     const nextDate = new Date();
     nextDate.setDate(nextDate.getDate() + 14);
     return nextDate.toLocaleDateString(undefined, {
@@ -655,7 +668,7 @@ export default function DesktopAppRail({
       month: "long",
       day: "numeric",
     });
-  }, [currentPlan]);
+  }, [currentPlan, currentPlanIsPlusSubscription]);
 
   const handleOpenPricingPage = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -988,7 +1001,7 @@ export default function DesktopAppRail({
                 <a
                   key={item.mobileId}
                   className="appFooterSheetUtility"
-                  href={item.href}
+                  href={resolveTaskTimerRouteHref(item.href)}
                   role="menuitem"
                   onClick={closeMobileFooterSheet}
                 >
@@ -1040,7 +1053,7 @@ export default function DesktopAppRail({
         <div className="modal rewardsInfoModal" role="dialog" aria-modal="true" aria-label="Subscription details">
           <h2>{currentPlanLabel} Subscription</h2>
           <p className="modalSubtext">
-            {currentPlan === "plus" || currentPlan === "pro"
+            {currentPlanIsPlusSubscription
               ? "Manage billing, payment methods, invoices, and cancellation in Stripe's secure customer portal."
               : currentPlan === "plus_lifetime"
                 ? "Your lifetime access includes the full PLUS feature set with no renewal date."
@@ -1060,7 +1073,7 @@ export default function DesktopAppRail({
             <div className="rewardsInfoDetailItem">
               <span className="rewardsInfoDetailLabel">Billing Cycle</span>
               <strong className="rewardsInfoDetailValue">
-                {currentPlan === "plus_lifetime" ? "One-time" : currentPlan === "plus" || currentPlan === "pro" ? "Monthly" : "No billing on Free"}
+                {currentPlan === "plus_lifetime" ? "One-time" : currentPlanIsPlusSubscription ? "Subscription" : "No billing on Free"}
               </strong>
             </div>
             <div className="rewardsInfoDetailItem">
@@ -1069,7 +1082,7 @@ export default function DesktopAppRail({
             </div>
           </div>
           <div className="rewardsInfoText">
-            {currentPlan === "plus" || currentPlan === "pro"
+            {currentPlanIsPlusSubscription
               ? "Your PLUS subscription includes advanced history, analytics, task setup, full-history backup tools, and connected social features."
               : currentPlan === "plus_lifetime"
                 ? "Your PLUS Lifetime plan includes advanced history, analytics, task setup, full-history backup tools, and connected social features."
@@ -1081,7 +1094,7 @@ export default function DesktopAppRail({
             </div>
           ) : null}
           <div className="confirmBtns rewardsInfoActions">
-            {currentPlan === "plus" || currentPlan === "pro" ? (
+            {currentPlanIsPlusSubscription ? (
               <button className="btn btn-accent" type="button" onClick={() => void handleOpenBillingPortal()} disabled={billingBusy}>
                 {billingBusy ? "Opening Billing..." : "Manage Billing"}
               </button>

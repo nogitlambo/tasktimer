@@ -2,7 +2,7 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 
 const TASKTIMER_STORAGE_KEY = "taskticker_tasks_v1";
 
-export type TaskTimerPlan = "free" | "plus" | "plus_lifetime" | "pro";
+export type TaskTimerPlan = "free" | "plus" | "plus_monthly" | "plus_yearly" | "plus_lifetime" | "pro";
 export type TaskTimerPlanLike = TaskTimerPlan;
 export type TaskTimerEntitlement =
   | "advancedHistory"
@@ -11,7 +11,7 @@ export type TaskTimerEntitlement =
   | "advancedBackup"
   | "executiveFunction"
   | "socialFeatures";
-export type TaskTimerPaidOffer = "plus_monthly" | "plus_lifetime";
+export type TaskTimerPaidOffer = "plus_monthly" | "plus_yearly";
 
 export const TASKTIMER_PLAN_STORAGE_KEY = `${TASKTIMER_STORAGE_KEY}:plan`;
 export const TASKTIMER_PLAN_CHANGED_EVENT = "tasktimer:plan-changed";
@@ -31,6 +31,22 @@ const PLAN_ENTITLEMENTS: Record<TaskTimerPlan, Record<TaskTimerEntitlement, bool
     socialFeatures: true,
   },
   plus: {
+    advancedHistory: true,
+    advancedInsights: true,
+    advancedTaskConfig: true,
+    advancedBackup: true,
+    executiveFunction: true,
+    socialFeatures: true,
+  },
+  plus_monthly: {
+    advancedHistory: true,
+    advancedInsights: true,
+    advancedTaskConfig: true,
+    advancedBackup: true,
+    executiveFunction: true,
+    socialFeatures: true,
+  },
+  plus_yearly: {
     advancedHistory: true,
     advancedInsights: true,
     advancedTaskConfig: true,
@@ -59,6 +75,8 @@ const PLAN_ENTITLEMENTS: Record<TaskTimerPlan, Record<TaskTimerEntitlement, bool
 export function normalizeTaskTimerPlan(value: unknown): TaskTimerPlan {
   const raw = String(value || "").trim().toLowerCase();
   if (raw === "pro" || raw === "plus") return "plus";
+  if (raw === "plus_monthly") return "plus_monthly";
+  if (raw === "plus_yearly") return "plus_yearly";
   if (raw === "plus_lifetime") return "plus_lifetime";
   return "free";
 }
@@ -69,7 +87,7 @@ export function getEffectiveTaskTimerPlan(plan: TaskTimerPlan): TaskTimerPlan {
 
 export function isTaskTimerPlusPlan(plan: TaskTimerPlanLike | unknown) {
   const normalized = normalizeTaskTimerPlan(plan);
-  return normalized === "plus" || normalized === "plus_lifetime";
+  return normalized === "plus" || normalized === "plus_monthly" || normalized === "plus_yearly" || normalized === "plus_lifetime";
 }
 
 export function getTaskTimerEntitlements(plan: TaskTimerPlan) {

@@ -2,6 +2,7 @@ import type { HistoryEntry, Task } from "@/app/tasktimer/lib/types";
 import type { TaskClarificationStatus } from "@/app/taskclarification/lib/taskClarification";
 
 import type { DurationEstimateSource, NextBestActionReasonCode } from "./nextBestActionRecommendation";
+import type { NextBestActionProductivityWindowExplanation } from "./nextBestActionExplanation";
 
 export type NextBestActionPriority = "low" | "medium" | "high";
 
@@ -29,6 +30,7 @@ export type NextBestActionCandidate = {
   history?: HistoryEntry[];
   clarification?: NextBestActionClarificationMetadata | null;
   focusWindowMatched?: boolean | null;
+  productivityWindow?: NextBestActionProductivityWindowExplanation | null;
   postponementCount?: number;
   blocksImportantWork?: boolean;
   recentlyStartedIncomplete?: boolean;
@@ -101,6 +103,7 @@ export type RankedNextBestActionCandidate = {
   durationSource: DurationEstimateSource;
   firstAction: string | null;
   focusWindowMatched: boolean;
+  productivityWindow: NextBestActionProductivityWindowExplanation | null;
   dueDate: string | null;
   explicitPriority: NextBestActionPriority | null;
   timeGoalMinutes: number | null;
@@ -256,6 +259,7 @@ function rankCandidate(candidate: NextBestActionCandidate, context: NextBestActi
     durationSource: duration.source,
     firstAction,
     focusWindowMatched: candidate.focusWindowMatched === true,
+    productivityWindow: candidate.productivityWindow || null,
     dueDate,
     explicitPriority: candidate.explicitPriority || null,
     timeGoalMinutes: asPositiveMinutes(candidate.task.timeGoalMinutes),

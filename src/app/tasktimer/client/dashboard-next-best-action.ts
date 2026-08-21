@@ -173,6 +173,17 @@ function formatHistoryDate(ts: number) {
   }).format(new Date(ts));
 }
 
+function formatConfidenceDetail(confidence: string | undefined) {
+  const normalized = String(confidence || "").trim().toUpperCase();
+  if (normalized === "HIGH")
+    return "High - several strong signals support this recommendation";
+  if (normalized === "MEDIUM")
+    return "Medium - at least one useful signal supports this recommendation";
+  if (normalized === "LOW")
+    return "Low - limited signals are available for this recommendation";
+  return "Not enough signal yet";
+}
+
 export function formatNextBestActionExplanation(
   recommendation: Pick<
     NextBestActionDashboardRecommendation,
@@ -187,14 +198,74 @@ export function formatNextBestActionExplanation(
   const summary =
     recommendation.explanation ||
     "This is the most useful next step for right now.";
-  const duration = `${recommendation.estimatedMinutes} minutes, ${durationSourceLabel(recommendation.durationSource)} duration`;
-  const confidence = recommendation.confidence
-    ? `${recommendation.confidence.toLowerCase()} confidence`
-    : "confidence available";
+  const duration = `${recommendation.estimatedMinutes} minutes (${durationSourceLabel(recommendation.durationSource)})`;
+  const confidence = formatConfidenceDetail(recommendation.confidence);
   const latestHistory = recommendation.latestHistoryEntry
-    ? ` Last history entry: ${formatHistoryDuration(recommendation.latestHistoryEntry.ms)} on ${formatHistoryDate(recommendation.latestHistoryEntry.ts)}.`
-    : "";
-  return `${summary} Estimated effort: ${duration}.${latestHistory} Recommendation confidence: ${confidence}.`;
+    ? `${formatHistoryDuration(recommendation.latestHistoryEntry.ms)} on ${formatHistoryDate(recommendation.latestHistoryEntry.ts)}`
+    : "No previous history entry";
+  return [
+    summary,
+    `- Estimated effort based on historical duration: ${duration}`,
+    `- Last history entry: ${latestHistory}`,
+    `- Confidence: ${confidence}`,
+  ].join("\n");
+}
+
+function getNextBestActionExplanationParts(
+  recommendation: Parameters<typeof formatNextBestActionExplanation>[0],
+) {
+  const [summary, ...details] =
+    formatNextBestActionExplanation(recommendation).split("\n");
+  return {
+    summary,
+    details: details.map((detail) => {
+      const normalized = detail.replace(/^- /, "");
+      const separatorIndex = normalized.indexOf(": ");
+      return separatorIndex >= 0
+        ? {
+            label: normalized.slice(0, separatorIndex),
+            value: normalized.slice(separatorIndex + 2),
+          }
+        : { label: normalized, value: "" };
+    }),
+  };
+}
+
+function renderNextBestActionExplanation(
+  element: HTMLElement,
+  recommendation: Parameters<typeof formatNextBestActionExplanation>[0],
+) {
+  const { summary, details } = getNextBestActionExplanationParts(recommendation);
+  const writableElement = element as HTMLElement & {
+    replaceChildren?: (...nodes: Node[]) => void;
+  };
+  if (typeof writableElement.replaceChildren !== "function") {
+    writableElement.textContent = formatNextBestActionExplanation(recommendation);
+    return;
+  }
+  const documentRef = writableElement.ownerDocument;
+  const summaryElement = documentRef.createElement("p");
+  summaryElement.className = "dashboardNextBestActionExplanationSummary";
+  const heading = documentRef.createElement("strong");
+  heading.textContent = "Why this?";
+  const summaryText = documentRef.createElement("span");
+  summaryText.textContent = ` ${summary}`;
+  summaryElement.append(heading, summaryText);
+
+  const list = documentRef.createElement("ul");
+  list.className = "dashboardNextBestActionExplanationList";
+  details.forEach((detail) => {
+    const item = documentRef.createElement("li");
+    const label = documentRef.createElement("span");
+    label.className = "dashboardNextBestActionExplanationLabel";
+    label.textContent = detail.label;
+    const value = documentRef.createElement("span");
+    value.className = "dashboardNextBestActionExplanationValue";
+    value.textContent = detail.value;
+    item.append(label, value);
+    list.append(item);
+  });
+  writableElement.replaceChildren(summaryElement, list);
 }
 
 function setHidden(element: HTMLElement | null, hidden: boolean) {
@@ -333,7 +404,7 @@ export function createDashboardNextBestAction(
       firstAction.hidden = !recommendation.firstAction;
     }
     if (explanation)
-      explanation.textContent = formatNextBestActionExplanation(recommendation);
+      renderNextBestActionExplanation(explanation, recommendation);
     const actionButtons = documentRef.querySelectorAll<HTMLButtonElement>(
       "[data-next-best-action-action]",
     );

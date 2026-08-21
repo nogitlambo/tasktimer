@@ -4,6 +4,7 @@ import { DEFAULT_REWARD_PROGRESS } from "../lib/rewards";
 import type { TaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
 import { createTaskTimerRuntimeComposition } from "./runtime-composition";
 import { createTaskTimerRuntime } from "./runtime";
+import { createFocusSessionDrafts } from "./focus-session-drafts";
 
 const createRuntimeStub = createTaskTimerRuntime;
 
@@ -62,6 +63,50 @@ function createWorkspaceRepositoryStub(overrides: Partial<TaskTimerWorkspaceRepo
 }
 
 describe("createTaskTimerRuntimeComposition", () => {
+  it("composes one Focus session drafts instance over runtime state and the supplied view", () => {
+    const persisted: Record<string, string>[] = [];
+    let inputValue = "live input";
+    let sectionOpen = false;
+    const draftStorageKeys: string[] = [];
+    const createFocusSessionDraftsFactory = vi.fn(createFocusSessionDrafts);
+    const composition = createTaskTimerRuntimeComposition("tasks", "taskticker_tasks_v1", {
+      createRuntime: createRuntimeStub,
+      createWorkspaceRepository: () => createWorkspaceRepositoryStub(),
+      createFocusSessionDrafts: createFocusSessionDraftsFactory,
+      createFocusSessionDraftStorage: (storageKey) => {
+        draftStorageKeys.push(storageKey);
+        return {
+          load: () => ({ "task-1": "loaded draft" }),
+          persist: (drafts) => persisted.push(drafts),
+        };
+      },
+      focusSessionDraftView: {
+        getInputValue: () => inputValue,
+        setInputValue: (value) => {
+          inputValue = value;
+        },
+        setSectionOpen: (open) => {
+          sectionOpen = open;
+        },
+      },
+    });
+
+    expect(createFocusSessionDraftsFactory).toHaveBeenCalledTimes(1);
+    expect(draftStorageKeys).toEqual(["taskticker_tasks_v1:focusSessionNotes"]);
+    expect(composition.focusSessionDrafts).toBe(createFocusSessionDraftsFactory.mock.results[0]?.value);
+
+    composition.focusSessionDrafts.load();
+    expect(composition.stores.focusState.get("focusSessionNotesByTaskId")).toEqual({ "task-1": "loaded draft" });
+
+    composition.stores.focusState.set("focusModeTaskId", "task-1");
+    composition.focusSessionDrafts.syncActive();
+    expect(inputValue).toBe("loaded draft");
+    expect(sectionOpen).toBe(true);
+
+    composition.focusSessionDrafts.setDraft("task-1", "updated draft");
+    expect(persisted.at(-1)).toEqual({ "task-1": "updated draft" });
+  });
+
   it("creates the runtime composition without touching default adapters when factories are injected", () => {
     const runtime = createRuntimeStub();
     const workspaceRepository = createWorkspaceRepositoryStub();

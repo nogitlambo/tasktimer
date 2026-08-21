@@ -40,11 +40,11 @@ const pricingTiers: PricingTier[] = [
   },
   {
     name: "PLUS",
-    price: "$6.99",
-    cta: "14-Day Free Trial",
-    href: "/login?checkout=pro",
+    price: "$14.99",
+    cta: "1 Month Free Trial",
+    href: "/login?checkout=plus_monthly",
     checkoutOffer: "plus_monthly",
-    badge: "14-Day Free Trial",
+    badge: "1 Month Free Trial",
     description: "Advanced tools for power users",
     billingLabel: "Per month",
     features: [
@@ -60,18 +60,18 @@ const pricingTiers: PricingTier[] = [
     finePrint: null,
   },
   {
-    name: "PLUS Lifetime",
-    price: "$99.00",
-    cta: "Get PLUS Lifetime",
-    href: "/login?checkout=plus_lifetime",
-    checkoutOffer: "plus_lifetime",
-    badge: "One-time",
-    description: "All PLUS features without a renewal",
-    billingLabel: "One-off payment",
+    name: "PLUS Yearly",
+    price: "$149.00",
+    cta: "Get PLUS Yearly",
+    href: "/login?checkout=plus_yearly",
+    checkoutOffer: "plus_yearly",
+    badge: "Best Value",
+    description: "All PLUS features on an annual plan",
+    billingLabel: "Per year",
     features: [
       "Everything in PLUS",
-      "Lifetime access to PLUS features",
-      "No monthly renewal",
+      "Annual access to PLUS features",
+      "One yearly renewal",
       "Unlock AI-guided workflow optimisation",
       "Richer dashboard analytics and insights",
       "Unlimited session history",
@@ -101,7 +101,7 @@ export default function PricingSection({ mode = "landing" }: PricingSectionProps
     const user = auth?.currentUser || null;
     const uid = String(user?.uid || "").trim();
     if (!uid || !user) {
-      router.push(offer === "plus_lifetime" ? "/login?checkout=plus_lifetime" : "/login?checkout=pro");
+      router.push(offer === "plus_yearly" ? "/login?checkout=plus_yearly" : "/login?checkout=plus_monthly");
       return;
     }
 

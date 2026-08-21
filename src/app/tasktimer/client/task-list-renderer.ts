@@ -4,6 +4,7 @@ import type { DashboardWeekStart } from "../lib/historyChart";
 import { hasRecordedTaskGoalCompletion, isTaskTimeGoalStartLockedForPeriod } from "../lib/timeGoalCompletion";
 import { renderTaskCardHtml } from "./task-card-view-model";
 import { applyXpAwardButtonLabelOverride, getXpAwardButtonLabelOverride } from "./xp-award-button-label-override";
+import { isCompletedOnceOffTask, isTaskMarkedDone } from "../lib/taskManualCompletion";
 
 type TaskListRendererDocument = Pick<Document, "createElement">;
 
@@ -48,6 +49,7 @@ type TaskListRendererOptions = {
   fillBackgroundForPct: (pct: number) => string;
   escapeHtml: (value: unknown) => string;
   formatMainTaskElapsedHtml: (elapsedMs: number, running: boolean) => string;
+  getCompletedOnceOffTasksCollapsed: () => boolean;
 };
 
 function normalizeTaskNameForSort(task: Task | null | undefined) {
@@ -146,6 +148,10 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
     taskListEl.classList.toggle("hasRunningTask", tasks.some((task) => !!task?.running));
     const taskOrderBy = options.getTaskOrderBy();
     const displayedTasks = buildDisplayedTasks(tasks, taskOrderBy);
+    const completedOnceOffTasks = displayedTasks
+      .filter(isCompletedOnceOffTask)
+      .sort((a, b) => Number(b.markedDoneAtMs || 0) - Number(a.markedDoneAtMs || 0));
+    const activeTasks = displayedTasks.filter((task) => !isCompletedOnceOffTask(task));
     const sourceIndexByTask = new Map(tasks.map((task, index) => [task, index] as const));
     taskListEl.innerHTML = "";
     const useTileColumns = options.getTaskView() === "tile";
@@ -183,7 +189,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
     }
 
     const tileColumnEls: HTMLElement[] = [];
-    if (useTileColumns) {
+    if (useTileColumns && activeTasks.length) {
       for (let columnIndex = 0; columnIndex < tileColumnCount; columnIndex += 1) {
         const columnEl = options.documentRef.createElement("div");
         columnEl.className = "taskTileColumn";
@@ -193,7 +199,28 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       }
     }
 
-    displayedTasks.forEach((task, displayIndex) => {
+    let completedSectionEl: HTMLElement | null = null;
+    let completedCardsEl: HTMLElement | null = null;
+    if (completedOnceOffTasks.length) {
+      completedSectionEl = options.documentRef.createElement("section");
+      completedSectionEl.className = "completedOnceOffTasksSection";
+      completedSectionEl.setAttribute("aria-labelledby", "completedOnceOffTasksTitle");
+      const isCollapsed = options.getCompletedOnceOffTasksCollapsed();
+      completedSectionEl.innerHTML = `
+        <button class="completedOnceOffTasksToggle" type="button" data-action="toggleCompletedOnceOffTasks" aria-expanded="${isCollapsed ? "false" : "true"}" aria-controls="completedOnceOffTasksCards">
+          <span id="completedOnceOffTasksTitle">Completed Once-off Tasks</span>
+          <span class="completedOnceOffTasksChevron" aria-hidden="true">${isCollapsed ? "+" : "-"}</span>
+        </button>
+      `;
+      completedCardsEl = options.documentRef.createElement("div");
+      completedCardsEl.className = "completedOnceOffTasksCards";
+      completedCardsEl.id = "completedOnceOffTasksCards";
+      completedCardsEl.hidden = isCollapsed;
+      completedCardsEl.setAttribute("data-tile-columns", String(tileColumnCount));
+      completedSectionEl.appendChild(completedCardsEl);
+    }
+
+    const renderTask = (task: Task, displayIndex: number, isCompletedOnceOff: boolean) => {
       const taskId = String(task.id || "");
       const elapsedMs = options.getElapsedMs(task);
       const hasMilestones = task.milestonesEnabled && Array.isArray(task.milestones) && task.milestones.length > 0;
@@ -204,7 +231,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       const taskEl = options.documentRef.createElement("div");
       taskEl.dataset.index = String(sourceIndexByTask.get(task) ?? -1);
       taskEl.dataset.taskId = taskId;
-      taskEl.setAttribute("draggable", taskOrderBy === "custom" ? "true" : "false");
+      taskEl.setAttribute("draggable", !isCompletedOnceOff && taskOrderBy === "custom" ? "true" : "false");
 
       const historyState = historyViewByTaskId[taskId];
       const historyRevealPhase = historyState?.revealPhase || (openHistoryTaskIds.has(taskId) ? "open" : null);
@@ -236,6 +263,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       canUseSocialFeatures: options.canUseSocialFeatures(),
         hasFriends: options.hasFriends(),
         isSharedByOwner: options.isTaskSharedByOwner(taskId),
+        isManuallyDone: isTaskMarkedDone(task, Date.now()),
         isStaleRecordedGoalCompleted: isRecordedGoalCompleted && !isCompletedForCurrentPeriod,
         isTimeGoalCompleted:
           isHeldResetPrimaryAction ||
@@ -252,9 +280,13 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       taskEl.innerHTML = renderedCard.html;
       applyXpAwardButtonLabelOverride(taskEl, taskId);
       options.applyTaskFlipDomState(taskId, taskEl);
-      const tileColumnEl = useTileColumns ? tileColumnEls[displayIndex % tileColumnCount] : null;
-      (tileColumnEl || taskListEl).appendChild(taskEl);
-    });
+      const tileColumnEl = useTileColumns && !isCompletedOnceOff ? tileColumnEls[displayIndex % tileColumnCount] : null;
+      (isCompletedOnceOff ? completedCardsEl : tileColumnEl || taskListEl)?.appendChild(taskEl);
+    };
+
+    activeTasks.forEach((task, displayIndex) => renderTask(task, displayIndex, false));
+    if (completedSectionEl) taskListEl.appendChild(completedSectionEl);
+    completedOnceOffTasks.forEach((task, displayIndex) => renderTask(task, displayIndex, true));
 
     const stableOpenHistoryTaskIds = Array.from(openHistoryTaskIds).filter((taskId) => {
       const revealPhase = historyViewByTaskId[taskId]?.revealPhase;

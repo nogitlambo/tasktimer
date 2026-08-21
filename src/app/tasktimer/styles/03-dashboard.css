@@ -1,6 +1,6 @@
 /* Generated from tasktimer.css split. */
 /* Executive experience and compact Dashboard summary */
-.executiveShell{--executive-accent:#c9ff24;--executive-panel:#111216;--executive-line:#1a1b20;--executive-status-good:var(--executive-accent);--executive-status-warning:#ffd84d;--executive-status-danger:#ff7462;width:min(1560px,100%);margin:0 auto;padding:20px 24px 28px;color:#f5f7fb}
+.executiveShell{--executive-accent:#c9ff24;--executive-panel:#111216;--executive-line:#1a1b20;--executive-status-good:var(--executive-accent);--executive-status-warning:#ffd84d;--executive-status-danger:#ff7462;--executive-plan-health-good:#22c55e;--executive-plan-health-warning:#ffd84d;--executive-plan-health-danger:#ff7462;width:min(1560px,100%);margin:0 auto;padding:20px 24px 28px;color:#f5f7fb}
 .executiveFlipScene{position:relative;width:100%;min-height:100px;perspective:2200px;transform-style:preserve-3d;isolation:isolate;transition:height .76s cubic-bezier(.16,1,.3,1);will-change:height}
 .executiveFlipFace{position:absolute;inset:0;width:100%;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:translateZ(0);transform-style:preserve-3d;transform-origin:center center;transition:transform .76s cubic-bezier(.16,1,.3,1);will-change:transform}
 .executiveFlipFaceFront{transform:translateZ(0) rotateY(0)}
@@ -16,7 +16,7 @@
 .brainDumpEmbeddedTitle{font-size:clamp(2rem,4vw,3.25rem)!important}
 .brainDumpPrimitivePanel{position:relative;border:1px solid #2a2f38!important;border-radius:8px!important;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012))!important;box-shadow:inset 0 1px rgba(255,255,255,.04),0 14px 30px rgba(0,0,0,.2)}
 .brainDumpPrimitiveTextarea{border:1px solid #2a2f38!important;border-radius:4px!important;background:#0d0f13!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important}
-.brainDumpPrimitiveTextarea:focus-visible{border-color:#c9ff24!important;box-shadow:0 0 0 2px rgba(201,255,36,.16),inset 0 1px 0 rgba(255,255,255,.025)!important}
+.brainDumpPrimitiveTextarea:focus-visible{border-color:#c9ff24!important;box-shadow:0 0 0 2px rgba(201,255,36,.16),inset 0 1px 0 rgba(255,255,255,.025)!important}#brainDumpText.brainDumpPrimitiveTextarea:focus,#brainDumpText.brainDumpPrimitiveTextarea:focus-visible{border-color:#2a2f38!important;outline:none!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important}
 .brainDumpPrimitiveInput{width:100%;border:1px solid #2a2f38!important;border-radius:4px!important;background:#0d0f13!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important;color:#f5f7fb!important}
 .brainDumpPrimitiveInput:focus-visible{border-color:#c9ff24!important;box-shadow:0 0 0 2px rgba(201,255,36,.16),inset 0 1px 0 rgba(255,255,255,.025)!important}
 .brainDumpPrimitiveCheckbox{appearance:none;display:grid;place-content:center;width:18px!important;height:18px!important;margin:0;border:1px solid #8b929d;border-radius:0;background:#1a1b20;cursor:pointer}.brainDumpPrimitiveCheckbox:checked{border-color:#c9ff24;background:#c9ff24}.brainDumpPrimitiveCheckbox:checked::after{content:"";width:8px;height:5px;border:solid #050607;border-width:0 0 2px 2px;transform:translateY(-1px) rotate(-45deg)}.brainDumpPrimitiveCheckbox:focus-visible{outline:2px solid #c9ff24;outline-offset:2px}.brainDumpPrimitiveCheckbox:disabled{cursor:not-allowed;opacity:.5}
@@ -24,38 +24,38 @@
 .brainDumpPrimitiveAction:hover,.brainDumpPrimitiveAction:focus-visible,.brainDumpPrimitivePicker:hover,.brainDumpPrimitivePicker:focus-within{border-color:#c9ff24!important;background:#202227!important;color:#c9ff24!important;outline:none!important}
 .brainDumpPrimitivePrimaryAction{border-color:#c9ff24!important;background:#c9ff24!important;color:#080a0d!important}.brainDumpPrimitivePrimaryAction:hover,.brainDumpPrimitivePrimaryAction:focus-visible{background:#d8ff57!important;color:#080a0d!important}
 .brainDumpPrimitiveAction:disabled{border-color:#2a2f38!important;background:#15171d!important;color:#666d78!important}
-.brainDumpPrimitiveLink{width:max-content;min-width:0!important;padding-inline:14px!important;text-decoration:none!important}.brainDumpPrimitiveReviewItem{padding:14px!important}.brainDumpCaptureModeField{display:grid;gap:8px}.brainDumpCaptureModePills{display:flex;flex-wrap:wrap;gap:8px}.brainDumpCaptureModePill{min-height:38px;min-width:78px;border:1px solid #424750;border-radius:4px;background:#1a1b20;color:#c7ccd5;font:11px var(--font-orbitron);letter-spacing:.04em}.brainDumpCaptureModePill:hover,.brainDumpCaptureModePill:focus-visible{border-color:#c9ff24;color:#c9ff24;outline:none}.brainDumpCaptureModePill[aria-pressed="true"]{border-color:#c9ff24!important;background:#c9ff24!important;color:#080a0d!important}.brainDumpCaptureModePill:disabled{border-color:#2a2f38;background:#15171d;color:#666d78}
+.brainDumpPrimitiveLink{width:max-content;min-width:0!important;padding-inline:14px!important;text-decoration:none!important}.brainDumpPrimitiveReviewItem{padding:14px!important}.brainDumpCaptureModeField{display:grid;gap:8px}.brainDumpCaptureModePills{display:flex;flex-wrap:wrap;gap:8px}.brainDumpCaptureModePill{min-height:38px;min-width:78px;border:1px solid #424750;border-radius:999px;background:#1a1b20;color:#c7ccd5;font:11px var(--font-orbitron);letter-spacing:.04em}.brainDumpCaptureModePill:hover,.brainDumpCaptureModePill:focus-visible{border-color:#c9ff24;color:#c9ff24;outline:none}.brainDumpCaptureModePill[aria-pressed="true"],.brainDumpCaptureModePill[aria-pressed="true"]:hover,.brainDumpCaptureModePill[aria-pressed="true"]:focus-visible,.brainDumpCaptureModePill.btn.btn-ghost[aria-pressed="true"]{border-color:#c9ff24!important;background:#c9ff24!important;color:#000!important}.brainDumpCaptureModePill:disabled{border-color:#2a2f38;background:#15171d;color:#666d78}
 @media (max-width:640px){.brainDumpEmbeddedShell{padding:18px 14px 90px!important}.brainDumpEmbeddedPanel{padding:14px}}
 .executiveHeader,.executiveSectionHeading,.executiveTools,.dashboardExecutiveSummary .dashboardPanelLabelRow{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
 .executiveHeader{padding:2px 2px 18px;border-bottom:0}
-.executiveHeader h1,.executiveSectionHeading h2,.executiveSectionHeading h3,.executiveTools h2,.executiveCompactHeading h3,.executiveAttentionStack>h2{margin:0;color:#f7f9ff}
+.executiveHeader h1,.executiveSectionHeading h2,.executiveSectionHeading h3,.executiveTools h2,.executiveCompactHeading h3{margin:0;color:#f7f9ff}
 .executiveHeader h1{font-family:var(--font-readable,inherit);font-size:clamp(26px,3.4vw,38px);letter-spacing:-.04em}
 .executiveHeaderSummary{margin:7px 0 0;color:#aeb6c7;max-width:620px;font:15px/1.5 var(--font-readable,inherit)}
 .executiveEyebrow{margin:0 0 8px;color:var(--executive-accent);font-size:12px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}
 .executiveTodayMarker{display:grid;flex:0 0 auto;gap:3px;padding:7px 0;text-align:right;color:#98a3b7;font:700 10px var(--font-readable,inherit);letter-spacing:.12em;text-transform:uppercase}.executiveTodayMarker strong{color:#f5f7fb;font:700 13px var(--font-readable,inherit);letter-spacing:.02em;text-transform:none}.executiveTodayLocalTime{color:#aeb6c7;font:500 11px var(--font-readable,inherit);letter-spacing:.01em;text-transform:none}
 #app[aria-label="TaskLaunch App"] #appPageExecutive .executiveTodayRefreshButton{justify-self:end;margin-top:6px;min-height:30px;padding-inline:10px;font-size:10px}
-.executiveTodayHealth{position:relative;z-index:5;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:0 0 20px;overflow:visible;background:transparent}
+.executiveTodayHealth{position:relative;z-index:5;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:0 0 20px;overflow:visible;background:transparent}
 .executiveMetricCard{display:flex !important;align-items:center;gap:18px;min-height:102px;padding:16px 18px !important;border:1px solid var(--executive-line) !important;border-radius:16px !important;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012) 48%,rgba(0,0,0,.08)),#111216 !important;box-shadow:inset 0 1px rgba(255,255,255,.035),0 12px 30px rgba(0,0,0,.2)}
-.executiveMetricCard{position:relative;cursor:help;isolation:isolate}.executiveMetricCard:focus-visible{outline:1px solid var(--executive-accent);outline-offset:2px}.executiveMetricHelper{position:absolute;z-index:4;left:50%;top:calc(100% + 9px);width:min(360px,calc(100vw - 32px));padding:10px 12px;border:1px solid var(--executive-line);border-radius:8px;background:#111216;color:#c3cada;font:13px/1.4 var(--font-readable,inherit);text-align:left;box-shadow:0 12px 26px rgba(0,0,0,.34);opacity:0;pointer-events:none;transform:translate(-50%,-4px);transition:opacity .14s ease,transform .14s ease}.executiveMetricHelper strong,.executiveMetricHelper>span{display:block}.executiveMetricHelper strong{margin-bottom:6px;color:#f5f7fb;font-weight:700}.executiveMetricHelper ul{margin:6px 0 0;padding-left:18px}.executiveMetricHelper li+li{margin-top:4px}.executiveMetricHelper b{color:#f5f7fb}.executiveMetricHelper .executivePlanHealthRealistic,.executiveMetricHelper .executiveCapacityConfidenceHigh{color:var(--executive-status-good)}.executiveMetricHelper .executivePlanHealthSlightlyOverloaded,.executiveMetricHelper .executiveCapacityConfidenceMedium{color:var(--executive-status-warning)}.executiveMetricHelper .executivePlanHealthSignificantlyOverloaded,.executiveMetricHelper .executiveCapacityConfidenceLow{color:var(--executive-status-danger)}.executiveMetricHelper::before{content:"";position:absolute;top:-5px;left:50%;width:8px;height:8px;border-top:1px solid var(--executive-line);border-left:1px solid var(--executive-line);background:#111216;transform:translateX(-50%) rotate(45deg)}.executiveMetricCard.isHelperVisible .executiveMetricHelper{opacity:1;transform:translate(-50%,0)}
+.executiveMetricCard{position:relative;cursor:help;isolation:isolate}.executiveMetricCard:focus-visible{outline:1px solid var(--executive-accent);outline-offset:2px}.executiveMetricHelper{position:absolute;z-index:4;left:50%;top:calc(100% + 9px);width:min(360px,calc(100vw - 32px));padding:10px 12px;border:1px solid var(--executive-line);border-radius:8px;background:#111216;color:#c3cada;font:13px/1.4 var(--font-readable,inherit);text-align:left;box-shadow:0 12px 26px rgba(0,0,0,.34);opacity:0;pointer-events:none;transform:translate(-50%,-4px);transition:opacity .14s ease,transform .14s ease}.executiveMetricHelper strong,.executiveMetricHelper>span{display:block}.executiveMetricHelper strong{margin-bottom:6px;color:#f5f7fb;font-weight:700}.executiveMetricHelper ul{margin:6px 0 0;padding-left:18px}.executiveMetricHelper li+li{margin-top:4px}.executiveMetricHelper b{color:#f5f7fb}.executiveMetricHelper .executivePlanHealthRealistic{color:var(--executive-plan-health-good)}.executiveMetricHelper .executivePlanHealthSlightlyOverloaded{color:var(--executive-plan-health-warning)}.executiveMetricHelper .executivePlanHealthSignificantlyOverloaded{color:var(--executive-plan-health-danger)}.executiveMetricHelper::before{content:"";position:absolute;top:-5px;left:50%;width:8px;height:8px;border-top:1px solid var(--executive-line);border-left:1px solid var(--executive-line);background:#111216;transform:translateX(-50%) rotate(45deg)}.executiveMetricCard.isHelperVisible .executiveMetricHelper{opacity:1;transform:translate(-50%,0)}
 .executiveMetricIcon{display:grid;place-items:center;flex:0 0 58px;width:58px;height:58px;border:1px solid var(--executive-line);border-radius:50%;background:var(--executive-panel);box-shadow:0 5px 12px rgba(0,0,0,.45),inset 0 1px rgba(255,255,255,.09)}
 .executiveMetricIcon img{width:29px;height:29px;object-fit:contain;filter:sepia(1) saturate(3) hue-rotate(30deg) brightness(1.35)}
 .executiveMetricPlanHealth .executiveMetricIcon img{filter:none}
-.executiveMetricCopy{display:grid;min-width:0;gap:5px}.executiveMetricCopy>span{color:#c3cada;font:700 11px var(--font-readable,inherit);letter-spacing:.04em;text-transform:uppercase}.executiveMetricCopy strong{font:700 clamp(20px,2vw,29px) var(--font-readable,inherit);color:#f8f9fc;white-space:nowrap}.executiveMetricCopy i{display:block;width:min(224px,100%);height:6px;border-radius:99px;background:linear-gradient(90deg,var(--executive-accent) 0 62%,#39435b 62%);box-shadow:0 0 9px rgba(201,255,36,.45)}
+.executiveMetricCopy{display:grid;min-width:0;gap:5px}.executiveMetricCopy>span{color:#7f8ba1;font:700 13px var(--font-orbitron);letter-spacing:.04em;text-transform:uppercase}.executiveMetricCopy strong{font:700 clamp(20px,2vw,29px) var(--font-readable,inherit);color:#f8f9fc;white-space:nowrap}.executiveMetricCopy i{display:block;width:min(224px,100%);height:6px;border-radius:99px;background:linear-gradient(90deg,var(--executive-accent) 0 62%,#39435b 62%);box-shadow:0 0 9px rgba(201,255,36,.45)}
 #app[aria-label="TaskLaunch App"] #appPageExecutive .executiveMetricCopy strong[data-executive-metric-loading="true"]{color:#c3cada;font:500 13px var(--font-readable,inherit);animation:executiveMetricLoadingPulse 1.35s ease-in-out infinite}
 @keyframes executiveMetricLoadingPulse{0%,100%{opacity:.5}50%{opacity:1}}
 @media (prefers-reduced-motion: reduce){#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveMetricCopy strong[data-executive-metric-loading="true"]{animation:none}}
 #app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth{font-size:clamp(15px,1.25vw,20px);line-height:1.15;white-space:normal;overflow-wrap:normal}
-.executiveMetricCard:nth-child(2) i{background:repeating-linear-gradient(90deg,var(--executive-accent) 0 25px,transparent 25px 34px),#3a4357;box-shadow:none}.executiveMetricCard:nth-child(3) i{width:118px;background:radial-gradient(circle,var(--executive-accent) 0 4px,transparent 5px) 0 50%/24px 8px repeat-x;box-shadow:none}.executiveMetricCard:nth-child(4) i{background:linear-gradient(90deg,var(--executive-accent) 0 55%,#39435b 55%)}
-#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health]{color:#ffb867}#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="REALISTIC"]{color:var(--executive-status-good)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="SLIGHTLY_OVERLOADED"]{color:var(--executive-status-warning)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="SIGNIFICANTLY_OVERLOADED"]{color:var(--executive-status-danger)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executiveCapacityConfidence[data-capacity-confidence="HIGH"]{color:var(--executive-status-good)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executiveCapacityConfidence[data-capacity-confidence="MEDIUM"]{color:var(--executive-status-warning)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executiveCapacityConfidence[data-capacity-confidence="LOW"]{color:var(--executive-status-danger)}
-.executiveDecisionFlow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"nba attention" "tools tools";gap:20px}
-.executiveCard,.executiveTools,.dashboardExecutiveSummary{border:1px solid var(--executive-line);border-radius:16px;background:var(--executive-panel);padding:20px;box-shadow:inset 0 1px rgba(255,255,255,.035),0 14px 34px rgba(0,0,0,.2)}
+.executiveMetricCard:nth-child(2) i{background:repeating-linear-gradient(90deg,var(--executive-accent) 0 25px,transparent 25px 34px),#3a4357;box-shadow:none}.executiveMetricCard:nth-child(3) i{background:linear-gradient(90deg,var(--executive-accent) 0 55%,#39435b 55%)}
+#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health]{color:#ffb867}#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="REALISTIC"]{color:var(--executive-plan-health-good)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="SLIGHTLY_OVERLOADED"]{color:var(--executive-plan-health-warning)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="SIGNIFICANTLY_OVERLOADED"]{color:var(--executive-plan-health-danger)}
+.executiveDecisionFlow{display:grid;grid-template-columns:minmax(0,3fr) minmax(240px,1fr);grid-template-areas:"nba tools";align-items:stretch;gap:20px}
+.executiveCard,.dashboardExecutiveSummary{border:1px solid var(--executive-line);border-radius:16px;background:var(--executive-panel);padding:20px;box-shadow:inset 0 1px rgba(255,255,255,.035),0 14px 34px rgba(0,0,0,.2)}
 .executiveNbaCard.dashboardNextBestActionCard{grid-area:nba;position:relative;min-height:300px;overflow:hidden;border-color:var(--executive-line);background:var(--executive-panel)}
 #app[aria-label="TaskLaunch App"] #appPageExecutive .executiveNbaCard.dashboardNextBestActionCard,
 #app[aria-label="TaskLaunch App"] #appPageExecutive .executivePlanCard.dashboardDailyExecutiveBriefCard{
   border-color:#2a2f38;
   border-radius:8px;
 }
-.executiveNbaCard .executiveSectionHeading{position:relative;z-index:1}.executiveSectionHeading h2{font-size:17px}.executiveSectionHeading h3,.executiveCompactHeading h3,.executiveAttentionStack>h2{font-size:15px}.executiveStatus{position:relative;z-index:1;margin:12px 0;color:#aeb6c7;font:14px var(--font-readable,inherit)}
+.executiveNbaCard .executiveSectionHeading{position:relative;z-index:1}.executiveSectionHeading h2{font-size:17px}.executiveSectionHeading h3,.executiveCompactHeading h3{font-size:15px}.executiveStatus{position:relative;z-index:1;margin:12px 0;color:#aeb6c7;font:14px var(--font-readable,inherit)}
 .executiveNbaContent,.executivePlanCard .dashboardDailyExecutiveBriefContent,.executiveCapacityContent{display:grid;gap:13px}
 .executiveNbaContent{position:relative;z-index:1;max-width:100%}.executiveNbaContent .dashboardNextBestActionTitle{font-size:clamp(30px,4vw,48px);line-height:1.04;letter-spacing:-.045em;margin:8px 0 0}.executiveNbaContent .dashboardNextBestActionFirstAction{font-size:16px;color:#f1f4fa}
 .executiveNbaContent .dashboardNextBestActionExplanation{padding-bottom:16px}.executiveNbaContent .dashboardNextBestActionExplanation,.executivePlanCard .dashboardDailyExecutiveBriefSummary,.dashboardDailyCapacityExplanation{color:var(--text-secondary,#aeb9cc);font:13px var(--font-readable,inherit);line-height:1.5}
@@ -74,12 +74,8 @@
 .executiveDisclosure{display:grid;gap:6px;color:rgba(225,231,244,.62);font:11px var(--font-readable,inherit)}
 .executiveDisclosure summary{cursor:pointer;color:rgba(225,231,244,.62)}
 .executiveDisclosure .dashboardDailyCapacityExplanation{margin:0}
-.executiveAttentionStack{grid-area:attention;display:none;gap:10px}.executiveAttentionStack>h2{padding-left:14px;font-size:17px}
-.executiveAttentionStack:has(.executiveAttentionCard[data-schedule-repair-state="ready"]),.executiveAttentionStack:has(.executiveAttentionCard[data-schedule-repair-state="error"]),.executiveAttentionStack:has(.executiveAttentionCard[data-schedule-repair-state="locked"]),.executiveAttentionStack:has(.executiveRecoveryCard[data-recovery-state="ready"]),.executiveAttentionStack:has(.executiveRecoveryCard[data-recovery-state="error"]),.executiveAttentionStack:has(.executiveRecoveryCard[data-recovery-state="locked"]){display:grid}
-.executiveAttentionStack .executiveAttentionCard,.executiveAttentionStack .executiveRecoveryCard{display:none}
-.executiveAttentionStack .executiveAttentionCard[data-schedule-repair-state="ready"],.executiveAttentionStack .executiveAttentionCard[data-schedule-repair-state="error"],.executiveAttentionStack .executiveAttentionCard[data-schedule-repair-state="locked"],.executiveAttentionStack .executiveRecoveryCard[data-recovery-state="ready"],.executiveAttentionStack .executiveRecoveryCard[data-recovery-state="error"],.executiveAttentionStack .executiveRecoveryCard[data-recovery-state="locked"]{display:block}
-.executiveAttentionStack .executiveCard{padding:16px}.executiveAttentionStack .executiveSectionHeading{gap:12px}.executiveAttentionStack .executiveEyebrow{margin-bottom:4px;font-size:10px}.executiveAttentionStack .executiveSectionHeading h3{font-size:17px}.executiveTools{grid-area:tools;display:block;padding:12px}.executiveToolsLabel{margin:0 0 10px}.executiveToolLinks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.executiveToolLinks>.btn{display:grid;align-content:start;justify-items:center;width:100%;min-width:0;height:auto;padding:16px!important;gap:10px;border-color:#3a3d45!important;text-align:center!important}.executiveToolIcon{box-sizing:content-box;flex:0 0 auto;width:34px;height:34px;padding:0;object-fit:contain;filter:brightness(0) saturate(100%) invert(92%) sepia(94%) saturate(1176%) hue-rotate(22deg) brightness(103%) contrast(105%)}.executiveToolCopy{display:grid;justify-items:center;gap:5px;min-width:0;text-align:center}.executiveToolLabel{padding-bottom:16px;color:inherit;font-size:13px;font-weight:500;line-height:1.2}.executiveToolCopy small{color:#aeb6c7;font-family:var(--font-readable);font-size:13px;font-weight:400;letter-spacing:0;line-height:1.35;text-align:center}
-.executiveToolIcon.executiveToolRepairIcon{flex-basis:auto;width:34px;height:34px;filter:none}
+.executiveTools{grid-area:tools;display:flex;flex-direction:column;padding:12px;border:0;background:transparent;box-shadow:none}.executiveToolsLabel{margin:0 0 10px}.executiveToolLinks{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(4,minmax(0,1fr));flex:1;gap:8px}.executiveToolLinks>.btn{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;justify-items:start;width:100%;min-width:0;height:auto;padding:12px!important;gap:8px;border-color:#3a3d45!important;text-align:left!important}.executiveToolIcon{box-sizing:content-box;flex:0 0 auto;width:28px;height:28px;padding:0;object-fit:contain;filter:brightness(0) saturate(100%) invert(92%) sepia(94%) saturate(1176%) hue-rotate(22deg) brightness(103%) contrast(105%)}.executiveToolCopy{display:grid;justify-items:start;gap:3px;min-width:0;text-align:left}.executiveToolLabel{padding-bottom:0;color:inherit;font-size:12px;font-weight:500;line-height:1.2}.executiveToolCopy small{color:#aeb6c7;font-family:var(--font-readable);font-size:11px;font-weight:400;letter-spacing:0;line-height:1.3;text-align:left}
+.executiveToolIcon.executiveToolRepairIcon{flex-basis:auto;width:28px;height:28px;filter:none}
 #app[aria-label="TaskLaunch App"] #appPageExecutive .executiveToolLinks>.btn{border-color:#3a3d45!important;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012) 48%,rgba(0,0,0,.08)),#111216!important}
 #app[aria-label="TaskLaunch App"] #appPageExecutive .executiveToolLinks>.btn:hover:not(:disabled),#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveToolLinks>.btn:focus-visible{border-color:var(--accent)!important;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012) 48%,rgba(0,0,0,.08)),#111216!important}
 #app[aria-label="TaskLaunch App"] #appPageExecutive .executiveToolLinks>.btn .executiveToolLabel{font-family:Orbitron,"Bahnschrift","Segoe UI Variable","Segoe UI",Arial,sans-serif!important}
@@ -90,13 +86,8 @@
 .dashboardExecutiveSummaryStatus{margin:12px 0;color:var(--text-secondary,#aeb9cc);font:13px var(--font-readable,inherit)}
 .dashboardExecutiveSummaryContent{display:grid;gap:10px}
 .dashboardExecutiveSummaryPlanHealth{margin:0;color:var(--text-primary,#f1f7ff);font-weight:700}
-.dashboardExecutiveSummaryDivider{height:1px;background:rgba(121,226,255,.12)}
 .dashboardExecutiveSummaryFacts{display:flex;flex-wrap:wrap;gap:8px;color:var(--text-secondary,#aeb9cc);font-size:12px}
 .dashboardExecutiveSummaryFacts span{padding:5px 8px;border:1px solid rgba(121,226,255,.16)}
-.dashboardExecutiveSummaryNext{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:10px;border-top:1px solid rgba(121,226,255,.12)}
-.dashboardExecutiveSummaryNext div{display:grid;gap:4px}.dashboardExecutiveSummaryNext strong{color:var(--accent,#a9d65f);font-size:11px;text-transform:uppercase;letter-spacing:.12em}
-.dashboardExecutiveSummaryNext span{color:var(--text-primary,#f1f7ff)}
-.dashboardExecutiveSummaryNext span+span{color:var(--text-secondary,#aeb9cc);font:13px var(--font-readable,inherit)}
 .dashboardExecutiveSummaryFallback{color:var(--text-secondary,#aeb9cc);font:13px var(--font-readable,inherit)}
 
 @media (min-width: 981px){
@@ -775,6 +766,10 @@
   font:13px var(--font-readable);
 }
 
+.dashboardNextBestActionExplanationSummary{
+  margin:0;
+}
+
 .dashboardNextBestActionExplanation strong{
   display:inline;
   margin-right:4px;
@@ -782,6 +777,32 @@
   font:700 11px var(--font-readable);
   letter-spacing:0;
   text-transform:none;
+}
+
+.dashboardNextBestActionExplanationList{
+  display:grid;
+  gap:5px;
+  margin:8px 0 0;
+  padding:0 0 0 18px;
+}
+
+.dashboardNextBestActionExplanationList li{
+  padding-left:2px;
+}
+
+.dashboardNextBestActionExplanationLabel{
+  color:#f2f5ff;
+  font-weight:700;
+}
+
+.dashboardNextBestActionExplanationLabel::after{
+  content:": ";
+  color:rgba(225,231,244,.62);
+  font-weight:400;
+}
+
+.dashboardNextBestActionExplanationValue{
+  color:rgba(225,231,244,.78);
 }
 
 .dashboardNextBestActionActions{
@@ -9804,8 +9825,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   --dashboard-reference-green:#92e35b;
 }
 
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardExecutiveSummary,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardExecutiveSummary,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityTaskOverviewCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardDailyCapacityCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardDailyExecutiveBriefCard,
@@ -9825,8 +9846,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     inset 0 1px 0 rgba(255,255,255,.045) !important;
 }
 
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardExecutiveSummary::before,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard::before,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardExecutiveSummary::before,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityTaskOverviewCard::before,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardDailyCapacityCard::before,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardDailyExecutiveBriefCard::before,
@@ -9846,20 +9867,47 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   pointer-events:none !important;
 }
 
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardExecutiveSummary{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardExecutiveSummary{
+  grid-column:1 / -1 !important;
+  grid-row:auto !important;
   grid-template-columns:minmax(0, 1fr) !important;
-  grid-template-rows:auto auto minmax(0, 1fr) !important;
+  grid-template-rows:auto minmax(0, 1fr) !important;
   gap:0 !important;
   min-height:0 !important;
   padding:26px 28px !important;
+  margin:0 0 22px !important;
+  box-sizing:border-box !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryTitleRow{
   margin:0 0 12px !important;
 }
 
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryStatus{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryStatusRow{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  align-items:center !important;
+  gap:8px !important;
   margin:0 0 14px !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryStatusLabel{
+  display:none !important;
+  color:var(--dashboard-reference-dim) !important;
+  font-family:var(--font-orbitron) !important;
+  font-size:11px !important;
+  font-weight:700 !important;
+  letter-spacing:0 !important;
+  line-height:1.2 !important;
+  text-transform:uppercase !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryStatusRow:has(.dashboardExecutiveSummaryStatus[data-plan-health]) .dashboardExecutiveSummaryStatusLabel{
+  display:inline-flex !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryStatus{
+  margin:0 !important;
   color:var(--dashboard-reference-dim) !important;
   font-family:var(--font-readable) !important;
   font-size:12px !important;
@@ -9919,13 +9967,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   line-height:1.45 !important;
 }
 
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryDivider{
-  display:block !important;
-  width:100% !important;
-  height:1px !important;
-  background:var(--dashboard-reference-border) !important;
-}
-
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryFacts{
   display:flex !important;
   flex-wrap:wrap !important;
@@ -9945,76 +9986,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   border-bottom:1px solid var(--dashboard-reference-border) !important;
   color:var(--dashboard-reference-dim) !important;
   overflow-wrap:anywhere !important;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext{
-  display:flex !important;
-  align-items:flex-end !important;
-  justify-content:space-between !important;
-  gap:16px !important;
-  margin:0 !important;
-  padding:0 !important;
-  border-top:0 !important;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext[hidden]{
-  display:none !important;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext div{
-  display:flex !important;
-  flex-wrap:wrap !important;
-  gap:4px 6px !important;
-  min-width:0 !important;
-  align-items:baseline !important;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext strong{
-  flex:1 0 100% !important;
-  color:#c9ff24 !important;
-  font-family:var(--font-orbitron), var(--font-readable), sans-serif !important;
-  font-size:10px !important;
-  font-weight:800 !important;
-  line-height:1.1 !important;
-  letter-spacing:0 !important;
-  text-transform:uppercase !important;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext span{
-  color:var(--dashboard-reference-text) !important;
-  font-family:var(--font-readable) !important;
-  font-size:15px !important;
-  font-weight:700 !important;
-  line-height:1.35 !important;
-  overflow-wrap:anywhere !important;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext span+span{
-  color:var(--dashboard-reference-dim) !important;
-  font-family:var(--font-readable) !important;
-  font-size:13px !important;
-  font-weight:600 !important;
-  line-height:1.35 !important;
-  white-space:nowrap !important;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext span+span::before{
-  content:"\00b7";
-  margin-right:6px;
-  color:var(--dashboard-reference-faint);
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext .btn{
-  flex:0 0 auto !important;
-  min-height:36px !important;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard #dashboardExecutiveSummaryStart .dashboardStartNowButtonLabel{
-  color:#000 !important;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext .btn[hidden]{
-  display:none !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryFallback{
@@ -10601,7 +10572,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 
 @media (max-width: 980px){
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardExecutiveSummary,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardExecutiveSummary,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard{
     min-height:0 !important;
   }
@@ -10613,7 +10584,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 
 @media (max-width: 640px){
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardExecutiveSummary,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardExecutiveSummary,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityTaskOverviewCard,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardTasksCompletedCard,
@@ -10621,17 +10592,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardHeatCard{
     padding:22px 20px !important;
     border-radius:16px !important;
-  }
-
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext{
-    align-items:stretch !important;
-    flex-direction:column !important;
-  }
-
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardExecutiveSummaryNext .btn{
-    flex:0 0 auto !important;
-    align-self:flex-start !important;
-    min-height:48px !important;
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryStack{
@@ -10709,15 +10669,18 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   min-width:0 !important;
 }
 
-/* Desktop dashboard panel order: Activity Overview, Momentum, Task Overview + Focus Heatmap. */
+/* Desktop dashboard panel order: Time Tracked spans two columns, Momentum starts row two. */
 @media (min-width: 1601px){
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel{
     grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard{
-    grid-column:1 !important;
+    grid-column:1 / span 2 !important;
     grid-row:1 !important;
+    grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-rows:auto auto minmax(300px, 1fr) !important;
+    gap:18px 22px !important;
     align-self:stretch !important;
   }
 
@@ -10725,18 +10688,44 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     display:contents !important;
   }
 
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardExecutiveSummary{
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardExecutiveSummary{
     grid-column:1 !important;
     grid-row:2 !important;
     align-self:stretch !important;
     box-sizing:border-box !important;
-    min-height:340px !important;
-    height:340px !important;
+    min-height:0 !important;
+    height:auto !important;
+    margin:0 !important;
+    padding:18px 20px !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityOverviewHead{
+    grid-column:2 !important;
+    grid-row:2 !important;
+    align-self:stretch !important;
+    margin:0 !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryStack{
+    grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+    align-content:stretch !important;
+    gap:14px !important;
+    margin:0 !important;
+    height:100% !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityOverviewBody{
+    grid-column:1 / -1 !important;
+    grid-row:3 !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityChartPanel{
+    grid-template-rows:minmax(300px, 1fr) !important;
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardMomentumCard{
     grid-column:2 !important;
-    grid-row:1 !important;
+    grid-row:2 !important;
     align-self:stretch !important;
     justify-self:stretch !important;
     width:100% !important;

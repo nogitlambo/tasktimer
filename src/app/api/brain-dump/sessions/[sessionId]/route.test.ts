@@ -71,7 +71,10 @@ function reviewSession(): BrainDumpReviewSession {
           enrichment: {
             notes: null,
             estimatedDurationMinutes: null,
-            priority: null,
+            timeGoalValue: null,
+            timeGoalUnit: "minute",
+            timeGoalPeriod: "day",
+            priority: "medium",
             firstAction: null,
           },
           validationErrors: [],
@@ -133,6 +136,9 @@ describe("GET /api/brain-dump/sessions/[sessionId]", () => {
               enrichment: {
                 notes: "Mention onboarding metrics.",
                 estimatedDurationMinutes: 45,
+                timeGoalValue: 45,
+                timeGoalUnit: "minute",
+                timeGoalPeriod: "day",
                 priority: "high",
                 firstAction: "Open the draft deck",
               },
@@ -155,6 +161,9 @@ describe("GET /api/brain-dump/sessions/[sessionId]", () => {
     expect(payload.session.review.items[0].enrichment).toEqual({
       notes: "Mention onboarding metrics.",
       estimatedDurationMinutes: 45,
+      timeGoalValue: 45,
+      timeGoalUnit: "minute",
+      timeGoalPeriod: "day",
       priority: "high",
       firstAction: "Open the draft deck",
     });
@@ -165,6 +174,9 @@ describe("GET /api/brain-dump/sessions/[sessionId]", () => {
     savedSession.review.items[0].enrichment = {
       notes: "Mention onboarding metrics.",
       estimatedDurationMinutes: 45,
+      timeGoalValue: 45,
+      timeGoalUnit: "minute",
+      timeGoalPeriod: "day",
       priority: "high",
       firstAction: "Open the draft deck",
     };
@@ -188,7 +200,10 @@ describe("GET /api/brain-dump/sessions/[sessionId]", () => {
               enrichment: {
                 notes: null,
                 estimatedDurationMinutes: null,
-                priority: null,
+                timeGoalValue: null,
+                timeGoalUnit: "minute",
+                timeGoalPeriod: "day",
+                priority: "medium",
                 firstAction: null,
               },
             },
@@ -205,7 +220,10 @@ describe("GET /api/brain-dump/sessions/[sessionId]", () => {
       enrichment: {
         notes: null,
         estimatedDurationMinutes: null,
-        priority: null,
+        timeGoalValue: null,
+        timeGoalUnit: "minute",
+        timeGoalPeriod: "day",
+        priority: "medium",
         firstAction: null,
       },
     });

@@ -18,7 +18,7 @@ function asString(value: unknown) {
 
 function resolveCheckoutOffer(value: unknown) {
   const raw = asString(value).toLowerCase();
-  if (raw === "plus_lifetime") return "plus_lifetime" as const;
+  if (raw === "plus_yearly") return "plus_yearly" as const;
   return "plus_monthly" as const;
 }
 
@@ -123,7 +123,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   await upsertUserBillingState({
     uid,
-    plan: offer === "plus_lifetime" ? "plus_lifetime" : "plus",
+    plan: offer,
     customerId,
     subscriptionId,
     priceId: asString(session.metadata?.priceId),
@@ -138,6 +138,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const priceId = asString(subscription.items.data[0]?.price?.id);
   const status = asString(subscription.status);
   const currentPeriodEndAt = resolveSubscriptionPeriodEndAt(subscription);
+  const offer = asString(subscription.metadata?.offer);
 
   let resolvedUid = uid;
   if (!resolvedUid && customerId) {
@@ -155,6 +156,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     subscriptionId,
     priceId,
     status,
+    offer,
     currentPeriodEndAt,
   });
   if (!resolvedUid) {
@@ -177,7 +179,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
   await upsertUserBillingState({
     uid: resolvedUid,
-    plan: planFromStripeSubscriptionStatus(status),
+    plan: planFromStripeSubscriptionStatus(status, { offer, priceId }),
     customerId,
     subscriptionId,
     priceId,

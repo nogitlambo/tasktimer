@@ -216,11 +216,23 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   } else {
     delete document.body.dataset.tasktimerNativeRuntime;
   }
-  const composition = createTaskTimerRuntimeComposition(initialAppPage, STORAGE_KEY);
+  const els = collectTaskTimerElements(document);
+  const composition = createTaskTimerRuntimeComposition(initialAppPage, STORAGE_KEY, {
+    focusSessionDraftView: {
+      getInputValue: () => getRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null),
+      setInputValue: (value) => {
+        setRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null, value);
+      },
+      setSectionOpen: (open) => {
+        els.focusSessionNotesSection?.setAttribute("data-notes-visible", String(open));
+      },
+    },
+  });
   const {
     runtime,
     workspaceRepository,
     workspaceAdapters,
+    focusSessionDrafts,
     storageKeys: {
       AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
       TIME_GOAL_COMPLETE_NEXT_TASKS_KEY,
@@ -242,7 +254,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       OPTIMAL_PRODUCTIVITY_END_TIME_KEY,
       OPTIMAL_PRODUCTIVITY_DAYS_KEY,
       NAV_STACK_KEY,
-      FOCUS_SESSION_NOTES_KEY,
       NAV_STACK_MAX,
       NATIVE_BACK_DEBOUNCE_MS,
     },
@@ -426,7 +437,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getTaskElapsedMs: (task) => getTaskElapsedMs(task),
   });
 
-  const els = collectTaskTimerElements(document);
   registerCloudSyncNoticeRuntime({
     host: els.cloudSyncNoticeHost as HTMLElement | null,
     on,
@@ -903,9 +913,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
     canUseExecutiveFunction,
-    startTaskById: launchRecommendedTask,
     getExecutiveFunctionUnavailableMessage,
-    showUpgradePrompt,
     requestCoordinator: executiveRequestCoordinator,
   });
   executiveSurfaceApi = createExecutiveSurface({
@@ -1233,7 +1241,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       on,
       runtime,
       sharedTasks: sharedTaskApi,
-      storageKeys: { FOCUS_SESSION_NOTES_KEY, TIME_GOAL_PENDING_FLOW_KEY, TIME_GOAL_PENDING_COMPLETIONS_KEY, TIME_GOAL_COMPLETION_ACK_KEY, FOCUS_DND_STORAGE_KEY: STORAGE_KEY },
+      focusSessionDrafts,
+      storageKeys: { TIME_GOAL_PENDING_FLOW_KEY, TIME_GOAL_PENDING_COMPLETIONS_KEY, TIME_GOAL_COMPLETION_ACK_KEY, FOCUS_DND_STORAGE_KEY: STORAGE_KEY },
       getTasks: taskCollectionBindings.getTasks,
       appRuntimeState,
       getHistoryByTaskId: taskCollectionBindings.getHistoryByTaskId,
@@ -1338,7 +1347,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       getCurrentUid: () => getCurrentTaskTimerUid(),
     })
   );
-  const { loadFocusSessionNotes: loadFocusSessionNotesApi, tick: tickApi, syncTimeGoalModalWithTaskState: syncTimeGoalModalWithTaskStateApi, maybeRestorePendingTimeGoalFlow: maybeRestorePendingTimeGoalFlowApi, registerSessionEvents } = sessionApi;
+  const { tick: tickApi, syncTimeGoalModalWithTaskState: syncTimeGoalModalWithTaskStateApi, maybeRestorePendingTimeGoalFlow: maybeRestorePendingTimeGoalFlowApi, registerSessionEvents } = sessionApi;
   let openHistoryManagerFromShell = () => {};
 
   const appShell = createTaskTimerAppShell(
@@ -1807,14 +1816,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   persistenceApi = createTaskTimerPersistence(
     createTaskTimerPersistenceContext({
-      focusSessionNotesKey: FOCUS_SESSION_NOTES_KEY,
+      focusSessionDrafts,
       pendingTimeGoalCompletionsKey: TIME_GOAL_PENDING_COMPLETIONS_KEY,
       pendingTaskJumpKey: PENDING_PUSH_TASK_ID_KEY,
       workspaceRepository,
       historyPersistence: workspaceAdapters.historyPersistence,
       taskCollectionBindings,
       historyUiState,
-      focusState,
       preferencesState,
       rewardState,
       runtimeDestroyed: () => runtime.destroyed,
@@ -1823,15 +1831,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       pendingTaskJumpMemory: () => cacheRuntimeState.get("pendingTaskJumpMemory"),
       setPendingTaskJumpMemory: (value) => {
         cacheRuntimeState.set("pendingTaskJumpMemory", value);
-      },
-      getFocusSessionNotesInputValue: () => getRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null),
-      setFocusSessionNotesInputValue: (value) => {
-        setRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null, value);
-      },
-      setFocusSessionNotesSectionOpen: () => {
-        if (els.focusSessionNotesSection) {
-          els.focusSessionNotesSection.setAttribute("data-notes-visible", "true");
-        }
       },
       getCurrentAppPage: currentAppPageBinding.getCurrentAppPage,
       getInitialAppPageFromLocation,
@@ -1843,7 +1842,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         taskCollectionBindings.setDeletedTaskMeta(value);
       },
       primeDashboardCacheFromShadow: workspaceRepository.primeDashboardCacheFromShadow,
-      loadFocusSessionNotes: () => loadFocusSessionNotesApi(),
       loadAddTaskCustomNames: () => loadAddTaskCustomNamesApi(),
       loadWeekStartingPreference,
       loadStartupModulePreference,

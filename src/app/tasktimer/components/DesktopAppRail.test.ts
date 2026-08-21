@@ -55,6 +55,14 @@ describe("DesktopAppRail profile menu", () => {
     expect(items.map((item) => item.href)).toEqual(["/account", "/settings", "/user-guide"]);
   });
 
+  it("resolves footer sheet utility links through the shared TaskTimer route helper", () => {
+    const source = readFileSync(resolve(__dirname, "DesktopAppRail.tsx"), "utf8");
+
+    expect(source).toContain('import { resolveTaskTimerRouteHref } from "../lib/routeHref";');
+    expect(source).toContain('className="appFooterSheetUtility"');
+    expect(source).toContain("href={resolveTaskTimerRouteHref(item.href)}");
+  });
+
   it("keeps the mobile footer sheet out of desktop layout and the fixed nav outside the transformed panel", () => {
     const source = readFileSync(resolve(__dirname, "DesktopAppRail.tsx"), "utf8");
     const css = readFileSync(resolve(__dirname, "../styles/09-desktop-rail.css"), "utf8");

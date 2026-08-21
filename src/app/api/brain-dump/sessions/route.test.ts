@@ -158,6 +158,7 @@ describe("POST /api/brain-dump/sessions", () => {
       "selected",
       "sourceEvidence",
       "supported",
+      "taskType",
       "title",
       "validationErrors",
     ]);
@@ -169,7 +170,10 @@ describe("POST /api/brain-dump/sessions", () => {
     expect(payload.session.review.items[0].enrichment).toEqual({
       notes: null,
       estimatedDurationMinutes: null,
-      priority: null,
+      timeGoalValue: null,
+      timeGoalUnit: "minute",
+      timeGoalPeriod: "day",
+      priority: "medium",
       firstAction: null,
     });
     expect(payload.session.review.items[0].validationErrors).toEqual([]);

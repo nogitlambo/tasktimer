@@ -343,7 +343,7 @@ export function createDashboardScheduleRepair(options: Options) {
     mode: "automatic" | "user" = "automatic",
     completionMessage = "",
   ) {
-    if (!card || !["dashboard", "executive"].includes(options.getCurrentAppPage())) return;
+    if (!["dashboard", "executive"].includes(options.getCurrentAppPage())) return;
     if (lockIfNeeded()) return;
     abortController?.abort();
     abortController = new AbortController();
@@ -513,7 +513,6 @@ export function createDashboardScheduleRepair(options: Options) {
   }
 
   function register() {
-    if (!card) return;
     documentRef.addEventListener("click", (event) => {
       const target = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-schedule-repair]");
       const actionTarget = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-schedule-repair-action]");

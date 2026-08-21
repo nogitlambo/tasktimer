@@ -190,7 +190,7 @@ function makeDashboardContext() {
 
 function makeExecutiveSummaryTarget(options?: { interactive?: boolean }) {
   const executiveSummary = { id: "dashboardExecutiveSummary" };
-  const interactive = { id: "dashboardExecutiveSummaryStart" };
+  const interactive = { id: "dashboardExecutiveSummaryNestedControl" };
   return {
     closest: (selector: string) => {
       if (selector === "#dashboardExecutiveSummary") return executiveSummary;

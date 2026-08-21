@@ -184,22 +184,6 @@ export function createExecutiveSurface(options: Options) {
         ? `${capacity.remainingRange.min}-${capacity.remainingRange.max} min`
         : "Unavailable",
     );
-    const capacityConfidence = element(
-      documentRef,
-      "executiveCapacityConfidence",
-    );
-    if (capacityConfidence) {
-      setMetricText(
-        capacityConfidence,
-        capacity ? formatPlanHealthLabel(capacity.confidence) : "Unavailable",
-      );
-      if (capacity)
-        capacityConfidence.setAttribute(
-          "data-capacity-confidence",
-          capacity.confidence,
-        );
-      else capacityConfidence.removeAttribute("data-capacity-confidence");
-    }
     const work = element(documentRef, "executiveWorkRemaining");
     setMetricText(
       work,

@@ -36,7 +36,7 @@ function formatXp(value: number) {
 
 function formatAccountPlan(plan: string) {
   if (plan === "plus_lifetime") return "PLUS Lifetime";
-  if (plan === "plus") return "PLUS";
+  if (plan === "plus" || plan === "plus_monthly" || plan === "plus_yearly" || plan === "pro") return "PLUS";
   return "FREE";
 }
 
@@ -244,7 +244,7 @@ export default function AccountScreen() {
                               <span className={`settingsAccountPlanPill settingsAccountPlanPill-${account.authPlan}`}>
                                 {formatAccountPlan(account.authPlan)}
                               </span>
-                              {account.authPlan === "plus" ? (
+                              {account.authPlan === "plus" || account.authPlan === "plus_monthly" || account.authPlan === "plus_yearly" || account.authPlan === "pro" ? (
                                 <>
                                   <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
                                   <button className="settingsAccountUpgradeLink" type="button" onClick={() => void account.onOpenPlanAction()}>
@@ -262,7 +262,7 @@ export default function AccountScreen() {
                               ) : null}
                             </dd>
                           </div>
-                          {account.authPlan === "plus" ? (
+                          {account.authPlan === "plus" || account.authPlan === "plus_monthly" || account.authPlan === "plus_yearly" || account.authPlan === "pro" ? (
                             <div className="settingsAccountMetaListItem">
                               <dt className="settingsAccountUidLabel">Renews On</dt>
                               <dd className="settingsAccountMemberSinceValue">{formatPlanRenewalDate(account.authPlanRenewalAtMs)}</dd>

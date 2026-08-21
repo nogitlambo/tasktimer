@@ -94,6 +94,7 @@ function createHarness(
     tileColumnCount: number;
     historyByTaskId: Record<string, Array<{ ts: number; ms: number; name: string }>>;
     pruneInactiveHistoryTasks: (activeTaskIds: Set<string>) => boolean;
+    completedOnceOffTasksCollapsed: boolean;
   }> = {}
 ) {
   const taskListEl = elementStub("section");
@@ -113,6 +114,7 @@ function createHarness(
     getTaskView: () => overrides.taskView ?? "list",
     getTaskOrderBy: () => overrides.taskOrderBy ?? "custom",
     getTileColumnCount: () => overrides.tileColumnCount ?? 2,
+    getCompletedOnceOffTasksCollapsed: () => overrides.completedOnceOffTasksCollapsed ?? false,
     setCurrentTileColumnCount: (value) => calls.push(`tile-count:${value}`),
     getOpenHistoryTaskIds: () => openHistoryTaskIds,
     getPinnedHistoryTaskIds: () => pinnedHistoryTaskIds,
@@ -198,6 +200,37 @@ describe("task list renderer", () => {
     expect(harness.taskListEl.innerHTML).not.toContain('href="/brain-dump"');
     expect(harness.taskListEl.innerHTML).not.toContain('data-brain-dump-entry="empty-task-state"');
     expect(harness.calls).toEqual(["tile-count:1", "sync-flips:", "dashboard", "sync-goal", "restore-goal-flow"]);
+  });
+
+  it("moves completed once-off tasks below active tasks in newest-first order", () => {
+    const harness = createHarness({ tasks: [
+      task({ id: "done-old", name: "Old", order: 1, taskType: "once-off", markedDoneAtMs: 100 }),
+      task({ id: "active", name: "Active", order: 2, taskType: "recurring" }),
+      task({ id: "done-new", name: "New", order: 3, taskType: "once-off", markedDoneAtMs: 200 }),
+    ] });
+
+    harness.renderer.renderTasksPage();
+
+    expect(harness.taskListEl.children[0]?.dataset.taskId).toBe("active");
+    const section = harness.taskListEl.children[1];
+    expect(section?.className).toBe("completedOnceOffTasksSection");
+    expect(section?.innerHTML).toContain("Completed Once-off Tasks");
+    const cards = section?.children[0];
+    expect(cards?.children.map((entry) => entry.dataset.taskId)).toEqual(["done-new", "done-old"]);
+    expect(cards?.children.every((entry) => entry.attributes.get("draggable") === "false")).toBe(true);
+  });
+
+  it("honors the locally persisted completed-section collapsed state", () => {
+    const harness = createHarness({
+      completedOnceOffTasksCollapsed: true,
+      tasks: [task({ id: "done", name: "Done", taskType: "once-off", markedDoneAtMs: 100 })],
+    });
+
+    harness.renderer.renderTasksPage();
+
+    const section = harness.taskListEl.children[0];
+    expect(section?.innerHTML).toContain('aria-expanded="false"');
+    expect((section?.children[0] as StubElement & { hidden?: boolean })?.hidden).toBe(true);
   });
 
   it("renders task cards into tile columns and preserves source indexes", () => {

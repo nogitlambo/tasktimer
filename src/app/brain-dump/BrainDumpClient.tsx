@@ -9,6 +9,7 @@ import { trackEvent } from "@/lib/firebaseTelemetry";
 import { getApiUrl } from "@/app/tasktimer/lib/apiClient";
 import { resolveStandaloneRouteBackTarget } from "@/app/tasktimer/lib/routeBack";
 import { resolveTaskTimerRouteHref } from "@/app/tasktimer/lib/routeHref";
+import AppImg from "@/components/AppImg";
 
 import styles from "./BrainDump.module.css";
 
@@ -29,6 +30,9 @@ const BRAIN_DUMP_CAPTURE_MODE_KEY = `${TASKTIMER_STORAGE_KEY}:brainDump:captureM
 type BrainDumpCaptureMode = "typed" | "voice" | "image";
 type BrainDumpVoiceState = "idle" | "recording" | "paused" | "recorded" | "transcribing" | "transcript";
 type BrainDumpImageState = "idle" | "ready" | "processing";
+type BrainDumpTimeGoalUnit = "minute" | "hour";
+type BrainDumpTimeGoalPeriod = "day" | "week";
+type BrainDumpReviewTaskType = "recurring" | "once-off";
 
 function readStoredDraft() {
   if (typeof window === "undefined") return "";
@@ -162,9 +166,73 @@ function requestErrorCode(error: unknown) {
   return typeof (error as { code?: unknown })?.code === "string" ? String((error as { code?: unknown }).code) : "";
 }
 
+function normalizeTimeGoalUnit(value: unknown): BrainDumpTimeGoalUnit {
+  return value === "hour" ? "hour" : "minute";
+}
+
+function normalizeTimeGoalPeriod(value: unknown): BrainDumpTimeGoalPeriod {
+  return value === "week" ? "week" : "day";
+}
+
+function maxTimeGoalValue(unit: BrainDumpTimeGoalUnit, period: BrainDumpTimeGoalPeriod) {
+  if (period === "day") return unit === "minute" ? 24 * 60 : 24;
+  return unit === "minute" ? 7 * 24 * 60 : 7 * 24;
+}
+
+function normalizeTimeGoalValue(value: unknown, unit: BrainDumpTimeGoalUnit, period: BrainDumpTimeGoalPeriod) {
+  if (value === "" || value === null) return null;
+  const amount = Math.floor(Number(value));
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return Math.min(maxTimeGoalValue(unit, period), amount);
+}
+
+function timeGoalMinutes(value: number | null, unit: BrainDumpTimeGoalUnit) {
+  if (!value || value <= 0) return null;
+  return unit === "hour" ? value * 60 : value;
+}
+
+function getReviewTimeGoalUnit(enrichment: BrainDumpReviewEnrichment): BrainDumpTimeGoalUnit {
+  return normalizeTimeGoalUnit(enrichment.timeGoalUnit);
+}
+
+function getReviewTimeGoalPeriod(enrichment: BrainDumpReviewEnrichment): BrainDumpTimeGoalPeriod {
+  return normalizeTimeGoalPeriod(enrichment.timeGoalPeriod);
+}
+
+function getReviewTimeGoalValue(enrichment: BrainDumpReviewEnrichment) {
+  const unit = getReviewTimeGoalUnit(enrichment);
+  const period = getReviewTimeGoalPeriod(enrichment);
+  return normalizeTimeGoalValue(enrichment.timeGoalValue ?? enrichment.estimatedDurationMinutes, unit, period);
+}
+
+function buildTimeGoalEnrichment(
+  enrichment: BrainDumpReviewEnrichment,
+  patch: {
+    timeGoalValue?: number | string | null;
+    timeGoalUnit?: BrainDumpTimeGoalUnit;
+    timeGoalPeriod?: BrainDumpTimeGoalPeriod;
+  }
+): BrainDumpReviewEnrichment {
+  const unit = normalizeTimeGoalUnit(patch.timeGoalUnit ?? enrichment.timeGoalUnit);
+  const period = normalizeTimeGoalPeriod(patch.timeGoalPeriod ?? enrichment.timeGoalPeriod);
+  const value = normalizeTimeGoalValue(
+    Object.prototype.hasOwnProperty.call(patch, "timeGoalValue") ? patch.timeGoalValue : getReviewTimeGoalValue(enrichment),
+    unit,
+    period
+  );
+  return {
+    ...enrichment,
+    estimatedDurationMinutes: timeGoalMinutes(value, unit),
+    timeGoalValue: value,
+    timeGoalUnit: unit,
+    timeGoalPeriod: period,
+  };
+}
+
 type BrainDumpReviewItem = {
   id: string;
   itemType: string;
+  taskType?: BrainDumpReviewTaskType;
   title: string;
   selected: boolean;
   sourceEvidence: string[];
@@ -194,6 +262,9 @@ type BrainDumpReviewDate = {
 type BrainDumpReviewEnrichment = {
   notes: string | null;
   estimatedDurationMinutes: number | null;
+  timeGoalValue?: number | null;
+  timeGoalUnit?: BrainDumpTimeGoalUnit;
+  timeGoalPeriod?: BrainDumpTimeGoalPeriod;
   priority: "low" | "medium" | "high" | null;
   firstAction: string | null;
 };
@@ -248,8 +319,8 @@ type BrainDumpClientProps = {
 };
 
 export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpClientProps) {
-  const [captureMode, setCaptureMode] = useState<BrainDumpCaptureMode>(() => readStoredCaptureMode());
-  const [text, setText] = useState(() => readStoredDraft());
+  const [captureMode, setCaptureMode] = useState<BrainDumpCaptureMode>("typed");
+  const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
@@ -275,8 +346,10 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
   const [imageUploadProgressPct, setImageUploadProgressPct] = useState(0);
   const [recoverableFailure, setRecoverableFailure] = useState(false);
   const [session, setSession] = useState<BrainDumpReviewSession | null>(null);
+  const [removedReviewItemIds, setRemovedReviewItemIds] = useState<Set<string>>(() => new Set());
   const [batchResult, setBatchResult] = useState<BrainDumpCreationBatchResult | null>(null);
   const [undoResult, setUndoResult] = useState<BrainDumpUndoBatchResult | null>(null);
+  const [creatingTasks, setCreatingTasks] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [confirmIdempotencyKey, setConfirmIdempotencyKey] = useState("");
   const autoRetriedRef = useRef(false);
@@ -308,7 +381,7 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
       !voiceBusy &&
       (captureMode !== "voice" || (voiceState === "transcript" && !!voiceBrainDumpId));
   const remaining = BRAIN_DUMP_TEXT_LIMIT - text.length;
-  const selectedCount = session?.review.items.filter((item) => item.supported && item.selected).length ?? 0;
+  const selectedCount = session?.review.items.filter((item) => item.supported && item.selected && !removedReviewItemIds.has(item.id)).length ?? 0;
   const undoExpiresAtMs = batchResult?.state === "completed" ? batchResult.completedAtMs + 30_000 : 0;
   const undoAvailable = !!batchResult && batchResult.state === "completed" && !undoResult && nowMs <= undoExpiresAtMs;
   const timezone = useMemo(() => {
@@ -327,9 +400,7 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
     : styles.submitButton;
   const primitiveTextareaClass = embedded ? `${styles.textarea} brainDumpPrimitiveTextarea` : styles.textarea;
   const primitiveInputClass = embedded ? `${styles.titleInput} brainDumpPrimitiveInput` : styles.titleInput;
-  const primitiveBackLinkClass = embedded
-    ? `${styles.backLink} btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction brainDumpPrimitiveAction brainDumpPrimitiveLink`
-    : styles.backLink;
+  const primitiveBackLinkClass = styles.backLink;
 
   function handleBackNavigation(event: MouseEvent<HTMLAnchorElement>) {
     if (typeof window === "undefined") return;
@@ -348,6 +419,7 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
     setErrorCode(nextCode);
     if (nextCode === "brain-dump/expired") {
       setSession(null);
+      setRemovedReviewItemIds(new Set());
       setBatchResult(null);
       setUndoResult(null);
       setConfirmIdempotencyKey("");
@@ -362,6 +434,14 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
   useEffect(() => {
     if (error) errorSummaryRef.current?.focus();
   }, [error]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setCaptureMode(readStoredCaptureMode());
+      setText(readStoredDraft());
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!batchResult || batchResult.state !== "completed" || undoResult) return;
@@ -899,6 +979,7 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
       setImageUploadProgressPct(100);
       setImageState("ready");
       setSession(payload.session);
+      setRemovedReviewItemIds(new Set());
       setBatchResult(null);
       setUndoResult(null);
       setConfirmIdempotencyKey(createConfirmIdempotencyKey(payload.session.id));
@@ -945,6 +1026,7 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
     setStatus("");
     setRecoverableFailure(false);
     setSession(null);
+    setRemovedReviewItemIds(new Set());
     setBatchResult(null);
     setUndoResult(null);
     setConfirmIdempotencyKey("");
@@ -1013,6 +1095,7 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
         if (!response.ok || !payload.session) throw payloadError(payload.error || "Brain Dump could not be processed.", payload.code);
         setStatus("Saving review");
         setSession(payload.session);
+        setRemovedReviewItemIds(new Set());
         setBatchResult(null);
         setUndoResult(null);
         setConfirmIdempotencyKey(createConfirmIdempotencyKey(payload.session.id));
@@ -1055,7 +1138,7 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
 
   function updateReviewItem(
     itemId: string,
-    patch: Partial<Pick<BrainDumpReviewItem, "selected" | "title" | "date" | "enrichment" | "duplicateDecision">>
+    patch: Partial<Pick<BrainDumpReviewItem, "selected" | "title" | "taskType" | "date" | "enrichment" | "duplicateDecision">>
   ) {
     setSession((current) => {
       if (!current) return current;
@@ -1079,17 +1162,27 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
     });
   }
 
+  function removeDuplicateReviewItem(itemId: string) {
+    setRemovedReviewItemIds((current) => {
+      const next = new Set(current);
+      next.add(itemId);
+      return next;
+    });
+    updateReviewItem(itemId, { duplicateDecision: "skip", selected: false });
+  }
+
   function buildReviewItemUpdates(currentSession: BrainDumpReviewSession) {
     return currentSession.review.items.map((item) => ({
       itemId: item.id,
-      selected: item.supported && item.selected,
+      selected: item.supported && item.selected && !removedReviewItemIds.has(item.id),
+      taskType: item.taskType === "once-off" ? "once-off" : "recurring",
       title: item.title,
       date: {
         resolvedDate: item.date.resolvedDate,
         userConfirmedDate: item.date.userConfirmedDate,
       },
       enrichment: item.enrichment,
-      duplicateDecision: item.duplicateDecision,
+      duplicateDecision: removedReviewItemIds.has(item.id) ? "skip" : item.duplicateDecision,
     }));
   }
 
@@ -1135,9 +1228,10 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
   async function handleConfirm() {
     if (!session || selectedCount === 0 || busy || !confirmIdempotencyKey) return;
     setBusy(true);
+    setCreatingTasks(true);
     setError("");
     setErrorCode("");
-    setStatus("Creating tasks");
+    setStatus("Generating tasks...");
     try {
       const auth = getFirebaseAuthClient();
       const user = auth?.currentUser || null;
@@ -1184,6 +1278,7 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
         selected_count: selectedCount,
       });
     } finally {
+      setCreatingTasks(false);
       setBusy(false);
     }
   }
@@ -1230,9 +1325,10 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
   return (
     <main className={`${styles.page}${embedded ? " brainDumpEmbedded" : ""}`}>
       <section className={`${styles.shell}${embedded ? " brainDumpEmbeddedShell" : ""}`} aria-labelledby="brainDumpTitle">
-        <header className={`${styles.header}${embedded ? " brainDumpEmbeddedPanel brainDumpEmbeddedHeader brainDumpPrimitivePanel" : ""}`}>
-          <a className={primitiveBackLinkClass} href={taskLaunchHref} onClick={handleBackNavigation}>
-            Back
+        <header className={`${styles.header}${embedded ? " brainDumpEmbeddedHeader" : ""}`}>
+          <a className={primitiveBackLinkClass} href={taskLaunchHref} onClick={handleBackNavigation} aria-label="Back">
+            <span className={styles.backIcon} aria-hidden="true" />
+            <span className={styles.srOnly}>Back</span>
           </a>
           <div>
             <p className={styles.kicker}>Executive Function</p>
@@ -1441,24 +1537,28 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
             <span id="brainDumpCount" className={remaining < 0 ? styles.countError : styles.count}>
               {remaining} characters left
             </span>
-            <button className={primitivePrimaryButtonClass} type="submit" disabled={!canSubmit}>
-              {busy ? "Analysing" : captureMode === "image" ? "Review image" : "Review"}
-            </button>
-          </div>
-          <div className={styles.secondaryActions}>
-            <button className={primitiveSecondaryButtonClass} type="button" disabled={!text || busy} onClick={handleClearDraft}>
-              Clear draft
-            </button>
-            {recoverableFailure ? (
-              <button className={primitiveSecondaryButtonClass} type="button" disabled={!canSubmit} onClick={handleRetryProcessing}>
-                Retry
-              </button>
-            ) : null}
-            {busy ? (
-              <button className={primitiveSecondaryButtonClass} type="button" onClick={handleCancelProcessing}>
-                Cancel
-              </button>
-            ) : null}
+            <div className={styles.captureActions}>
+              <div className={styles.capturePrimaryActions}>
+                <button className={primitiveSecondaryButtonClass} type="button" disabled={!text || busy} onClick={handleClearDraft}>
+                  Clear draft
+                </button>
+                {recoverableFailure ? (
+                  <button className={primitiveSecondaryButtonClass} type="button" disabled={!canSubmit} onClick={handleRetryProcessing}>
+                    Retry
+                  </button>
+                ) : null}
+                <button className={primitivePrimaryButtonClass} type="submit" disabled={!canSubmit}>
+                  {busy ? "Analysing" : captureMode === "image" ? "Review image" : "Review"}
+                </button>
+              </div>
+              {busy ? (
+                <div className={styles.captureCancelActions}>
+                  <button className={primitiveSecondaryButtonClass} type="button" onClick={handleCancelProcessing}>
+                    Cancel
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
         </form>
 
@@ -1482,6 +1582,14 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
 
         {session ? (
           <section className={`${styles.review}${embedded ? " brainDumpEmbeddedPanel brainDumpPrimitivePanel" : ""}`} aria-labelledby="brainDumpReviewTitle">
+            {creatingTasks ? (
+              <div className={styles.createOverlay} role="status" aria-live="polite" aria-label="Generating tasks...">
+                <div className={styles.createOverlayContent}>
+                  <AppImg className={styles.createOverlayIcon} src="/icons/icons_default/executive.webp" alt="" aria-hidden="true" />
+                  <p className={styles.createOverlayText}>Generating tasks...</p>
+                </div>
+              </div>
+            ) : null}
             <div className={styles.reviewHeader}>
               <h2 id="brainDumpReviewTitle" className={styles.reviewTitle}>
                 Review
@@ -1491,7 +1599,13 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
               </p>
             </div>
             <div className={styles.reviewList}>
-              {session.review.items.map((item) => (
+              {session.review.items.filter((item) => !removedReviewItemIds.has(item.id)).map((item) => {
+                const timeGoalUnit = getReviewTimeGoalUnit(item.enrichment);
+                const timeGoalPeriod = getReviewTimeGoalPeriod(item.enrichment);
+                const timeGoalValue = getReviewTimeGoalValue(item.enrichment);
+                const timeGoalMax = maxTimeGoalValue(timeGoalUnit, timeGoalPeriod);
+                const taskType = item.taskType === "once-off" ? "once-off" : "recurring";
+                return (
                 <article className={`${styles.reviewItem}${embedded ? " brainDumpPrimitivePanel brainDumpPrimitiveReviewItem" : ""}`} key={item.id} data-supported={String(item.supported)}>
                   <div className={styles.reviewItemHeader}>
                     <label className={styles.reviewControls}>
@@ -1542,129 +1656,207 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
                           aria-pressed={item.duplicateDecision === "create_anyway"}
                           onClick={() => updateReviewItem(item.id, { duplicateDecision: "create_anyway", selected: true })}
                         >
-                          Create anyway
+                          Select anyway
                         </button>
                         <button
                           className={primitiveSecondaryButtonClass}
                           type="button"
                           disabled={session.state === "completed" || busy}
                           aria-pressed={item.duplicateDecision === "skip"}
-                          onClick={() => updateReviewItem(item.id, { duplicateDecision: "skip", selected: false })}
+                          onClick={() => removeDuplicateReviewItem(item.id)}
                         >
                           Skip
                         </button>
                       </div>
                     </section>
                   ) : null}
-                  <div className={styles.dateReview}>
-                    <label className={styles.label} htmlFor={`brainDumpDate-${item.id}`}>
-                      Date
-                    </label>
-                    <input
-                      id={`brainDumpDate-${item.id}`}
-                      className={primitiveInputClass}
-                      type="date"
-                      aria-label={`Date for ${item.title}`}
-                      value={item.date.resolvedDate || ""}
-                      disabled={session.state === "completed" || busy}
-                      onChange={(event) =>
-                        updateReviewItem(item.id, {
-                          date: {
-                            ...item.date,
-                            resolvedDate: event.target.value || null,
-                            userConfirmedDate: true,
-                            ambiguity: event.target.value ? "none" : item.date.ambiguity,
-                            ambiguityFlags: event.target.value ? [] : item.date.ambiguityFlags,
-                          },
-                        })
-                      }
-                    />
-                    <button
-                      className={primitiveSecondaryButtonClass}
-                      type="button"
-                      disabled={!item.date.resolvedDate || session.state === "completed" || busy}
-                      onClick={() =>
-                        updateReviewItem(item.id, {
-                          date: {
-                            ...item.date,
-                            resolvedDate: null,
-                            userConfirmedDate: true,
-                          },
-                        })
-                      }
-                    >
-                      Remove date
-                    </button>
-                    <p className={styles.dateMeta}>
-                      {item.date.dateSource} {item.date.originalDateText ? `| ${item.date.originalDateText}` : ""}
-                    </p>
-                    {item.date.ambiguityFlags.length ? <p className={styles.flags}>{item.date.ambiguityFlags.join(" ")}</p> : null}
-                  </div>
-                  <details className={styles.optionalDetails}>
-                    <summary>Optional details</summary>
+                  <div className={styles.optionalDetails}>
                     <div className={styles.optionalGrid}>
-                      <label className={styles.label} htmlFor={`brainDumpNotes-${item.id}`}>
-                        Notes
-                      </label>
-                      <textarea
-                        id={`brainDumpNotes-${item.id}`}
-                        className={primitiveTextareaClass}
-                        aria-label={`Notes for ${item.title}`}
-                        value={item.enrichment.notes || ""}
-                        disabled={session.state === "completed" || busy}
-                        onChange={(event) =>
-                          updateReviewItem(item.id, {
-                            enrichment: { ...item.enrichment, notes: event.target.value || null },
-                          })
-                        }
-                      />
-                      <label className={styles.label} htmlFor={`brainDumpDuration-${item.id}`}>
-                        Duration
-                      </label>
-                      <input
-                        id={`brainDumpDuration-${item.id}`}
-                        className={primitiveInputClass}
-                        type="number"
-                        min="1"
-                        max="1440"
-                        inputMode="numeric"
-                        aria-label={`Estimated duration minutes for ${item.title}`}
-                        value={item.enrichment.estimatedDurationMinutes ?? ""}
-                        disabled={session.state === "completed" || busy}
-                        onChange={(event) =>
-                          updateReviewItem(item.id, {
-                            enrichment: {
-                              ...item.enrichment,
-                              estimatedDurationMinutes: event.target.value ? Math.max(1, Number(event.target.value)) : null,
-                            },
-                          })
-                        }
-                      />
-                      <label className={styles.label} htmlFor={`brainDumpPriority-${item.id}`}>
-                        Priority
-                      </label>
-                      <select
-                        id={`brainDumpPriority-${item.id}`}
-                        className={primitiveInputClass}
-                        aria-label={`Priority for ${item.title}`}
-                        value={item.enrichment.priority || ""}
-                        disabled={session.state === "completed" || busy}
-                        onChange={(event) =>
-                          updateReviewItem(item.id, {
-                            enrichment: {
-                              ...item.enrichment,
-                              priority: event.target.value === "low" || event.target.value === "medium" || event.target.value === "high"
-                                ? event.target.value
-                                : null,
-                            },
-                          })
-                        }
+                      <span className={styles.label} id={`brainDumpTaskType-${item.id}`}>
+                        Task Type
+                      </span>
+                      <div
+                        className={`${styles.taskTypePills} ${styles.timeGoalPills} unitButtons timerTypePills editTaskTypePills taskScreenPillGroup`}
+                        role="group"
+                        aria-labelledby={`brainDumpTaskType-${item.id}`}
+                        aria-label={`Task type for ${item.title}`}
                       >
-                        <option value="">None</option>
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                      </select>
+                        {([
+                          ["recurring", "Recurring"],
+                          ["once-off", "Once-off"],
+                        ] as const).map(([nextTaskType, label]) => (
+                          <button
+                            className={`btn btn-ghost small unitBtn timerTypePill taskScreenPill taskScreenHeaderBtn${taskType === nextTaskType ? " isOn" : ""}`}
+                            type="button"
+                            key={nextTaskType}
+                            disabled={session.state === "completed" || busy}
+                            aria-pressed={taskType === nextTaskType}
+                            onClick={() => updateReviewItem(item.id, { taskType: nextTaskType })}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      <label className={styles.label} htmlFor={`brainDumpDuration-${item.id}`}>
+                        Time Goal/Estimate
+                      </label>
+                      <div className={`${styles.timeGoalControl} addTaskDurationRow editTaskDurationRow`}>
+                        <input
+                          id={`brainDumpDuration-${item.id}`}
+                          className={`${primitiveInputClass} ${styles.timeGoalValueInput}`}
+                          type="number"
+                          min="0"
+                          max={timeGoalMax}
+                          step="1"
+                          inputMode="numeric"
+                          aria-label={`Time goal or estimate for ${item.title}`}
+                          value={timeGoalValue ?? ""}
+                          disabled={session.state === "completed" || busy}
+                          onChange={(event) =>
+                            updateReviewItem(item.id, {
+                              enrichment: buildTimeGoalEnrichment(item.enrichment, { timeGoalValue: event.target.value }),
+                            })
+                          }
+                        />
+                        <div
+                          className={`${styles.timeGoalPills} unitButtons addTaskDurationPills taskScreenPillGroup`}
+                          role="group"
+                          aria-label={`Time goal unit for ${item.title}`}
+                        >
+                          <button
+                            className={`btn btn-ghost small unitBtn taskScreenPill taskScreenHeaderBtn${timeGoalUnit === "minute" ? " isOn" : ""}`}
+                            type="button"
+                            disabled={session.state === "completed" || busy}
+                            aria-pressed={timeGoalUnit === "minute"}
+                            onClick={() =>
+                              updateReviewItem(item.id, {
+                                enrichment: buildTimeGoalEnrichment(item.enrichment, { timeGoalUnit: "minute" }),
+                              })
+                            }
+                          >
+                            Min
+                          </button>
+                          <button
+                            className={`btn btn-ghost small unitBtn taskScreenPill taskScreenHeaderBtn${timeGoalUnit === "hour" ? " isOn" : ""}`}
+                            type="button"
+                            disabled={session.state === "completed" || busy}
+                            aria-pressed={timeGoalUnit === "hour"}
+                            onClick={() =>
+                              updateReviewItem(item.id, {
+                                enrichment: buildTimeGoalEnrichment(item.enrichment, { timeGoalUnit: "hour" }),
+                              })
+                            }
+                          >
+                            Hour
+                          </button>
+                        </div>
+                        <span className={`${styles.timeGoalPerLabel} addTaskDurationPerLabel`}>per</span>
+                        <div
+                          className={`${styles.timeGoalPills} unitButtons addTaskDurationPills taskScreenPillGroup`}
+                          role="group"
+                          aria-label={`Time goal period for ${item.title}`}
+                        >
+                          <button
+                            className={`btn btn-ghost small unitBtn taskScreenPill taskScreenHeaderBtn${timeGoalPeriod === "day" ? " isOn" : ""}`}
+                            type="button"
+                            disabled={session.state === "completed" || busy}
+                            aria-pressed={timeGoalPeriod === "day"}
+                            onClick={() =>
+                              updateReviewItem(item.id, {
+                                enrichment: buildTimeGoalEnrichment(item.enrichment, { timeGoalPeriod: "day" }),
+                              })
+                            }
+                          >
+                            Day
+                          </button>
+                          <button
+                            className={`btn btn-ghost small unitBtn taskScreenPill taskScreenHeaderBtn${timeGoalPeriod === "week" ? " isOn" : ""}`}
+                            type="button"
+                            disabled={session.state === "completed" || busy}
+                            aria-pressed={timeGoalPeriod === "week"}
+                            onClick={() =>
+                              updateReviewItem(item.id, {
+                                enrichment: buildTimeGoalEnrichment(item.enrichment, { timeGoalPeriod: "week" }),
+                              })
+                            }
+                          >
+                            Week
+                          </button>
+                        </div>
+                      </div>
+                      <label className={styles.label} htmlFor={`brainDumpDate-${item.id}`}>
+                        Date
+                      </label>
+                      <div className={styles.dateReview}>
+                        <input
+                          id={`brainDumpDate-${item.id}`}
+                          className={primitiveInputClass}
+                          type="date"
+                          aria-label={`Date for ${item.title}`}
+                          value={item.date.resolvedDate || ""}
+                          disabled={session.state === "completed" || busy}
+                          onChange={(event) =>
+                            updateReviewItem(item.id, {
+                              date: {
+                                ...item.date,
+                                resolvedDate: event.target.value || null,
+                                userConfirmedDate: true,
+                                ambiguity: event.target.value ? "none" : item.date.ambiguity,
+                                ambiguityFlags: event.target.value ? [] : item.date.ambiguityFlags,
+                              },
+                            })
+                          }
+                        />
+                        <button
+                          className={primitiveSecondaryButtonClass}
+                          type="button"
+                          disabled={!item.date.resolvedDate || session.state === "completed" || busy}
+                          onClick={() =>
+                            updateReviewItem(item.id, {
+                              date: {
+                                ...item.date,
+                                resolvedDate: null,
+                                userConfirmedDate: true,
+                              },
+                            })
+                          }
+                        >
+                          Remove date
+                        </button>
+                      </div>
+                      <span className={styles.label} id={`brainDumpPriority-${item.id}`}>
+                        Priority
+                      </span>
+                      <div
+                        className={`${styles.priorityPills} ${styles.timeGoalPills} unitButtons addTaskDurationPills taskScreenPillGroup`}
+                        role="group"
+                        aria-labelledby={`brainDumpPriority-${item.id}`}
+                        aria-label={`Priority for ${item.title}`}
+                      >
+                        {([
+                          ["low", "Low"],
+                          ["medium", "Normal"],
+                          ["high", "High"],
+                        ] as const).map(([priority, label]) => (
+                          <button
+                            className={`btn btn-ghost small unitBtn taskScreenPill taskScreenHeaderBtn${(item.enrichment.priority || "medium") === priority ? " isOn" : ""}`}
+                            type="button"
+                            key={priority}
+                            disabled={session.state === "completed" || busy}
+                            aria-pressed={(item.enrichment.priority || "medium") === priority}
+                            onClick={() =>
+                              updateReviewItem(item.id, {
+                                enrichment: {
+                                  ...item.enrichment,
+                                  priority,
+                                },
+                              })
+                            }
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                       <label className={styles.label} htmlFor={`brainDumpFirstAction-${item.id}`}>
                         First action
                       </label>
@@ -1689,7 +1881,10 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
                             enrichment: {
                               notes: null,
                               estimatedDurationMinutes: null,
-                              priority: null,
+                              timeGoalValue: null,
+                              timeGoalUnit: "minute",
+                              timeGoalPeriod: "day",
+                              priority: "medium",
                               firstAction: null,
                             },
                           })
@@ -1698,9 +1893,10 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
                         Clear optional details
                       </button>
                     </div>
-                  </details>
+                  </div>
                 </article>
-              ))}
+                );
+              })}
             </div>
             <div className={styles.reviewActions}>
               <button
@@ -1717,7 +1913,7 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
                 disabled={selectedCount === 0 || busy || session.state === "completed"}
                 onClick={handleConfirm}
               >
-                {busy ? "Creating" : `Create ${selectedCount}`}
+                {creatingTasks ? "Generating" : `Create ${selectedCount}`}
               </button>
               {batchResult ? (
                 <>
@@ -1732,7 +1928,7 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
                       Undo
                     </button>
                   ) : null}
-                  <a className={primitiveBackLinkClass} href={taskLaunchHref} onClick={handleBackNavigation}>
+                  <a className={primitiveSecondaryButtonClass} href={taskLaunchHref} onClick={handleBackNavigation}>
                     Tasks
                   </a>
                 </>

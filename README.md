@@ -45,12 +45,12 @@ Local development should stay on Stripe test mode.
   - `STRIPE_SECRET_KEY=sk_test_...`
   - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...`
   - `STRIPE_WEBHOOK_SECRET=whsec_...`
-  - `STRIPE_PRICE_ID_PRO_MONTHLY=price_...`
-  - `STRIPE_PRICE_ID_PLUS_LIFETIME=price_...`
+  - `STRIPE_PRICE_ID_PLUS_MONTHLY=price_...`
+  - `STRIPE_PRICE_ID_PLUS_YEARLY=price_...`
 - Production must use live values for:
   - `STRIPE_SECRET_KEY`
-  - `STRIPE_PRICE_ID_PRO_MONTHLY`
-  - `STRIPE_PRICE_ID_PLUS_LIFETIME`
+  - `STRIPE_PRICE_ID_PLUS_MONTHLY`
+  - `STRIPE_PRICE_ID_PLUS_YEARLY`
   - `STRIPE_WEBHOOK_SECRET`
   - `NEXT_PUBLIC_APP_URL`
 - The deployed Stripe webhook endpoint must include the trailing slash:
@@ -59,7 +59,7 @@ Local development should stay on Stripe test mode.
 ### Production Live Stripe Checklist
 
 1. Verify the correct live Stripe account/workspace is selected.
-2. Confirm the live recurring Pro monthly `price_...` exists.
+2. Confirm the live recurring PLUS monthly and yearly `price_...` values exist.
 3. Confirm the Stripe Billing Portal is enabled in the live account.
 4. Set production env vars to live values only. Do not replace local test values unless you intentionally want local live testing.
 5. Register the live webhook endpoint as `https://<your-domain>/api/stripe/webhook/`.
@@ -78,7 +78,7 @@ Local development should stay on Stripe test mode.
    - `userSubscriptions/{uid}.stripeSubscriptionStatus`
    - `userSubscriptions/{uid}.stripeSyncedAt`
    - If plan state drifts from billing state, run `npm run subscriptions:reconcile-plans -- --write`
-9. Validate `Manage Billing` opens the Stripe billing portal for a Pro user.
+9. Validate `Manage Billing` opens the Stripe billing portal for a PLUS user.
 10. Validate cancellation or downgrade webhooks return the user to `free` when appropriate.
 
 ## Account Deletion

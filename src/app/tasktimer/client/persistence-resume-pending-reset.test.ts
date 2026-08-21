@@ -3,6 +3,7 @@ import type { HistoryByTaskId, LiveSessionsByTaskId, Task } from "../lib/types";
 import { normalizeRewardProgress } from "../lib/rewards";
 import { createTaskTimerPersistence } from "./persistence";
 import { loadPendingTimeGoalCompletions } from "./pending-time-goal-completions";
+import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -41,6 +42,28 @@ function createHarness(
   let history: HistoryByTaskId = {};
   let liveSessions: LiveSessionsByTaskId = initialLiveSessions;
   let rewardProgress = normalizeRewardProgress({ totalXp: 10, totalXpPrecise: 10, completedSessions: 1 });
+  let focusNotes: Record<string, string> = {};
+  let focusSessionNoteSaveTimer: number | null = null;
+  let focusSessionNotesInputValue = "";
+  const focusSessionDrafts = createFocusSessionDrafts(
+    {
+      getDrafts: () => focusNotes,
+      setDrafts: (value) => {
+        focusNotes = value;
+      },
+      getActiveTaskId: () => null,
+      getPersistedLiveValue: (taskId) => String(liveSessions[taskId]?.note || "").trim(),
+      getPendingSaveTimer: () => focusSessionNoteSaveTimer,
+      setPendingSaveTimer: (value) => {
+        focusSessionNoteSaveTimer = value;
+      },
+      getInputValue: () => focusSessionNotesInputValue,
+      setInputValue: (value) => {
+        focusSessionNotesInputValue = value;
+      },
+    },
+    createLocalStorageFocusSessionDraftStorage("test:focus-notes")
+  );
   const saveTasks = vi.fn();
   const finalizeLiveSession = vi.fn((entry: Task, opts?: { elapsedMs?: number; completedAtMs?: number }) => {
     const taskId = String(entry.id || "");
@@ -93,7 +116,7 @@ function createHarness(
       loadSnapshot: () => ({ historyByTaskId: {}, cleanedHistoryByTaskId: {}, historyWasCleaned: false }),
       saveCleanedSnapshot: () => {},
     },
-    focusSessionNotesKey: "test:focus-notes",
+    focusSessionDrafts,
     pendingTimeGoalCompletionsKey: "test:pending-completions",
     pendingTaskJumpKey: "test:pending-jump",
     getTasks: () => tasks,
@@ -112,18 +135,10 @@ function createHarness(
     setHistoryRangeDaysByTaskId: () => {},
     getHistoryRangeModeByTaskId: () => ({}),
     setHistoryRangeModeByTaskId: () => {},
-    getFocusSessionNotesByTaskId: () => ({}),
-    setFocusSessionNotesByTaskId: () => {},
     getPendingTaskJumpMemory: () => null,
     setPendingTaskJumpMemory: () => {},
     getRuntimeDestroyed: () => false,
     getCurrentUid: () => "",
-    getFocusModeTaskId: () => null,
-    getFocusSessionNoteSaveTimer: () => null,
-    setFocusSessionNoteSaveTimer: () => {},
-    getFocusSessionNotesInputValue: () => "",
-    setFocusSessionNotesInputValue: () => {},
-    setFocusSessionNotesSectionOpen: () => {},
     getCurrentAppPage: () => "tasks",
     getInitialAppPageFromLocation: () => "tasks",
     initialAppPage: "tasks",
@@ -132,7 +147,6 @@ function createHarness(
     loadDeletedMeta: () => ({}),
     setDeletedTaskMeta: () => {},
     primeDashboardCacheFromShadow: () => {},
-    loadFocusSessionNotes: () => ({}),
     loadAddTaskCustomNames: () => {},
     loadWeekStartingPreference: () => {},
     loadStartupModulePreference: () => {},

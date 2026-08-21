@@ -1,5 +1,12 @@
 import { buildTaskStatusMeta, type Task } from "../lib/types";
 import { nowMs } from "../lib/time";
+import { STORAGE_KEY } from "../lib/storage";
+import {
+  clearTaskMarkedDone,
+  isTaskMarkedDone,
+  markTaskDone,
+  snoozeTaskForToday,
+} from "../lib/taskManualCompletion";
 import type { TaskTimerTasksContext } from "./context";
 import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
 import { createTaskCardActionEffects } from "./task-card-action-effects";
@@ -27,6 +34,8 @@ import {
 
 const TASK_PRIMARY_ACTION_PRESS_CLASS = "isTaskPrimaryActionPressed";
 const TASK_PRIMARY_ACTION_PRESS_MS = 140;
+const TASK_PRIMARY_ACTION_HOLD_MS = 600;
+const COMPLETED_ONCE_OFF_TASKS_COLLAPSED_KEY = `${STORAGE_KEY}:completedOnceOffTasksCollapsed`;
 const ARCHIVE_TASK_CONFIRM_TEXT =
   "Archiving a task removes it from your active tasks while preserving history. You can restore or permanently delete an archived task and associated history from History Manager. [under Settings > Data]";
 const ARCHIVE_TASK_CONFIRM_TEXT_HTML =
@@ -39,7 +48,11 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     | ((task: Task, opts?: { logHistory?: boolean }) => void)
     | null = null;
   let pressedTaskPrimaryActionEl: HTMLElement | null = null;
-  let taskPrimaryActionPressTimer: number | null = null;
+  let taskPrimaryActionHoldTimer: number | null = null;
+  let taskPrimaryActionReleaseTimer: number | null = null;
+  let openTaskPrimaryHoldMenuEl: HTMLElement | null = null;
+  let openTaskPrimaryHoldButtonEl: HTMLButtonElement | null = null;
+  let suppressNextTaskPrimaryClick = false;
   const taskManualEntry = createTaskManualEntryInteraction({
     elements: {
       overlay: els.taskManualEntryOverlay,
@@ -150,6 +163,13 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     fillBackgroundForPct: ctx.fillBackgroundForPct,
     escapeHtml: ctx.escapeHtmlUI,
     formatMainTaskElapsedHtml: ctx.formatMainTaskElapsedHtml,
+    getCompletedOnceOffTasksCollapsed: () => {
+      try {
+        return localStorage.getItem(COMPLETED_ONCE_OFF_TASKS_COLLAPSED_KEY) === "true";
+      } catch {
+        return false;
+      }
+    },
   });
 
   function renderTasksPage() {
@@ -340,9 +360,10 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   });
 
   function clearTaskPrimaryActionPressTimer() {
-    if (!taskPrimaryActionPressTimer) return;
-    window.clearTimeout(taskPrimaryActionPressTimer);
-    taskPrimaryActionPressTimer = null;
+    if (taskPrimaryActionHoldTimer) window.clearTimeout(taskPrimaryActionHoldTimer);
+    if (taskPrimaryActionReleaseTimer) window.clearTimeout(taskPrimaryActionReleaseTimer);
+    taskPrimaryActionHoldTimer = null;
+    taskPrimaryActionReleaseTimer = null;
   }
 
   function getTaskElementForTarget(target: HTMLElement | null | undefined) {
@@ -451,24 +472,65 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     return target;
   }
 
+  function closeTaskPrimaryHoldMenu({ restoreFocus = false } = {}) {
+    const menu = openTaskPrimaryHoldMenuEl;
+    const button = openTaskPrimaryHoldButtonEl;
+    if (!menu && !button) return;
+    if (menu) {
+      menu.hidden = true;
+      menu.closest?.(".task")?.classList.remove("isTaskPrimaryHoldMenuOpen");
+    }
+    if (button) {
+      button.setAttribute("aria-expanded", "false");
+      button.classList.remove(TASK_PRIMARY_ACTION_PRESS_CLASS);
+      if (pressedTaskPrimaryActionEl === button) pressedTaskPrimaryActionEl = null;
+    }
+    if (taskPrimaryActionReleaseTimer) window.clearTimeout(taskPrimaryActionReleaseTimer);
+    taskPrimaryActionReleaseTimer = null;
+    openTaskPrimaryHoldMenuEl = null;
+    openTaskPrimaryHoldButtonEl = null;
+    if (restoreFocus) button?.focus?.();
+  }
+
+  function openTaskPrimaryHoldMenu(target: HTMLButtonElement) {
+    const taskEl = getTaskElementForTarget(target);
+    const menu = taskEl?.querySelector?.(".taskPrimaryHoldMenu") as HTMLElement | null;
+    if (!taskEl || !menu) return;
+    closeTaskPrimaryHoldMenu();
+    openTaskPrimaryHoldMenuEl = menu;
+    openTaskPrimaryHoldButtonEl = target;
+    suppressNextTaskPrimaryClick = true;
+    menu.hidden = false;
+    taskEl.classList.add("isTaskPrimaryHoldMenuOpen");
+    target.setAttribute("aria-expanded", "true");
+    const firstEnabledItem = menu.querySelector<HTMLButtonElement>('[role="menuitem"]:not(:disabled)');
+    firstEnabledItem?.focus?.();
+  }
+
   function releaseTaskPrimaryActionPress(delayMs = TASK_PRIMARY_ACTION_PRESS_MS) {
     const target = pressedTaskPrimaryActionEl;
     if (!target) return;
-    clearTaskPrimaryActionPressTimer();
-    taskPrimaryActionPressTimer = window.setTimeout(() => {
+    if (taskPrimaryActionHoldTimer) window.clearTimeout(taskPrimaryActionHoldTimer);
+    taskPrimaryActionHoldTimer = null;
+    if (taskPrimaryActionReleaseTimer) window.clearTimeout(taskPrimaryActionReleaseTimer);
+    taskPrimaryActionReleaseTimer = window.setTimeout(() => {
       target.classList.remove(TASK_PRIMARY_ACTION_PRESS_CLASS);
       if (pressedTaskPrimaryActionEl === target) pressedTaskPrimaryActionEl = null;
-      taskPrimaryActionPressTimer = null;
+      taskPrimaryActionReleaseTimer = null;
     }, delayMs);
   }
 
-  function pressTaskPrimaryAction(target: HTMLElement) {
+  function pressTaskPrimaryAction(target: HTMLButtonElement) {
     if (pressedTaskPrimaryActionEl && pressedTaskPrimaryActionEl !== target) {
       pressedTaskPrimaryActionEl.classList.remove(TASK_PRIMARY_ACTION_PRESS_CLASS);
     }
     clearTaskPrimaryActionPressTimer();
     pressedTaskPrimaryActionEl = target;
     target.classList.add(TASK_PRIMARY_ACTION_PRESS_CLASS);
+    taskPrimaryActionHoldTimer = window.setTimeout(() => {
+      taskPrimaryActionHoldTimer = null;
+      openTaskPrimaryHoldMenu(target);
+    }, TASK_PRIMARY_ACTION_HOLD_MS);
   }
 
   function handleTaskPrimaryActionPressStart(event: any) {
@@ -480,19 +542,159 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   function handleTaskPrimaryActionKeyDown(event: any) {
     if (event?.key !== " " && event?.key !== "Enter") return;
     if (event?.repeat) return;
-    handleTaskPrimaryActionPressStart(event);
+    const target = getTaskPrimaryActionPressTarget(event?.target);
+    if (!target) return;
+    event?.preventDefault?.();
+    suppressNextTaskPrimaryClick = false;
+    pressTaskPrimaryAction(target);
   }
 
   function handleTaskPrimaryActionPressEnd() {
+    if (openTaskPrimaryHoldButtonEl && pressedTaskPrimaryActionEl === openTaskPrimaryHoldButtonEl) return;
     releaseTaskPrimaryActionPress();
   }
 
+  function handleTaskPrimaryActionContextMenu(event: any) {
+    const primaryAction = getTaskPrimaryActionPressTarget(event?.target);
+    if (!primaryAction && !openTaskPrimaryHoldMenuEl) return;
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+  }
+
+  function handleTaskPrimaryActionKeyUp(event: any) {
+    if (event?.key !== " " && event?.key !== "Enter") return;
+    const target = getTaskPrimaryActionPressTarget(event?.target);
+    if (!target || pressedTaskPrimaryActionEl !== target) return;
+    event?.preventDefault?.();
+    const holdMenuOpened = openTaskPrimaryHoldButtonEl === target;
+    releaseTaskPrimaryActionPress();
+    if (!holdMenuOpened) target.click?.();
+  }
+
+  function handleDocumentTaskPrimaryHoldPointerDown(event: any) {
+    if (!openTaskPrimaryHoldMenuEl) return;
+    const target = event?.target as Node | null;
+    if (target && (openTaskPrimaryHoldMenuEl.contains(target) || openTaskPrimaryHoldButtonEl?.contains(target))) return;
+    closeTaskPrimaryHoldMenu();
+    suppressNextTaskPrimaryClick = false;
+  }
+
+  function handleDocumentTaskPrimaryHoldKeyDown(event: any) {
+    if (event?.key !== "Escape" || !openTaskPrimaryHoldMenuEl) return;
+    event?.preventDefault?.();
+    suppressNextTaskPrimaryClick = false;
+    closeTaskPrimaryHoldMenu({ restoreFocus: true });
+  }
+
+  function resetManuallyDoneTask(task: Task) {
+    const taskId = String(task.id || "").trim();
+    clearTaskMarkedDone(task);
+    resetTaskStateImmediate(task, { logHistory: false });
+    ctx.save({ forceCloudFlush: true });
+    if (taskId) void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
+    ctx.render();
+    ctx.showActionConfirmation("Task reset");
+  }
+
+  function markTaskAsDone(task: Task) {
+    if (isTaskMarkedDone(task)) return;
+    const taskId = String(task.id || "").trim();
+    const elapsedMs = Math.max(0, Math.floor(Number(ctx.getTaskElapsedMs(task)) || 0));
+    const sessionNote = taskId ? ctx.captureResetActionSessionNote(taskId) : "";
+    if (sessionNote && taskId) ctx.setFocusSessionDraft(taskId, sessionNote);
+    resetTaskStateImmediate(task, { logHistory: elapsedMs > 0, sessionNote });
+    markTaskDone(task);
+    ctx.save({ forceCloudFlush: true });
+    if (taskId) {
+      void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
+      ctx.notifyTaskCompletionChanged?.(taskId);
+    }
+    ctx.render();
+    ctx.showActionConfirmation("Task marked done");
+  }
+
+  function snoozeTask(task: Task) {
+    snoozeTaskForToday(task);
+    ctx.save({ forceCloudFlush: true });
+    ctx.render();
+    ctx.showActionConfirmation("Snoozed until tomorrow");
+  }
+
+  function handleTaskPrimaryHoldAction(action: string, taskIndex: number) {
+    const task = ctx.getTasks()[taskIndex];
+    if (!task) return;
+    closeTaskPrimaryHoldMenu();
+    suppressNextTaskPrimaryClick = false;
+    if (action === "done") {
+      markTaskAsDone(task);
+      return;
+    }
+    if (action === "snooze") {
+      snoozeTask(task);
+      return;
+    }
+    if (action !== "reset") return;
+    if (isTaskMarkedDone(task)) {
+      resetManuallyDoneTask(task);
+      return;
+    }
+    taskDestructiveActionEffects.resetTask(taskIndex);
+  }
+
+  function toggleCompletedOnceOffTasks() {
+    let nextCollapsed = true;
+    try {
+      nextCollapsed = localStorage.getItem(COMPLETED_ONCE_OFF_TASKS_COLLAPSED_KEY) !== "true";
+      localStorage.setItem(COMPLETED_ONCE_OFF_TASKS_COLLAPSED_KEY, String(nextCollapsed));
+    } catch {
+      // The section remains usable for this render even when local storage is unavailable.
+    }
+    ctx.render();
+  }
+
   function handleTaskListClick(e: any) {
+    const completedSectionToggle = findDelegatedElement(e.target, '[data-action="toggleCompletedOnceOffTasks"]');
+    if (completedSectionToggle) {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      toggleCompletedOnceOffTasks();
+      return;
+    }
     const taskEl = e.target?.closest?.(".task");
     if (!taskEl) return;
-    const i = parseInt(taskEl.dataset.index, 10);
-    if (!Number.isFinite(i)) return;
-    const taskId = String(taskEl.dataset.taskId || "").trim();
+    const i = getTaskIndexFromTaskElement(taskEl);
+    if (i < 0) return;
+    const taskId = getTaskIdFromTaskElement(taskEl);
+    const holdAction = findDelegatedElement(e.target, "[data-hold-action]");
+    if (holdAction) {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      handleTaskPrimaryHoldAction(String(holdAction.getAttribute("data-hold-action") || ""), i);
+      return;
+    }
+    if (findDelegatedElement(e.target, ".taskPrimaryHoldMenu")) {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      return;
+    }
+    if (openTaskPrimaryHoldMenuEl) {
+      suppressNextTaskPrimaryClick = false;
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      return;
+    }
+    const primaryAction = findDelegatedElement(e.target, ".taskPrimaryAction") as HTMLButtonElement | null;
+    if (primaryAction && suppressNextTaskPrimaryClick) {
+      suppressNextTaskPrimaryClick = false;
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      return;
+    }
+    if (primaryAction?.getAttribute("aria-disabled") === "true") {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      return;
+    }
     const flipBtn = findDelegatedElement(e.target, "[data-task-flip]");
     if (flipBtn && taskId) {
       e?.preventDefault?.();
@@ -528,10 +730,13 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     ctx.on(els.taskList, "pointerup", handleTaskPrimaryActionPressEnd);
     ctx.on(els.taskList, "pointercancel", handleTaskPrimaryActionPressEnd);
     ctx.on(els.taskList, "pointerleave", handleTaskPrimaryActionPressEnd);
+    ctx.on(els.taskList, "contextmenu", handleTaskPrimaryActionContextMenu);
     ctx.on(els.taskList, "keydown", handleTaskPrimaryActionKeyDown);
-    ctx.on(els.taskList, "keyup", handleTaskPrimaryActionPressEnd);
+    ctx.on(els.taskList, "keyup", handleTaskPrimaryActionKeyUp);
     ctx.on(els.taskList, "focusout", handleTaskPrimaryActionPressEnd);
     ctx.on(els.taskList, "click", handleTaskListClick);
+    ctx.on(document, "pointerdown", handleDocumentTaskPrimaryHoldPointerDown);
+    ctx.on(document, "keydown", handleDocumentTaskPrimaryHoldKeyDown);
     ctx.on(els.resetAllBtn, "click", (e: any) => {
       e?.preventDefault?.();
       taskDestructiveActionEffects.resetAll();

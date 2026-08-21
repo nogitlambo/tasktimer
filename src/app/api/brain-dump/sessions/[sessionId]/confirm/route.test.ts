@@ -80,7 +80,10 @@ function reviewSession(): BrainDumpReviewSession {
           enrichment: {
             notes: null,
             estimatedDurationMinutes: null,
-            priority: null,
+            timeGoalValue: null,
+            timeGoalUnit: "minute",
+            timeGoalPeriod: "day",
+            priority: "medium",
             firstAction: null,
           },
           validationErrors: [],

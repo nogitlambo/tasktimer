@@ -31,6 +31,7 @@ import type { StartupModulePreference } from "../lib/startupModule";
 import type { TaskOrderBy } from "./types";
 import type { OptimalProductivityDays } from "../lib/productivityPeriod";
 import type { InteractionHapticsIntensity } from "../lib/interactionHapticsIntensity";
+import type { FocusSessionDrafts } from "./focus-session-drafts";
 
 export type TaskTimerAppPageSyncUrlMode = "replace" | "push" | false;
 
@@ -679,8 +680,8 @@ export type TaskTimerSessionContext = {
   on: TaskTimerRuntime["on"];
   runtime: TaskTimerRuntime;
   sharedTasks: TaskTimerSharedTaskApi;
+  focusSessionDrafts: FocusSessionDrafts;
   storageKeys: {
-    FOCUS_SESSION_NOTES_KEY: string;
     TIME_GOAL_PENDING_FLOW_KEY: string;
     TIME_GOAL_PENDING_COMPLETIONS_KEY?: string;
     TIME_GOAL_COMPLETION_ACK_KEY: string;
@@ -731,8 +732,6 @@ export type TaskTimerSessionContext = {
   setTimeGoalCompleteDurationUnit: (value: "minute" | "hour") => void;
   getTimeGoalCompleteDurationPeriod: () => "day" | "week";
   setTimeGoalCompleteDurationPeriod: (value: "day" | "week") => void;
-  getFocusSessionNotesByTaskId: () => Record<string, string>;
-  setFocusSessionNotesByTaskId: (value: Record<string, string>) => void;
   getFocusSessionNoteSaveTimer: () => number | null;
   setFocusSessionNoteSaveTimer: (value: number | null) => void;
   getCheckpointFlashUntilMsByTaskId: () => Record<string, number>;

@@ -44,7 +44,7 @@ service cloud.firestore {
     }
 
     function isValidUserPlanValue(value) {
-      return value in ["free", "plus", "plus_lifetime", "pro"];
+      return value in ["free", "plus", "plus_monthly", "plus_yearly", "plus_lifetime", "pro"];
     }
 
     function userPlanIsClientSafe() {
@@ -516,6 +516,9 @@ service cloud.firestore {
         "timeGoalCompletedAtMs",
         "timeGoalCompletedReason",
         "timeGoalCompletedElapsedMs",
+        "markedDoneAtMs",
+        "markedDoneUntilMs",
+        "nextBestActionSnoozedUntilMs",
         "resumePendingSinceDayKey",
         "taskType",
         "onceOffDay",
@@ -572,6 +575,9 @@ service cloud.firestore {
       && (!("timeGoalCompletedAtMs" in request.resource.data) || request.resource.data.timeGoalCompletedAtMs == null || request.resource.data.timeGoalCompletedAtMs is int)
       && (!("timeGoalCompletedReason" in request.resource.data) || request.resource.data.timeGoalCompletedReason == null || request.resource.data.timeGoalCompletedReason in ["goal", "reset"])
       && (!("timeGoalCompletedElapsedMs" in request.resource.data) || request.resource.data.timeGoalCompletedElapsedMs == null || request.resource.data.timeGoalCompletedElapsedMs is int)
+      && (!("markedDoneAtMs" in request.resource.data) || request.resource.data.markedDoneAtMs == null || request.resource.data.markedDoneAtMs is int)
+      && (!("markedDoneUntilMs" in request.resource.data) || request.resource.data.markedDoneUntilMs == null || request.resource.data.markedDoneUntilMs is int)
+      && (!("nextBestActionSnoozedUntilMs" in request.resource.data) || request.resource.data.nextBestActionSnoozedUntilMs == null || request.resource.data.nextBestActionSnoozedUntilMs is int)
       && (!("resumePendingSinceDayKey" in request.resource.data) || request.resource.data.resumePendingSinceDayKey == null || request.resource.data.resumePendingSinceDayKey is string)
       && (!("taskType" in request.resource.data) || request.resource.data.taskType in ["recurring", "once-off"])
       && (!("onceOffDay" in request.resource.data) || request.resource.data.onceOffDay == null || request.resource.data.onceOffDay in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"])

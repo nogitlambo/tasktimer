@@ -54,7 +54,10 @@ function reviewEnrichment(overrides: Partial<BrainDumpReviewEnrichment> = {}): B
   return {
     notes: null,
     estimatedDurationMinutes: null,
-    priority: null,
+    timeGoalValue: null,
+    timeGoalUnit: "minute",
+    timeGoalPeriod: "day",
+    priority: "medium",
     firstAction: null,
     ...overrides,
   };
@@ -512,6 +515,52 @@ describe("confirmBrainDumpReviewSession", () => {
     expect(JSON.stringify(savedTasks)).not.toContain("originalDateText");
   });
 
+  it("uses reviewed task type selections when creating tasks", async () => {
+    let savedTasks = [task()];
+    const datedSession = reviewSession({
+      review: {
+        selectedCount: 1,
+        items: [
+          {
+            ...reviewSession().review.items[0],
+            date: reviewDate({
+              originalDateText: "tomorrow",
+              dateSource: "explicit",
+              resolvedDate: "2026-08-08",
+              dateConfidence: 0.9,
+            }),
+          },
+        ],
+      },
+    });
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () => datedSession),
+      saveSession: vi.fn(async () => {}),
+    };
+    const workspace: BrainDumpWorkspaceRepository = {
+      loadTasks: vi.fn(async () => savedTasks),
+      saveTasks: vi.fn(async (_uid, tasks) => {
+        savedTasks = tasks;
+      }),
+    };
+
+    await confirmBrainDumpReviewSession({
+      uid: "uid-1",
+      sessionId: "session-1",
+      idempotencyKey: "confirm-key-task-type",
+      itemUpdates: [{ itemId: "item-1", selected: true, taskType: "recurring" }],
+      store,
+      workspace,
+      createId: () => "unused-random-id",
+    });
+
+    expect(savedTasks[1]).toMatchObject({
+      name: "Call dentist",
+      taskType: "recurring",
+      onceOffTargetDate: null,
+    });
+  });
+
   it("maps estimated duration while keeping review-only enrichment out of Task documents", async () => {
     let savedTasks = [task()];
     const store: BrainDumpSessionStore = {
@@ -558,6 +607,94 @@ describe("confirmBrainDumpReviewSession", () => {
     expect(JSON.stringify(savedTasks[1])).not.toContain("Mention onboarding metrics");
     expect(JSON.stringify(savedTasks[1])).not.toContain("Open the draft deck");
     expect(JSON.stringify(savedTasks[1])).not.toContain("priority");
+  });
+
+  it("maps reviewed hour-per-week time goals into task time goal fields", async () => {
+    let savedTasks = [task()];
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () => reviewSession()),
+      saveSession: vi.fn(async () => {}),
+    };
+    const workspace: BrainDumpWorkspaceRepository = {
+      loadTasks: vi.fn(async () => savedTasks),
+      saveTasks: vi.fn(async (_uid, tasks) => {
+        savedTasks = tasks;
+      }),
+    };
+
+    await confirmBrainDumpReviewSession({
+      uid: "uid-1",
+      sessionId: "session-1",
+      idempotencyKey: "confirm-key-weekly-time-goal",
+      itemUpdates: [
+        {
+          itemId: "item-1",
+          selected: true,
+          enrichment: {
+            timeGoalValue: 2,
+            timeGoalUnit: "hour",
+            timeGoalPeriod: "week",
+          },
+        },
+        { itemId: "item-2", selected: false },
+      ],
+      store,
+      workspace,
+      createId: () => "unused-random-id",
+    });
+
+    expect(savedTasks[1]).toMatchObject({
+      name: "Call dentist",
+      timeGoalEnabled: true,
+      timeGoalValue: 2,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 120,
+    });
+  });
+
+  it("does not enable a time goal when the reviewed value is blank", async () => {
+    let savedTasks = [task()];
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () => reviewSession()),
+      saveSession: vi.fn(async () => {}),
+    };
+    const workspace: BrainDumpWorkspaceRepository = {
+      loadTasks: vi.fn(async () => savedTasks),
+      saveTasks: vi.fn(async (_uid, tasks) => {
+        savedTasks = tasks;
+      }),
+    };
+
+    await confirmBrainDumpReviewSession({
+      uid: "uid-1",
+      sessionId: "session-1",
+      idempotencyKey: "confirm-key-blank-time-goal",
+      itemUpdates: [
+        {
+          itemId: "item-1",
+          selected: true,
+          enrichment: {
+            timeGoalValue: "",
+            timeGoalUnit: "minute",
+            timeGoalPeriod: "day",
+          },
+        },
+        { itemId: "item-2", selected: false },
+      ],
+      store,
+      workspace,
+      createId: () => "unused-random-id",
+    });
+
+    expect(savedTasks[1]).toMatchObject({
+      name: "Call dentist",
+      timeGoalEnabled: false,
+      timeGoalValue: 0,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 0,
+    });
   });
 
   it("skips invalid reviewed items without blocking unrelated valid items", async () => {

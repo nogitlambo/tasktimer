@@ -48,6 +48,9 @@ export type Task = {
   timeGoalCompletedAtMs?: number | null;
   timeGoalCompletedReason?: "goal" | "reset" | null;
   timeGoalCompletedElapsedMs?: number | null;
+  markedDoneAtMs?: number | null;
+  markedDoneUntilMs?: number | null;
+  nextBestActionSnoozedUntilMs?: number | null;
   plannedStartDay?: TaskPlannedStartDay | null;
   plannedStartTime?: string | null;
   plannedStartByDay?: TaskPlannedStartByDay | null;

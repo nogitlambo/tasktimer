@@ -4,6 +4,8 @@ import type { Task } from "../lib/types";
 import type { TaskTimerSessionContext } from "./context";
 import type { TaskTimerRuntime } from "./runtime";
 import type { TaskTimerSharedTaskApi } from "./task-shared";
+import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
+import { getRichNoteEditorValue, setRichNoteEditorValue } from "./rich-session-notes";
 import {
   clearSessionNoteAttachmentUploadStatus,
   createTaskTimerSession,
@@ -225,6 +227,28 @@ function createHarness(overrides?: {
   let focusModeTaskId = overrides?.focusModeTaskId ?? null;
   const liveSessionsByTaskId = overrides?.liveSessionsByTaskId || {};
   let focusSessionNoteSaveTimer: number | null = null;
+  const focusSessionDrafts = createFocusSessionDrafts(
+    {
+      getDrafts: () => drafts,
+      setDrafts: (value) => {
+        drafts = value;
+      },
+      getActiveTaskId: () => focusModeTaskId,
+      getPersistedLiveValue: (taskId) => String(liveSessionsByTaskId[taskId]?.note || "").trim(),
+      getPendingSaveTimer: () => focusSessionNoteSaveTimer,
+      setPendingSaveTimer: (value) => {
+        focusSessionNoteSaveTimer = value;
+      },
+      getInputValue: () => getRichNoteEditorValue(focusSessionNotesInput as unknown as HTMLElement),
+      setInputValue: (value) => {
+        setRichNoteEditorValue(focusSessionNotesInput as unknown as HTMLElement, value);
+      },
+      setSectionOpen: (open) => {
+        (focusSessionNotesSection as unknown as HTMLElement).setAttribute("data-notes-visible", String(open));
+      },
+    },
+    createLocalStorageFocusSessionDraftStorage("tasktimer:focus-session-notes")
+  );
 
   const session = createTaskTimerSession({
     els: {
@@ -269,12 +293,12 @@ function createHarness(overrides?: {
     },
     runtime: { destroyed: false, tickRaf: null, tickTimeout: null } as unknown as TaskTimerRuntime,
     storageKeys: {
-      FOCUS_SESSION_NOTES_KEY: "tasktimer:focus-session-notes",
       TIME_GOAL_PENDING_FLOW_KEY: "tasktimer:time-goal",
     },
     sharedTasks: {
       milestoneUnitSec: () => 3600,
     } as unknown as TaskTimerSharedTaskApi,
+    focusSessionDrafts,
     getTasks: () => tasks,
     getCheckpointFlashUntilMsByTaskId: () => ({}),
     getCheckpointAutoResetDirty: () => false,
@@ -340,10 +364,6 @@ function createHarness(overrides?: {
     setFocusSessionDraft: () => {},
     syncFocusSessionNotesInput: () => {},
     syncFocusSessionNotesAccordion: () => {},
-    getFocusSessionNotesByTaskId: () => drafts,
-    setFocusSessionNotesByTaskId: (value: Record<string, string>) => {
-      drafts = value;
-    },
     getFocusSessionNoteSaveTimer: () => focusSessionNoteSaveTimer,
     setFocusSessionNoteSaveTimer: (value: number | null) => {
       focusSessionNoteSaveTimer = value;

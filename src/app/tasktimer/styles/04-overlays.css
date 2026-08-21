@@ -5021,8 +5021,8 @@ body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntry
   z-index: 2;
   display: flex;
   box-sizing: border-box;
-  width: min(100%, 520px);
-  min-height: clamp(430px, 72dvh, 540px);
+  width: min(525px, calc(100vw - 28px));
+  min-height: min(525px, calc(100dvh - 112px - var(--safe-top) - var(--safe-bottom)));
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -5030,14 +5030,14 @@ body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntry
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  padding: clamp(66px, 9vh, 82px) clamp(42px, 8vw, 64px) clamp(76px, 10vh, 96px);
+  padding: clamp(58px, 7vh, 70px) clamp(46px, 8vw, 62px) clamp(66px, 8vh, 78px);
 }
 
 #rankPromotionOverlay .rankPromotionContent{
   position: relative;
   z-index: 2;
   display: flex;
-  width: min(100%, 520px);
+  width: min(525px, calc(100vw - 28px));
   flex-direction: column;
   align-items: center;
 }
@@ -5294,7 +5294,7 @@ body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntry
   justify-items: center;
   place-items: center;
   width: 100%;
-  min-height: 410px;
+  min-height: 350px;
 }
 
 #rankPromotionOverlay h2,
@@ -5310,7 +5310,7 @@ body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntry
   justify-items: center;
   place-items: center;
   gap: 10px;
-  width: min(100%, 315px);
+  width: min(100%, 286px);
   margin-inline: auto;
   text-align: center;
 }
@@ -5332,10 +5332,10 @@ body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntry
   content: "";
   position: absolute;
   left: 50%;
-  top: 306px;
+  top: 268px;
   z-index: 0;
-  width: 238px;
-  height: 38px;
+  width: 218px;
+  height: 34px;
   pointer-events: none;
   opacity: 0;
   transform: translateX(-50%) scaleX(.72);
@@ -5421,8 +5421,8 @@ body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntry
   display: grid;
   justify-self: center;
   place-items: center;
-  width: 252px;
-  height: 252px;
+  width: 218px;
+  height: 218px;
   margin-inline: auto;
   transform-origin: 50% 50%;
   will-change: transform, opacity, filter;
@@ -5434,8 +5434,8 @@ body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntry
   display: grid;
   justify-self: center;
   place-items: center;
-  width: 252px;
-  height: 252px;
+  width: 218px;
+  height: 218px;
   margin-inline: auto;
 }
 
@@ -5497,8 +5497,8 @@ body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntry
 }
 
 #rankPromotionOverlay .rankPromotionInsigniaNew{
-  width: 315px;
-  height: 315px;
+  width: 276px;
+  height: 276px;
 }
 
 #rankPromotionOverlay .rankPromotionInsigniaImage{
@@ -5512,31 +5512,31 @@ body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntry
 #rankPromotionOverlay .rankPromotionInsigniaPlaceholder{
   display: grid;
   place-items: center;
-  width: 207px;
-  height: 207px;
+  width: 180px;
+  height: 180px;
   border: 1px solid rgba(53,232,255,.34);
   border-radius: 50%;
   color: #c9ff24;
   background: rgba(53,232,255,.08);
-  font-size: 77px;
+  font-size: 68px;
   font-weight: 800;
 }
 
 #rankPromotionOverlay .rankPromotionInsigniaNew .rankPromotionInsigniaPlaceholder{
-  width: 261px;
-  height: 261px;
-  font-size: 90px;
+  width: 230px;
+  height: 230px;
+  font-size: 80px;
 }
 
 #rankPromotionOverlay .rankPromotionLabel{
   position: relative;
   justify-self: center;
-  width: min(100%, 315px);
+  width: min(100%, 286px);
   margin: 0 auto;
-  padding-bottom: 12px;
+  padding-bottom: 6px;
   color: #c9ff24;
   font-family: var(--font-orbitron) !important;
-  font-size: 26px !important;
+  font-size: 22px !important;
   font-weight: 700;
   line-height: 1.35;
   text-align: center;
@@ -5555,7 +5555,7 @@ body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntry
   display: grid;
   justify-self: center;
   justify-items: center;
-  width: min(100%, 315px);
+  width: min(100%, 286px);
   margin: 0 auto;
 }
 
@@ -6257,38 +6257,50 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 @media (max-width: 520px){
 #rankPromotionOverlay .rankPromotionModal{
     --rank-promotion-birdseye-scale: 3.6;
+    width: min(100%, calc(100vw - 20px));
+    min-height: min(500px, calc(100dvh - 102px - var(--safe-top) - var(--safe-bottom)));
+    padding: clamp(52px, 6.5vh, 62px) clamp(34px, 9vw, 46px) clamp(58px, 7vh, 68px);
+  }
+
+#rankPromotionOverlay .rankPromotionContent{
+    width: min(100%, calc(100vw - 20px));
   }
 
 #rankPromotionOverlay .rankPromotionStage{
-    min-height: 350px;
+    min-height: 310px;
   }
 
 #rankPromotionOverlay .rankPromotionInsignia{
-    width: 216px;
-    height: 216px;
+    width: 188px;
+    height: 188px;
   }
 
 #rankPromotionOverlay .rankPromotionInsigniaNew{
-    width: 270px;
-    height: 270px;
+    width: 238px;
+    height: 238px;
   }
 
 #rankPromotionOverlay .rankPromotionRankNew::before{
-    top: 261px;
-    width: 225px;
-    height: 42px;
+    top: 231px;
+    width: 198px;
+    height: 34px;
   }
 
 #rankPromotionOverlay .rankPromotionInsigniaPlaceholder{
-    width: 185px;
-    height: 185px;
-    font-size: 68px;
+    width: 158px;
+    height: 158px;
+    font-size: 60px;
   }
 
 #rankPromotionOverlay .rankPromotionInsigniaNew .rankPromotionInsigniaPlaceholder{
-    width: 230px;
-    height: 230px;
-    font-size: 81px;
+    width: 198px;
+    height: 198px;
+    font-size: 72px;
+  }
+
+#rankPromotionOverlay .rankPromotionLabel{
+    width: min(100%, 252px);
+    font-size: 19px !important;
   }
 
 #rankPromotionOverlay .rankPromotionCloseSlot .rankPromotionTapCloseText{

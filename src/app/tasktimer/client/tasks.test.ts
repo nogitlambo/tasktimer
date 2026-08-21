@@ -13,6 +13,7 @@ type TestEvent = {
 
 type TestTarget = {
   disabled?: boolean;
+  hidden?: boolean;
   dataset?: Record<string, string>;
   classList?: {
     add: (token: string) => void;
@@ -25,6 +26,9 @@ type TestTarget = {
   removeAttribute?: (name: string) => void;
   querySelector?: (selector: string) => TestTarget | null;
   closest?: (selector: string) => TestTarget | null;
+  contains?: (target: unknown) => boolean;
+  click?: () => void;
+  focus?: () => void;
 };
 
 function task(overrides: Partial<Task> = {}): Task {
@@ -267,6 +271,22 @@ function createHarness(overrides: { tasks?: Task[]; deferTimers?: boolean } = {}
           },
         },
       }),
+    clickHoldAction: (action: "done" | "reset" | "snooze") => {
+      const taskEl = { dataset: { index: "0", taskId: "task-1" } as Record<string, string> };
+      const actionEl = { getAttribute: (name: string) => name === "data-hold-action" ? action : null };
+      handlers.get(taskList)?.get("click")?.({
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+        target: {
+          closest: (selector: string) => {
+            if (selector === ".task") return taskEl;
+            if (selector === "[data-hold-action]") return actionEl;
+            if (selector === '[data-action="toggleCompletedOnceOffTasks"]') return null;
+            return null;
+          },
+        },
+      });
+    },
     clickStart: () =>
       handlers.get(taskList)?.get("click")?.({
         preventDefault: vi.fn(),
@@ -369,11 +389,23 @@ function createPrimaryActionTarget({
   const taskEl: TestTarget = {
     dataset: { index: taskIndex, taskId },
   };
+  const menuItem = { focus: vi.fn() };
+  const holdMenu = {
+    hidden: true,
+    contains: vi.fn(() => false),
+    querySelector: vi.fn(() => menuItem),
+    closest: (selector: string) => (selector === ".task" ? taskEl : null),
+  };
+  taskEl.classList = classList;
+  taskEl.querySelector = (selector: string) => selector === ".taskPrimaryHoldMenu" ? holdMenu as unknown as TestTarget : null;
   const button: TestTarget = {
     disabled,
     dataset: { action },
     classList,
     getAttribute: (name: string) => (name === "data-action" ? action : null),
+    setAttribute: vi.fn(),
+    contains: vi.fn(() => false),
+    click: vi.fn(),
     closest: (selector: string) => {
       if (selector === ".taskPrimaryAction" || selector === "[data-action]") return button;
       if (selector === ".task") return taskEl;
@@ -395,7 +427,7 @@ function createPrimaryActionTarget({
     if (selector === ".taskPrimaryAction") return null;
     return null;
   };
-  return { button, classList, group, arrowButton, forwardButton };
+  return { button, classList, group, arrowButton, forwardButton, holdMenu, menuItem };
 }
 
 describe("createTaskTimerTasks", () => {
@@ -485,6 +517,116 @@ describe("createTaskTimerTasks", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("opens the hold menu at 600 ms and suppresses the primary click", () => {
+    vi.useFakeTimers();
+    try {
+      const harness = createHarness({ deferTimers: true });
+      const { button, holdMenu } = createPrimaryActionTarget();
+
+      harness.dispatchTaskListEvent("pointerdown", { target: button });
+      vi.advanceTimersByTime(599);
+      expect(holdMenu.hidden).toBe(true);
+
+      vi.advanceTimersByTime(1);
+      expect(holdMenu.hidden).toBe(false);
+      expect(button.setAttribute).toHaveBeenCalledWith("aria-expanded", "true");
+
+      harness.dispatchTaskListEvent("click", { target: button, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+      expect(harness.getTasks()[0]?.running).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps the hold menu open when release retargets the generated click to the task card", () => {
+    vi.useFakeTimers();
+    try {
+      const harness = createHarness({ deferTimers: true });
+      const { button, classList, holdMenu } = createPrimaryActionTarget();
+      const taskEl = button.closest?.(".task") || null;
+
+      harness.dispatchTaskListEvent("pointerdown", { target: button });
+      vi.advanceTimersByTime(600);
+      harness.dispatchTaskListEvent("pointerup", { target: button });
+      vi.advanceTimersByTime(140);
+      harness.dispatchTaskListEvent("click", {
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+        target: {
+          closest: (selector: string) => {
+            if (selector === ".task") return taskEl;
+            if (selector === ".row") return {};
+            return null;
+          },
+        },
+      });
+
+      expect(harness.ctx.openFocusMode).not.toHaveBeenCalled();
+      expect(holdMenu.hidden).toBe(false);
+      expect(classList.contains("isTaskPrimaryActionPressed")).toBe(true);
+      expect(button.setAttribute).toHaveBeenLastCalledWith("aria-expanded", "true");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("suppresses the native context menu generated by releasing a long press", () => {
+    vi.useFakeTimers();
+    try {
+      const harness = createHarness({ deferTimers: true });
+      const { button, classList, holdMenu } = createPrimaryActionTarget();
+      const preventDefault = vi.fn();
+      const stopPropagation = vi.fn();
+
+      harness.dispatchTaskListEvent("pointerdown", { target: button });
+      vi.advanceTimersByTime(600);
+      harness.dispatchTaskListEvent("contextmenu", { target: button, preventDefault, stopPropagation });
+
+      expect(preventDefault).toHaveBeenCalledTimes(1);
+      expect(stopPropagation).toHaveBeenCalledTimes(1);
+      expect(holdMenu.hidden).toBe(false);
+      expect(classList.contains("isTaskPrimaryActionPressed")).toBe(true);
+      expect(harness.getTasks()[0]?.running).toBe(false);
+
+      harness.clickHoldAction("snooze");
+
+      expect(holdMenu.hidden).toBe(true);
+      expect(classList.contains("isTaskPrimaryActionPressed")).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("marks a running recurring task done, finalizes elapsed time, and locks it until tomorrow", () => {
+    const harness = createHarness({ tasks: [task({ taskType: "recurring", running: true, startMs: Date.now(), accumulatedMs: 60_000, hasStarted: true })] });
+
+    harness.clickHoldAction("done");
+
+    expect(harness.ctx.finalizeLiveSession).toHaveBeenCalledTimes(1);
+    expect(harness.getTasks()[0]).toMatchObject({ running: false, accumulatedMs: 0, markedDoneAtMs: expect.any(Number), markedDoneUntilMs: expect.any(Number) });
+    expect(harness.ctx.showActionConfirmation).toHaveBeenCalledWith("Task marked done");
+  });
+
+  it("snoozes Next Best Action without stopping the task", () => {
+    const harness = createHarness({ tasks: [task({ running: true, startMs: Date.now() })] });
+
+    harness.clickHoldAction("snooze");
+
+    expect(harness.getTasks()[0]?.running).toBe(true);
+    expect(harness.getTasks()[0]?.nextBestActionSnoozedUntilMs).toBeGreaterThan(Date.now());
+    expect(harness.ctx.finalizeLiveSession).not.toHaveBeenCalled();
+  });
+
+  it("resets a manually completed once-off task without duplicating history", () => {
+    const harness = createHarness({ tasks: [task({ taskType: "once-off", markedDoneAtMs: Date.now(), markedDoneUntilMs: null })] });
+
+    harness.clickHoldAction("reset");
+
+    expect(harness.getTasks()[0]).toMatchObject({ markedDoneAtMs: null, markedDoneUntilMs: null, running: false });
+    expect(harness.ctx.finalizeLiveSession).not.toHaveBeenCalled();
+    expect(harness.ctx.showActionConfirmation).toHaveBeenCalledWith("Task reset");
   });
 
   it("updates task card flip state only from explicit flip controls", () => {

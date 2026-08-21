@@ -717,12 +717,29 @@ describe("task card view model", () => {
     });
 
     expect(rendered.className).toBe("task taskCompleted");
-    expect(rendered.html).toContain('data-action="reset" title="Completed" aria-label="Completed" type="button" disabled');
+    expect(rendered.html).toContain('data-action="reset" title="Completed" aria-label="Completed" aria-disabled="true"');
+    expect(rendered.html).toContain('type="button" disabled');
     expect(rendered.html).toContain("btn btn-done small taskPrimaryAction taskPrimaryActionDone");
     expect(rendered.html).toContain('<span class="taskPrimaryActionPrimary">Completed</span>');
     expect(rendered.html).not.toContain("taskPrimaryAction taskPrimaryActionReset");
     expect(rendered.html).not.toContain('<span class="taskPrimaryActionPrimary">Resume</span>');
     expect(rendered.html).toContain('data-action="edit"');
+  });
+
+  it("renders manual Done as hold-resettable and removes normal hold actions", () => {
+    const rendered = renderCard({
+      isManuallyDone: true,
+      task: baseTask({ taskType: "recurring", markedDoneAtMs: Date.now(), markedDoneUntilMs: Date.now() + 60_000 }),
+    });
+
+    expect(rendered.className).toBe("task taskCompleted");
+    expect(rendered.html).toContain("taskPrimaryActionDone");
+    expect(rendered.html).toContain('aria-disabled="true"');
+    expect(rendered.html).toContain('aria-haspopup="menu"');
+    expect(rendered.html).not.toContain('type="button" disabled><span class="taskPrimaryActionRing"');
+    expect(rendered.html).toContain('data-hold-action="reset"');
+    expect(rendered.html).not.toContain('data-hold-action="done"');
+    expect(rendered.html).not.toContain('data-hold-action="snooze"');
   });
 
   it("renders checkpoint labels as compact durations instead of raw decimals", () => {

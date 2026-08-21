@@ -45,7 +45,12 @@ describe("dashboard Next Best Action contract", () => {
     if (result.kind !== "recommendation") return;
     expect(result.recommendation.title).toBe("Prepare launch notes");
     expect(formatNextBestActionExplanation(result.recommendation)).toBe(
-      "It is due soon. Estimated effort: 20 minutes, historical estimate duration. Last history entry: 30 minutes on Friday, August 7, 2026. Recommendation confidence: high confidence.",
+      [
+        "It is due soon.",
+        "- Estimated effort based on historical duration: 20 minutes (historical estimate)",
+        "- Last history entry: 30 minutes on Friday, August 7, 2026",
+        "- Confidence: High - several strong signals support this recommendation",
+      ].join("\n"),
     );
     expect(
       formatNextBestActionTimeGoalPill(result.recommendation.timeGoalMinutes),
@@ -351,7 +356,12 @@ describe("dashboard Next Best Action contract", () => {
     expect(
       elements.get("dashboardNextBestActionExplanation")?.textContent,
     ).toBe(
-      "It is due soon. Estimated effort: 20 minutes, historical estimate duration. Last history entry: 30 minutes on Friday, August 7, 2026. Recommendation confidence: high confidence.",
+      [
+        "It is due soon.",
+        "- Estimated effort based on historical duration: 20 minutes (historical estimate)",
+        "- Last history entry: 30 minutes on Friday, August 7, 2026",
+        "- Confidence: High - several strong signals support this recommendation",
+      ].join("\n"),
     );
     expect(
       elements.get("dashboardNextBestActionExplanation")?.textContent,

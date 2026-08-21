@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { Task } from "@/app/tasktimer/lib/types";
-import { processTypedBrainDump, type BrainDumpAiProvider, type BrainDumpSessionStore } from "./brainDumpProcessing";
+import { processTypedBrainDump, updateBrainDumpReviewSession, type BrainDumpAiProvider, type BrainDumpSessionStore } from "./brainDumpProcessing";
 
 function workspaceTask(overrides: Partial<Task> = {}): Task {
   return {
@@ -102,6 +102,124 @@ describe("processTypedBrainDump", () => {
     expect(JSON.stringify(session)).not.toContain("createdTask");
   });
 
+  it("initializes AI duration estimates as minute-per-day time goals", async () => {
+    const provider: BrainDumpAiProvider = {
+      extractTyped: vi.fn(async () => ({
+        items: [
+          {
+            itemType: "task",
+            title: "Prepare launch deck",
+            sourceEvidence: ["prepare launch deck"],
+            confidence: 0.94,
+            ambiguityFlags: [],
+            estimatedDurationMinutes: 45,
+          },
+        ],
+      })),
+    };
+    const store: BrainDumpSessionStore = {
+      saveSession: vi.fn(async () => {}),
+      getSession: vi.fn(),
+    };
+
+    const session = await processTypedBrainDump({
+      uid: "uid-1",
+      text: "Prepare launch deck.",
+      provider,
+      store,
+      createId: () => "brain-dump-session-1",
+    });
+
+    expect(session.review.items[0].enrichment).toMatchObject({
+      estimatedDurationMinutes: 45,
+      timeGoalValue: 45,
+      timeGoalUnit: "minute",
+      timeGoalPeriod: "day",
+    });
+  });
+
+  it("normalizes review time goal field updates and clamps invalid values", async () => {
+    const baseSession = {
+      id: "brain-dump-session-1",
+      ownerUid: "uid-1",
+      mode: "typed" as const,
+      state: "review" as const,
+      promptId: "brain-dump-v1" as const,
+      createdAtMs: 1_800_000_000_000,
+      expiresAtMs: 1_800_604_800_000,
+      source: { kind: "typed" as const, rawText: "Prepare launch deck." },
+      review: {
+        selectedCount: 1,
+        items: [
+          {
+            id: "item-1",
+            itemType: "task" as const,
+            title: "Prepare launch deck",
+            selected: true,
+            sourceEvidence: ["Prepare launch deck"],
+            confidence: 0.9,
+            ambiguityFlags: [],
+            supported: true,
+            date: {
+              originalDateText: null,
+              dateSource: "none" as const,
+              timezone: "UTC",
+              resolvedDate: null,
+              dateConfidence: 0,
+              ambiguity: "none" as const,
+              ambiguityFlags: [],
+              userConfirmedDate: false,
+              recurrenceText: null,
+              dependencyTimingText: null,
+            },
+            enrichment: {
+              notes: null,
+              estimatedDurationMinutes: 45,
+              timeGoalValue: 45,
+              timeGoalUnit: "minute" as const,
+              timeGoalPeriod: "day" as const,
+              priority: "medium" as const,
+              firstAction: null,
+            },
+            validationErrors: [],
+            duplicateWarnings: [],
+            duplicateDecision: "undecided" as const,
+          },
+        ],
+      },
+    };
+    let savedSession = baseSession;
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () => savedSession),
+      saveSession: vi.fn(async (session) => {
+        savedSession = session;
+      }),
+    };
+
+    const updated = await updateBrainDumpReviewSession({
+      uid: "uid-1",
+      sessionId: "brain-dump-session-1",
+      store,
+      itemUpdates: [
+        {
+          itemId: "item-1",
+          enrichment: {
+            timeGoalValue: 999,
+            timeGoalUnit: "hour",
+            timeGoalPeriod: "week",
+          },
+        },
+      ],
+    });
+
+    expect(updated.review.items[0].enrichment).toMatchObject({
+      estimatedDurationMinutes: 10_080,
+      timeGoalValue: 168,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "week",
+    });
+  });
+
   it("rejects provider output with fields outside the review schema before storage", async () => {
     const provider: BrainDumpAiProvider = {
       extractTyped: vi.fn(async () => ({
@@ -185,6 +303,7 @@ describe("processTypedBrainDump", () => {
       userConfirmedDate: false,
       ambiguity: "none",
     });
+    expect(session.review.items[0].taskType).toBe("once-off");
     expect(session.review.items[1].date).toMatchObject({
       originalDateText: "Friday",
       dateSource: "suggested",
@@ -193,6 +312,7 @@ describe("processTypedBrainDump", () => {
       userConfirmedDate: false,
       ambiguity: "none",
     });
+    expect(session.review.items[1].taskType).toBe("recurring");
   });
 
   it("preserves optional enrichment only when the provider supplies it", async () => {
@@ -236,13 +356,19 @@ describe("processTypedBrainDump", () => {
     expect(session.review.items[0].enrichment).toEqual({
       notes: "Mention onboarding metrics.",
       estimatedDurationMinutes: 45,
+      timeGoalValue: 45,
+      timeGoalUnit: "minute",
+      timeGoalPeriod: "day",
       priority: "high",
       firstAction: "Open the draft deck",
     });
     expect(session.review.items[1].enrichment).toEqual({
       notes: null,
       estimatedDurationMinutes: null,
-      priority: null,
+      timeGoalValue: null,
+      timeGoalUnit: "minute",
+      timeGoalPeriod: "day",
+      priority: "medium",
       firstAction: null,
     });
   });

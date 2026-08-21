@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import type { TaskTimerPaidOffer } from "../lib/entitlements";
 
 const PLUS_FEATURES = [
@@ -14,14 +13,14 @@ const PLUS_FEATURES = [
   "Backup Import/Export",
 ];
 
-export type NativePlusUpsellPanel = "monthly" | "lifetime";
+export type NativePlusUpsellPanel = "monthly" | "yearly";
 
 export function getNativePlusUpsellPanelForOffer(offer: TaskTimerPaidOffer): NativePlusUpsellPanel {
-  return offer === "plus_lifetime" ? "lifetime" : "monthly";
+  return offer === "plus_yearly" ? "yearly" : "monthly";
 }
 
 export function getNativePlusUpsellToggleCopy(panel: NativePlusUpsellPanel): string {
-  return panel === "lifetime" ? "Back to monthly" : "Get PLUS Lifetime";
+  return panel === "yearly" ? "Back to monthly" : "Get PLUS Yearly";
 }
 
 export default function NativePlusUpsellModal({
@@ -41,36 +40,26 @@ export default function NativePlusUpsellModal({
   onSelectOffer: (offer: TaskTimerPaidOffer) => void;
   onConfirm: (offer: TaskTimerPaidOffer) => void | Promise<void>;
 }) {
-  const [visiblePanel, setVisiblePanel] = useState<NativePlusUpsellPanel>("monthly");
-
-  useEffect(() => {
-    if (!open) {
-      setVisiblePanel("monthly");
-      return;
-    }
-    setVisiblePanel(getNativePlusUpsellPanelForOffer(selectedOffer));
-  }, [open, selectedOffer]);
-
   if (!open) return null;
 
-  const showLifetimePanel = () => {
+  const visiblePanel = getNativePlusUpsellPanelForOffer(selectedOffer);
+
+  const showYearlyPanel = () => {
     if (busy) return;
-    setVisiblePanel("lifetime");
-    if (selectedOffer !== "plus_lifetime") onSelectOffer("plus_lifetime");
+    if (selectedOffer !== "plus_yearly") onSelectOffer("plus_yearly");
   };
 
   const showMonthlyPanel = () => {
     if (busy) return;
-    setVisiblePanel("monthly");
     if (selectedOffer !== "plus_monthly") onSelectOffer("plus_monthly");
   };
 
   const handleTogglePanel = () => {
-    if (visiblePanel === "lifetime") {
+    if (visiblePanel === "yearly") {
       showMonthlyPanel();
       return;
     }
-    showLifetimePanel();
+    showYearlyPanel();
   };
 
   return (
@@ -95,7 +84,7 @@ export default function NativePlusUpsellModal({
         <div className="nativePlusUpsellTopSection">
           <div className="nativePlusUpsellOfferViewport">
             <div
-              className={`nativePlusUpsellOfferTrack${visiblePanel === "lifetime" ? " isLifetimeVisible" : ""}`}
+              className={`nativePlusUpsellOfferTrack${visiblePanel === "yearly" ? " isLifetimeVisible" : ""}`}
               role="list"
               aria-label="Plus offers"
             >
@@ -111,7 +100,7 @@ export default function NativePlusUpsellModal({
                     <strong className="nativePlusUpsellOfferTitle">Get <span className="nativePlusUpsellOfferTitleAccent">PLUS</span></strong>
                   </span>
                   <span className="nativePlusUpsellPriceRow" aria-label="Plus monthly price">
-                    <strong className="nativePlusUpsellPrice">$6.99</strong>
+                    <strong className="nativePlusUpsellPrice">$14.99</strong>
                     <span className="nativePlusUpsellBilling">Per month</span>
                   </span>
                 </button>
@@ -119,23 +108,23 @@ export default function NativePlusUpsellModal({
               <div className="nativePlusUpsellOfferPanel">
                 <button
                   type="button"
-                  className={`nativePlusUpsellOfferCard${selectedOffer === "plus_lifetime" ? " isSelected" : ""}`}
-                  onClick={showLifetimePanel}
+                  className={`nativePlusUpsellOfferCard${selectedOffer === "plus_yearly" ? " isSelected" : ""}`}
+                  onClick={showYearlyPanel}
                   disabled={busy}
-                  aria-pressed={selectedOffer === "plus_lifetime"}
+                  aria-pressed={selectedOffer === "plus_yearly"}
                 >
                   <span className="nativePlusUpsellOfferHeadingRow">
-                    <strong className="nativePlusUpsellOfferTitle">PLUS Lifetime</strong>
+                    <strong className="nativePlusUpsellOfferTitle">PLUS Yearly</strong>
                   </span>
-                  <span className="nativePlusUpsellPriceRow" aria-label="Plus lifetime price">
-                    <strong className="nativePlusUpsellPrice">$99.00</strong>
-                    <span className="nativePlusUpsellBilling">One-off payment</span>
+                  <span className="nativePlusUpsellPriceRow" aria-label="Plus yearly price">
+                    <strong className="nativePlusUpsellPrice">$149.00</strong>
+                    <span className="nativePlusUpsellBilling">Per year</span>
                   </span>
                 </button>
               </div>
             </div>
           </div>
-          {visiblePanel === "monthly" ? <span className="nativePlusUpsellOfferBadge">14-DAY FREE TRIAL</span> : null}
+          {visiblePanel === "monthly" ? <span className="nativePlusUpsellOfferBadge">1 MONTH FREE TRIAL</span> : null}
         </div>
         <div className="nativePlusUpsellDivider" aria-hidden="true" />
         <ul className="nativePlusUpsellFeatureList">
@@ -162,9 +151,9 @@ export default function NativePlusUpsellModal({
           >
             {busy
               ? "Starting Checkout..."
-              : selectedOffer === "plus_lifetime"
-                ? "Get PLUS Lifetime"
-                : "Start my 14-day free trial"}
+              : selectedOffer === "plus_yearly"
+                ? "Get PLUS Yearly"
+                : "Start my 1 month free trial"}
           </button>
         </div>
         <button

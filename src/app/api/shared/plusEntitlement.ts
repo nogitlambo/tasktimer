@@ -11,7 +11,7 @@ export const PLUS_REQUIRED_CODE = "plan/plus-required";
 export const PLUS_REQUIRED_MESSAGE = "Upgrade to PLUS to use executive function features.";
 export const PLUS_REQUIRED_STATUS = 402;
 
-export type ServerTaskTimerPlan = "free" | "plus" | "plus_lifetime";
+export type ServerTaskTimerPlan = "free" | "plus" | "plus_monthly" | "plus_yearly" | "plus_lifetime";
 
 export class PlusPlanRequiredError extends Error {
   status = PLUS_REQUIRED_STATUS;
@@ -46,13 +46,15 @@ function isFirestoreLike(db: Firestore): db is Firestore & { collection: Firesto
 export function normalizeServerTaskTimerPlan(value: unknown): ServerTaskTimerPlan {
   const raw = typeof value === "string" ? value.trim().toLowerCase() : "";
   if (raw === "plus" || raw === "pro") return "plus";
+  if (raw === "plus_monthly") return "plus_monthly";
+  if (raw === "plus_yearly") return "plus_yearly";
   if (raw === "plus_lifetime") return "plus_lifetime";
   return "free";
 }
 
 export function isServerPlusPlan(plan: unknown) {
   const normalized = normalizeServerTaskTimerPlan(plan);
-  return normalized === "plus" || normalized === "plus_lifetime";
+  return normalized === "plus" || normalized === "plus_monthly" || normalized === "plus_yearly" || normalized === "plus_lifetime";
 }
 
 export async function loadUserPlanForEntitlement(uid: string, db: Firestore = getFirebaseAdminDb()) {

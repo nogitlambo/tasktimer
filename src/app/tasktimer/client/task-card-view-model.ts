@@ -45,12 +45,16 @@ type TaskPrimaryActionModel = {
   title: string;
   ariaLabel: string;
   disabled: boolean;
+  ariaDisabled: boolean;
+  holdMenuId?: string;
   innerHtml: string;
 };
 
 type TaskPrimaryActionOptions = {
   doneTitle?: string;
   doneLabel?: string;
+  holdEnabledDone?: boolean;
+  holdMenuId?: string;
 };
 
 type RenderTaskCardOptions = {
@@ -75,6 +79,7 @@ type RenderTaskCardOptions = {
   hasFriends: boolean;
   isSharedByOwner: boolean;
   isTimeGoalCompleted: boolean;
+  isManuallyDone?: boolean;
   isStaleRecordedGoalCompleted?: boolean;
   hasTaskHistory: boolean;
   dynamicColorsEnabled: boolean;
@@ -139,7 +144,9 @@ export function getTaskPrimaryActionModel(state: TaskPrimaryActionState, opts?: 
     dataAction: state === "stop" ? "stop" : state === "reset" || state === "done" ? "reset" : "start",
     title,
     ariaLabel: title,
-    disabled: state === "done",
+    disabled: state === "done" && opts?.holdEnabledDone !== true,
+    ariaDisabled: state === "done",
+    holdMenuId: opts?.holdMenuId,
     innerHtml: `<span class="taskPrimaryActionRing" aria-hidden="true"></span><span class="taskPrimaryActionFace"><span class="taskPrimaryActionLabel">${renderTaskPrimaryActionLabelHtml(
       state,
       opts
@@ -149,7 +156,12 @@ export function getTaskPrimaryActionModel(state: TaskPrimaryActionState, opts?: 
 
 export function renderTaskPrimaryActionHtml(state: TaskPrimaryActionState, opts?: TaskPrimaryActionOptions) {
   const model = getTaskPrimaryActionModel(state, opts);
-  return `<button class="${model.className}" data-action="${model.dataAction}" title="${model.title}" aria-label="${model.ariaLabel}" type="button" ${
+  const holdAttributes = model.holdMenuId
+    ? `aria-haspopup="menu" aria-expanded="false" aria-controls="${model.holdMenuId}"`
+    : "";
+  return `<button class="${model.className}" data-action="${model.dataAction}" title="${model.title}" aria-label="${model.ariaLabel}" ${
+    model.ariaDisabled ? 'aria-disabled="true"' : ""
+  } ${holdAttributes} type="button" ${
     model.disabled ? "disabled" : ""
   }>${model.innerHtml}</button>`;
 }
@@ -459,6 +471,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     hasFriends,
     isSharedByOwner,
     isTimeGoalCompleted,
+    isManuallyDone = false,
     isStaleRecordedGoalCompleted,
     hasTaskHistory,
     dynamicColorsEnabled,
@@ -473,7 +486,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
   const className =
     "task" +
     (task.running ? " taskRunning" : "") +
-    (isTimeGoalCompleted ? " taskCompleted" : "") +
+    (isTimeGoalCompleted || isManuallyDone ? " taskCompleted" : "") +
     (task.collapsed ? " collapsed" : "") +
     (checkpointFlashActive ? " taskCheckpointFlash" : "") +
     (historyRevealPhase === "openingSpace" ? " taskHistoryOpeningSpace" : "") +
@@ -510,7 +523,9 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
         escapeHtml,
       })
     : "";
-  const primaryActionState: TaskPrimaryActionState = isTimeGoalCompleted
+  const primaryActionState: TaskPrimaryActionState = isManuallyDone
+    ? "done"
+    : isTimeGoalCompleted
     ? isStaleRecordedGoalCompleted
       ? "done"
       : "reset"
@@ -519,14 +534,36 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
       : elapsedMs > 0
         ? "resume"
         : "launch";
+  const holdMenuEnabled = isManuallyDone || !isTimeGoalCompleted;
+  const holdMenuId = `taskPrimaryHoldMenu-${escapeHtml(taskId)}`;
   const startStopHtml = renderTaskPrimaryActionWithRewindHtml({
     state: primaryActionState,
     elapsedMs,
     sortedMilestones,
     milestoneUnitSec,
-    actionOptions: primaryActionState === "done" ? { doneTitle: "Completed", doneLabel: "Completed" } : undefined,
+    actionOptions: holdMenuEnabled
+      ? {
+          doneTitle: isManuallyDone ? (task.taskType === "once-off" ? "Completed" : "Done until tomorrow") : undefined,
+          doneLabel: isManuallyDone ? "Done" : undefined,
+          holdEnabledDone: isManuallyDone,
+          holdMenuId,
+        }
+      : primaryActionState === "done"
+        ? { doneTitle: "Completed", doneLabel: "Completed" }
+        : undefined,
   });
   const hasResettableTime = elapsedMs > 0;
+  const holdMenuHtml = holdMenuEnabled
+    ? `<div class="taskPrimaryHoldMenu" id="${holdMenuId}" role="menu" aria-label="Task actions" hidden>
+        ${
+          isManuallyDone
+            ? '<button class="taskPrimaryHoldMenuItem" type="button" role="menuitem" data-hold-action="reset">Reset this task</button>'
+            : `<button class="taskPrimaryHoldMenuItem" type="button" role="menuitem" data-hold-action="done">Mark as done</button>
+               <button class="taskPrimaryHoldMenuItem" type="button" role="menuitem" data-hold-action="reset" ${task.running || !hasResettableTime ? "disabled" : ""}>Reset this task</button>
+               <button class="taskPrimaryHoldMenuItem" type="button" role="menuitem" data-hold-action="snooze">Snooze for today</button>`
+        }
+      </div>`
+    : "";
   const resetLabel = task.running
     ? "Stop task to reset"
     : hasResettableTime
@@ -581,6 +618,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
               <div class="actions">
                 ${startStopHtml}
               </div>
+              ${holdMenuHtml}
             </div>
             ${progressHTML}
             <button class="taskHistoryReveal ${showHistory ? "isOpen" : ""}${historyRevealPhase === "openingSpace" ? " isOpeningSpace" : ""}${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}${historyRevealPhase === "closingSpace" ? " isClosingSpace" : ""}" type="button" data-action="history" title="${showHistory ? "Hide history chart" : "Show history chart"}" aria-label="${showHistory ? "Hide history chart" : "Show history chart"}" aria-pressed="${showHistory ? "true" : "false"}" ${isHistoryPinned ? 'aria-disabled="true"' : ""}>

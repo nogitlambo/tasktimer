@@ -274,7 +274,7 @@ export function createDashboardRecovery(options: Options) {
   }
 
   async function refresh(forceRefresh = false, userRequested = false) {
-    if (!card || !["dashboard", "executive"].includes(options.getCurrentAppPage())) return;
+    if (!["dashboard", "executive"].includes(options.getCurrentAppPage())) return;
     if (lockIfNeeded()) return;
     abortController?.abort();
     abortController = new AbortController();
@@ -432,7 +432,6 @@ export function createDashboardRecovery(options: Options) {
   }
 
   function register() {
-    if (!card) return;
     documentRef.addEventListener("click", (event) => {
       const target = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-recovery]");
       const actionTarget = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-recovery-action]");

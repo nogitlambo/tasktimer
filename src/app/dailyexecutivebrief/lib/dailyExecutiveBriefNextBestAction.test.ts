@@ -10,6 +10,8 @@ function repository(candidates: unknown[]): NextBestActionRepository {
     loadRecommendation: vi.fn(),
     skipRecommendation: vi.fn(),
     dismissRecommendation: vi.fn(),
+    loadSuppressedTaskIds: vi.fn().mockResolvedValue([]),
+    releaseSuppressionsForCompletedTask: vi.fn().mockResolvedValue(0),
     startRecommendation: vi.fn(),
   };
 }

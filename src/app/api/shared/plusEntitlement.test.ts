@@ -55,6 +55,8 @@ function dbWithPlanAndExecutivePreference(plan: unknown, executiveFunctionEnable
 describe("PLUS executive-function entitlement", () => {
   it("normalizes the allowed PLUS plan family", () => {
     expect(normalizeServerTaskTimerPlan("plus")).toBe("plus");
+    expect(normalizeServerTaskTimerPlan("plus_monthly")).toBe("plus_monthly");
+    expect(normalizeServerTaskTimerPlan("plus_yearly")).toBe("plus_yearly");
     expect(normalizeServerTaskTimerPlan("plus_lifetime")).toBe("plus_lifetime");
     expect(normalizeServerTaskTimerPlan("pro")).toBe("plus");
   });
@@ -65,8 +67,10 @@ describe("PLUS executive-function entitlement", () => {
     expect(normalizeServerTaskTimerPlan("free")).toBe("free");
   });
 
-  it("allows PLUS, lifetime, and legacy pro users", async () => {
+  it("allows PLUS, monthly, yearly, lifetime, and legacy pro users", async () => {
     await expect(assertPlusPlanForExecutiveFunction("uid-1", dbWithPlan("plus") as never)).resolves.toBe("plus");
+    await expect(assertPlusPlanForExecutiveFunction("uid-1", dbWithPlan("plus_monthly") as never)).resolves.toBe("plus_monthly");
+    await expect(assertPlusPlanForExecutiveFunction("uid-1", dbWithPlan("plus_yearly") as never)).resolves.toBe("plus_yearly");
     await expect(assertPlusPlanForExecutiveFunction("uid-1", dbWithPlan("plus_lifetime") as never)).resolves.toBe("plus_lifetime");
     await expect(assertPlusPlanForExecutiveFunction("uid-1", dbWithPlan("pro") as never)).resolves.toBe("plus");
   });

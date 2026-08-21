@@ -49,8 +49,8 @@ function checkoutRequest(body: Record<string, unknown> = { idToken: "token" }) {
 describe("POST /api/stripe/create-checkout-session", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.STRIPE_PRICE_ID_PRO_MONTHLY = "price_live_no_trial";
-    process.env.STRIPE_PRICE_ID_PLUS_LIFETIME = "price_live_plus_lifetime";
+    process.env.STRIPE_PRICE_ID_PLUS_MONTHLY = "price_live_no_trial";
+    process.env.STRIPE_PRICE_ID_PLUS_YEARLY = "price_live_plus_yearly";
     loadStripeCustomerIdForUser.mockResolvedValue("");
     isStripeApiError.mockReturnValue(false);
     createStripeApiErrorResponse.mockReturnValue(new Response("stripe error", { status: 500 }));
@@ -67,25 +67,27 @@ describe("POST /api/stripe/create-checkout-session", () => {
         success_url: "https://tasklaunch.app/dashboard?checkout=success&session_id={CHECKOUT_SESSION_ID}",
         cancel_url: "https://tasklaunch.app/login?checkout=cancelled",
         subscription_data: {
-          metadata: { uid: "uid-123", offer: "plus_monthly" },
+          metadata: { uid: "uid-123", offer: "plus_monthly", priceId: "price_live_no_trial" },
         },
-        metadata: { uid: "uid-123", offer: "plus_monthly" },
+        metadata: { uid: "uid-123", offer: "plus_monthly", priceId: "price_live_no_trial" },
       })
     );
     expect(checkoutSessionsCreate.mock.calls[0]?.[0]?.subscription_data).not.toHaveProperty("trial_period_days");
   });
 
-  it("creates a payment checkout session for the lifetime offer", async () => {
-    await POST(checkoutRequest({ offer: "plus_lifetime" }));
+  it("creates a subscription checkout session for the yearly offer", async () => {
+    await POST(checkoutRequest({ offer: "plus_yearly" }));
 
     expect(checkoutSessionsCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        mode: "payment",
-        line_items: [{ price: "price_live_plus_lifetime", quantity: 1 }],
-        metadata: { uid: "uid-123", offer: "plus_lifetime" },
+        mode: "subscription",
+        line_items: [{ price: "price_live_plus_yearly", quantity: 1 }],
+        subscription_data: {
+          metadata: { uid: "uid-123", offer: "plus_yearly", priceId: "price_live_plus_yearly" },
+        },
+        metadata: { uid: "uid-123", offer: "plus_yearly", priceId: "price_live_plus_yearly" },
       })
     );
-    expect(checkoutSessionsCreate.mock.calls[0]?.[0]?.subscription_data).toBeUndefined();
   });
 
   it("creates native account return URLs when the caller requests native checkout routing", async () => {

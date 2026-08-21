@@ -62,12 +62,12 @@ class TestElement {
 
 function makeDocument() {
   const elements = new Map<string, TestElement>();
-  for (const id of ["appPageExecutive", "executivePlanHealth", "executiveCapacityRange", "executiveCapacityConfidence", "executiveWorkRemaining", "executiveTodayDate"]) {
+  for (const id of ["appPageExecutive", "executivePlanHealth", "executiveCapacityRange", "executiveWorkRemaining", "executiveTodayDate"]) {
     const element = new TestElement();
     element.id = id;
     elements.set(id, element);
   }
-  const helperCards = ["plan-health", "remaining-capacity", "capacity-confidence", "work-remaining"].map((key) => {
+  const helperCards = ["plan-health", "remaining-capacity", "work-remaining"].map((key) => {
     const card = new TestElement();
     card.id = `executiveMetricCard-${key}`;
     card.helper = new TestElement();
@@ -161,36 +161,6 @@ describe("createExecutiveSurface", () => {
     const planHealth = documentRef.elements.get("executivePlanHealth")!;
     expect(planHealth.textContent).toBe("Slightly Overloaded");
     expect(planHealth.getAttribute("data-plan-health")).toBe("SLIGHTLY_OVERLOADED");
-    expect(documentRef.elements.get("executiveCapacityConfidence")!.textContent).toBe("High");
-    expect(documentRef.elements.get("executiveCapacityConfidence")!.getAttribute("data-capacity-confidence")).toBe("HIGH");
-  });
-
-  it("marks capacity confidence unavailable when capacity is unavailable", async () => {
-    const documentRef = makeDocument();
-    const windowRef = {
-      addEventListener: vi.fn(),
-    } as unknown as Window;
-
-    vi.mocked(loadExecutiveData).mockResolvedValue({
-      brief: { status: "error", message: "" },
-      capacity: { status: "error", message: "" },
-      nba: { status: "error", message: "" },
-      repair: { status: "error", message: "" },
-      recovery: { status: "error", message: "" },
-    });
-
-    const surface = createExecutiveSurface({
-      documentRef,
-      windowRef,
-      getCurrentAppPage: () => "executive",
-      getIdToken: async () => null,
-    });
-
-    surface.register();
-    await Promise.resolve();
-
-    expect(documentRef.elements.get("executiveCapacityConfidence")!.textContent).toBe("Unavailable");
-    expect(documentRef.elements.get("executiveCapacityConfidence")!.getAttribute("data-capacity-confidence")).toBeNull();
   });
 
   it("keeps the plan health metric loading when Executive Function is plan-locked", () => {

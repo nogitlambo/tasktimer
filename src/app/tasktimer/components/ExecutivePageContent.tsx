@@ -537,56 +537,6 @@ export default function ExecutivePageContent({ active }: Props) {
               </div>
               <div
                 className="executiveMetricCard"
-                data-executive-metric-helper-card="capacity-confidence"
-                role="button"
-                tabIndex={0}
-                aria-describedby="executiveMetricHelperCapacityConfidence"
-                aria-expanded="false"
-              >
-                <span className="executiveMetricIcon">
-                  <AppImg
-                    src="/icons/icons_default/confidence.webp"
-                    alt=""
-                    aria-hidden="true"
-                  />
-                </span>
-                <span className="executiveMetricCopy">
-                  <span>Capacity confidence</span>
-                  <strong
-                    id="executiveCapacityConfidence"
-                    data-executive-metric-loading="true"
-                  >
-                    Loading
-                  </strong>
-                </span>
-                <span
-                  className="executiveMetricHelper"
-                  id="executiveMetricHelperCapacityConfidence"
-                  role="tooltip"
-                  aria-hidden="true"
-                >
-                  <strong>How dependable the capacity estimate is.</strong>
-                  <ul>
-                    <li>
-                      <b className="executiveCapacityConfidenceHigh">High:</b>{" "}
-                      at least 14 valid history days with stable results.
-                    </li>
-                    <li>
-                      <b className="executiveCapacityConfidenceMedium">
-                        Medium:
-                      </b>{" "}
-                      matching-weekday or rolling history is available, but is
-                      limited or variable.
-                    </li>
-                    <li>
-                      <b className="executiveCapacityConfidenceLow">Low:</b>{" "}
-                      there is not enough history, so the default range is used.
-                    </li>
-                  </ul>
-                </span>
-              </div>
-              <div
-                className="executiveMetricCard"
                 data-executive-metric-helper-card="work-remaining"
                 role="button"
                 tabIndex={0}
@@ -732,10 +682,29 @@ export default function ExecutivePageContent({ active }: Props) {
                     className="dashboardNextBestActionFirstAction"
                     id="dashboardNextBestActionFirstAction"
                   />
-                  <p className="dashboardNextBestActionExplanation">
-                    <strong>Why this?</strong>{" "}
-                    <span id="dashboardNextBestActionExplanation" />
-                  </p>
+                  <div
+                    className="dashboardNextBestActionExplanation"
+                    id="dashboardNextBestActionExplanation"
+                  >
+                    <p className="dashboardNextBestActionExplanationSummary">
+                      <strong>Why this?</strong>{" "}
+                      <span>This recommendation will summarize why it fits now.</span>
+                    </p>
+                    <ul className="dashboardNextBestActionExplanationList">
+                      <li>
+                        <span className="dashboardNextBestActionExplanationLabel">Estimated effort based on historical duration</span>
+                        <span className="dashboardNextBestActionExplanationValue">Loading</span>
+                      </li>
+                      <li>
+                        <span className="dashboardNextBestActionExplanationLabel">Last history entry</span>
+                        <span className="dashboardNextBestActionExplanationValue">Loading</span>
+                      </li>
+                      <li>
+                        <span className="dashboardNextBestActionExplanationLabel">Confidence</span>
+                        <span className="dashboardNextBestActionExplanationValue">Loading</span>
+                      </li>
+                    </ul>
+                  </div>
                   <div
                     className="dashboardNextBestActionActions"
                     aria-label="Next Best Action actions"
@@ -802,88 +771,6 @@ export default function ExecutivePageContent({ active }: Props) {
                   Retry
                 </button>
               </section>
-
-              <div
-                className="executiveAttentionStack"
-                aria-labelledby="executiveAttentionHeading"
-              >
-                <h2 id="executiveAttentionHeading">Needs attention</h2>
-                <section
-                  className="executiveCard executiveAttentionCard dashboardScheduleRepairCard"
-                  id="dashboardScheduleRepairCard"
-                  aria-label="Schedule repair"
-                  data-schedule-repair-state="loading"
-                >
-                  <div className="executiveSectionHeading">
-                    <div>
-                      <p className="executiveEyebrow">Schedule repair</p>
-                      <h3>Review plan changes</h3>
-                    </div>
-                  </div>
-                  <div
-                    className="dashboardScheduleRepairStatus executiveStatus"
-                    id="dashboardScheduleRepairStatus"
-                    role="status"
-                    aria-live="polite"
-                  >
-                    Checking today&apos;s schedule...
-                  </div>
-                  <div
-                    className="dashboardScheduleRepairSummary"
-                    id="dashboardScheduleRepairSummary"
-                    hidden
-                    aria-hidden="true"
-                  >
-                    <strong id="dashboardScheduleRepairSummaryTitle" />
-                    <span id="dashboardScheduleRepairSummaryDetails" />
-                  </div>
-                  <button
-                    className="btn btn-ghost dashboardScheduleRepairRetry"
-                    type="button"
-                    data-schedule-repair="refresh"
-                    hidden
-                  >
-                    Try again
-                  </button>
-                </section>
-
-                <section
-                  className="executiveCard executiveRecoveryCard dashboardRecoveryCard"
-                  id="dashboardRecoveryCard"
-                  aria-label="Recovery Mode recommendation"
-                  data-recovery-state="idle"
-                >
-                  <div className="executiveSectionHeading">
-                    <div>
-                      <p className="executiveEyebrow">Recovery</p>
-                      <h3 id="executiveRecoveryHeading">Reset the plan</h3>
-                    </div>
-                  </div>
-                  <div
-                    className="dashboardRecoveryStatus executiveStatus"
-                    id="dashboardRecoveryStatus"
-                    role="status"
-                    aria-live="polite"
-                  />
-                  <div
-                    className="dashboardRecoverySummary"
-                    id="dashboardRecoverySummary"
-                    hidden
-                    aria-hidden="true"
-                  >
-                    <strong id="dashboardRecoverySummaryTitle" />
-                    <span id="dashboardRecoverySummaryDetails" />
-                  </div>
-                  <button
-                    className="btn btn-ghost dashboardRecoveryRetry"
-                    type="button"
-                    data-recovery="refresh"
-                    hidden
-                  >
-                    Try again
-                  </button>
-                </section>
-              </div>
 
               <section className="executiveTools" aria-label="Executive tools">
                 <p className="executiveEyebrow executiveToolsLabel">

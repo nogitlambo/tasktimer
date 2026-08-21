@@ -1273,6 +1273,16 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
     row.timeGoalCompletedElapsedMs == null || !Number.isFinite(Number(row.timeGoalCompletedElapsedMs))
       ? null
       : Math.max(0, Math.floor(Number(row.timeGoalCompletedElapsedMs)));
+  row.markedDoneAtMs = row.markedDoneAtMs == null || !Number.isFinite(Number(row.markedDoneAtMs))
+    ? null
+    : Math.max(0, Math.floor(Number(row.markedDoneAtMs)));
+  row.markedDoneUntilMs = row.markedDoneUntilMs == null || !Number.isFinite(Number(row.markedDoneUntilMs))
+    ? null
+    : Math.max(0, Math.floor(Number(row.markedDoneUntilMs)));
+  row.nextBestActionSnoozedUntilMs =
+    row.nextBestActionSnoozedUntilMs == null || !Number.isFinite(Number(row.nextBestActionSnoozedUntilMs))
+      ? null
+      : Math.max(0, Math.floor(Number(row.nextBestActionSnoozedUntilMs)));
   row.resumePendingSinceDayKey =
     typeof row.resumePendingSinceDayKey === "string" && /^\d{4}-\d{2}-\d{2}$/.test(row.resumePendingSinceDayKey)
       ? row.resumePendingSinceDayKey
@@ -1352,6 +1362,18 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
       task.timeGoalCompletedElapsedMs == null || !Number.isFinite(Number(task.timeGoalCompletedElapsedMs))
         ? null
         : Math.max(0, Math.floor(Number(task.timeGoalCompletedElapsedMs))),
+    markedDoneAtMs:
+      task.markedDoneAtMs == null || !Number.isFinite(Number(task.markedDoneAtMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.markedDoneAtMs))),
+    markedDoneUntilMs:
+      task.markedDoneUntilMs == null || !Number.isFinite(Number(task.markedDoneUntilMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.markedDoneUntilMs))),
+    nextBestActionSnoozedUntilMs:
+      task.nextBestActionSnoozedUntilMs == null || !Number.isFinite(Number(task.nextBestActionSnoozedUntilMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.nextBestActionSnoozedUntilMs))),
     resumePendingSinceDayKey:
       typeof task.resumePendingSinceDayKey === "string" && /^\d{4}-\d{2}-\d{2}$/.test(task.resumePendingSinceDayKey)
         ? task.resumePendingSinceDayKey
@@ -1394,6 +1416,9 @@ function mapTaskToCompatibilityFirestore(task: Task): Record<string, unknown> {
   const legacyRow = mapTaskToLegacyFirestore(task);
   const {
     resumePendingSinceDayKey,
+    markedDoneAtMs,
+    markedDoneUntilMs,
+    nextBestActionSnoozedUntilMs,
     taskType,
     onceOffDay,
     onceOffTargetDate,
@@ -1404,6 +1429,9 @@ function mapTaskToCompatibilityFirestore(task: Task): Record<string, unknown> {
     ...compatibilityRow
   } = legacyRow;
   void resumePendingSinceDayKey;
+  void markedDoneAtMs;
+  void markedDoneUntilMs;
+  void nextBestActionSnoozedUntilMs;
   void taskType;
   void onceOffDay;
   void onceOffTargetDate;

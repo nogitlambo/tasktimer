@@ -28,19 +28,19 @@ describe("NativePlusUpsellModal", () => {
     expect(html).toContain('aria-label="Close"');
     expect(html).toContain("Get <span");
     expect(html).toContain(">PLUS</span>");
-    expect(html).toContain("14-DAY FREE TRIAL");
-    expect(html).toContain("$6.99");
-    expect(html).toContain("PLUS Lifetime");
-    expect(html).toContain("$99.00");
-    expect(html).toContain("One-off payment");
+    expect(html).toContain("1 MONTH FREE TRIAL");
+    expect(html).toContain("$14.99");
+    expect(html).toContain("PLUS Yearly");
+    expect(html).toContain("$149.00");
+    expect(html).toContain("Per year");
     expect(html).toContain("Unlock AI-guided workflow optimisation");
     expect(html).toContain('class="confirmBtns nativePlusUpsellActions"');
     expect(html).toContain('class="nativePlusUpsellTopSection"');
     expect(html).toContain('class="nativePlusUpsellOfferViewport"');
     expect(html).toContain('class="nativePlusUpsellOfferTrack"');
-    expect(html).toContain("Get PLUS Lifetime");
+    expect(html).toContain("Get PLUS Yearly");
     expect(html).not.toContain(">Close<");
-    expect(html).toContain("Start my 14-day free trial");
+    expect(html).toContain("Start my 1 month free trial");
     expect(html).not.toContain('class="nativePlusUpsellOfferList"');
   });
 
@@ -67,11 +67,11 @@ describe("NativePlusUpsellModal", () => {
 
   it("maps checkout offers to the matching visible offer panel", () => {
     expect(getNativePlusUpsellPanelForOffer("plus_monthly")).toBe("monthly");
-    expect(getNativePlusUpsellPanelForOffer("plus_lifetime")).toBe("lifetime");
+    expect(getNativePlusUpsellPanelForOffer("plus_yearly")).toBe("yearly");
   });
 
   it("uses the correct toggle link copy for each panel state", () => {
-    expect(getNativePlusUpsellToggleCopy("monthly")).toBe("Get PLUS Lifetime");
-    expect(getNativePlusUpsellToggleCopy("lifetime")).toBe("Back to monthly");
+    expect(getNativePlusUpsellToggleCopy("monthly")).toBe("Get PLUS Yearly");
+    expect(getNativePlusUpsellToggleCopy("yearly")).toBe("Back to monthly");
   });
 });

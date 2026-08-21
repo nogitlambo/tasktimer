@@ -14,17 +14,15 @@
   .executiveDecisionFlow{display:flex;flex-direction:column;gap:14px}
   .executiveNbaCard.dashboardNextBestActionCard{order:1;min-height:0}
   .executivePlanCard{order:2}
-  .executiveAttentionStack{order:3}
-  .executiveTools{order:4}
+  .executiveTools{order:3}
   .executivePlanBody{grid-template-columns:1fr}
   .executivePlanBody .executiveCapacityCard.dashboardDailyCapacityCard{padding:12px 0 0;border-left:0;border-top:1px solid rgba(121,226,255,.16)}
-  .executiveTools{width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);border-radius:0;padding:14px}.executiveNbaContent{max-width:100%}.executiveToolLinks{grid-template-columns:repeat(2,minmax(0,1fr))}.executiveToolLinks>.btn{width:100%;height:auto;padding:14px!important}
-  .dashboardExecutiveSummaryNext{align-items:stretch;flex-direction:column}
+  .executiveTools{width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);border-radius:0;padding:14px}.executiveNbaContent{max-width:100%}.executiveToolLinks>.btn{width:100%;height:auto;padding:14px!important}
 }
 
 @media (min-width:721px) and (max-width:1100px){
   .executiveTodayHealth{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .executiveDecisionFlow{grid-template-columns:1fr;grid-template-areas:"nba" "attention" "tools"}
+  .executiveDecisionFlow{grid-template-columns:1fr;grid-template-areas:"nba" "tools"}
 }
 
 @media (max-width: 640px){

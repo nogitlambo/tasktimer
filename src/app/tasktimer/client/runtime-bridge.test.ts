@@ -111,7 +111,7 @@ describe("runtime bridge push actions", () => {
     });
 
     await maybeHandleTaskTimerPendingPushAction({
-      getTasks: () => [task()],
+      getTasks: () => [task({ plannedStartByDay: { mon: "09:00" } })],
       clearPendingPushAction: () => calls.push("clear"),
       startTaskByIndex: (index) => calls.push(`start:${index}`),
       jumpToTaskById: (taskId) => calls.push(`jump:${taskId}`),
@@ -123,6 +123,38 @@ describe("runtime bridge push actions", () => {
     expect(runtimeBridgeMocks.appliedActions).toEqual([
       { actionId: "launchTask", taskId: "task-1", route: "/tasklaunch", deviceId: "device-1" },
     ]);
+    expect(storedValues.get("taskticker_tasks_v1:lastNativePushDispatch")).toBe("message-1|task-1|launchTask|123|0");
+  });
+
+  it("does not auto-start unscheduled tasks from stale launch actions", async () => {
+    const calls: string[] = [];
+    const storedValues = new Map<string, string>();
+    runtimeBridgeMocks.pending = {
+      taskId: "task-1",
+      route: "/tasklaunch",
+      actionId: "launchTask",
+      sourceNotificationId: 123,
+      dispatchNonce: "message-1|task-1|launchTask|123|0",
+    };
+    vi.stubGlobal("window", {
+      setTimeout: vi.fn(),
+      localStorage: {
+        setItem: vi.fn((key: string, value: string) => storedValues.set(key, value)),
+        removeItem: vi.fn(),
+      },
+    });
+
+    await maybeHandleTaskTimerPendingPushAction({
+      getTasks: () => [task({ plannedStartTime: null, plannedStartByDay: null })],
+      clearPendingPushAction: () => calls.push("clear"),
+      startTaskByIndex: (index) => calls.push(`start:${index}`),
+      jumpToTaskById: (taskId) => calls.push(`jump:${taskId}`),
+      maybeRestorePendingTimeGoalFlow: () => calls.push("restore-flow"),
+    });
+
+    expect(calls).toEqual(["clear", "jump:task-1"]);
+    expect(runtimeBridgeMocks.sourceNotifications).toEqual([]);
+    expect(runtimeBridgeMocks.appliedActions).toEqual([]);
     expect(storedValues.get("taskticker_tasks_v1:lastNativePushDispatch")).toBe("message-1|task-1|launchTask|123|0");
   });
 });

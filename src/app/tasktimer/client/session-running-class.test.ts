@@ -12,6 +12,7 @@ import {
   type TimeGoalCompleteXpReplayRequest,
 } from "./xp-award-events";
 import { clearXpAwardButtonLabelOverride, setXpAwardButtonLabelOverride } from "./xp-award-button-label-override";
+import { createFocusSessionDrafts } from "./focus-session-drafts";
 
 vi.mock("./interaction-haptics", () => ({
   playCheckpointAlertVibration: vi.fn(),
@@ -45,6 +46,26 @@ function task(overrides: Partial<Task> = {}): Task {
     hasStarted: false,
     ...overrides,
   };
+}
+
+function createFocusSessionDraftsStub() {
+  let drafts: Record<string, string> = {};
+  return createFocusSessionDrafts(
+    {
+      getDrafts: () => drafts,
+      setDrafts: (value) => {
+        drafts = value;
+      },
+      getActiveTaskId: () => null,
+      getPendingSaveTimer: () => null,
+      setPendingSaveTimer: () => {},
+      getInputValue: () => "",
+    },
+    {
+      load: () => ({}),
+      persist: () => {},
+    }
+  );
 }
 
 function createClassList(initial: string[] = []) {
@@ -308,8 +329,8 @@ function createCompletionHarness(options?: {
       timeGoalCompleteNoteInput: null,
     },
     runtime: { destroyed: false, tickRaf: null, tickTimeout: null } as unknown as TaskTimerRuntime,
+    focusSessionDrafts: createFocusSessionDraftsStub(),
     storageKeys: {
-      FOCUS_SESSION_NOTES_KEY: "tasktimer:focus-session-notes",
       TIME_GOAL_PENDING_FLOW_KEY: "tasktimer:time-goal",
       TIME_GOAL_PENDING_COMPLETIONS_KEY: "taskticker_tasks_v1:pendingTimeGoalCompletions",
       TIME_GOAL_COMPLETION_ACK_KEY: "tasktimer:time-goal-ack",
@@ -402,8 +423,6 @@ function createCompletionHarness(options?: {
     setFocusSessionDraft,
     syncFocusSessionNotesInput: () => {},
     syncFocusSessionNotesAccordion: () => {},
-    getFocusSessionNotesByTaskId: () => ({}),
-    setFocusSessionNotesByTaskId: () => {},
     getFocusSessionNoteSaveTimer: () => null,
     setFocusSessionNoteSaveTimer: () => {},
     getDeferredFocusModeTimeGoalModals: () => [],
@@ -1663,8 +1682,8 @@ describe("task timer session tick", () => {
         focusTaskName: null,
       },
       runtime: { destroyed: false, tickRaf: null, tickTimeout: null } as unknown as TaskTimerRuntime,
+      focusSessionDrafts: createFocusSessionDraftsStub(),
       storageKeys: {
-        FOCUS_SESSION_NOTES_KEY: "tasktimer:focus-session-notes",
       },
       sharedTasks: {
         milestoneUnitSec: () => 3600,
@@ -1719,6 +1738,7 @@ describe("task timer session tick", () => {
       normalizeHistoryTimestampMs: () => 0,
       getHistoryEntryNote: () => "",
       syncSharedTaskSummariesForTask: async () => {},
+      syncSharedTaskSummariesForTasks: async () => {},
       startTask: () => {},
       stopTask: () => {},
       resetTask: () => {},
@@ -1727,8 +1747,6 @@ describe("task timer session tick", () => {
       setFocusSessionDraft: () => {},
       syncFocusSessionNotesInput: () => {},
       syncFocusSessionNotesAccordion: () => {},
-      getFocusSessionNotesByTaskId: () => ({}),
-      setFocusSessionNotesByTaskId: () => {},
       getFocusSessionNoteSaveTimer: () => null,
       setFocusSessionNoteSaveTimer: () => {},
       getDeferredFocusModeTimeGoalModals: () => [],
@@ -1821,8 +1839,8 @@ describe("task timer session tick", () => {
         focusTaskName: null,
       },
       runtime: { destroyed: false, tickRaf: null, tickTimeout: null } as unknown as TaskTimerRuntime,
+      focusSessionDrafts: createFocusSessionDraftsStub(),
       storageKeys: {
-        FOCUS_SESSION_NOTES_KEY: "tasktimer:focus-session-notes",
       },
       sharedTasks: {
         milestoneUnitSec: () => 3600,
@@ -1886,8 +1904,6 @@ describe("task timer session tick", () => {
       setFocusSessionDraft: () => {},
       syncFocusSessionNotesInput: () => {},
       syncFocusSessionNotesAccordion: () => {},
-      getFocusSessionNotesByTaskId: () => ({}),
-      setFocusSessionNotesByTaskId: () => {},
       getFocusSessionNoteSaveTimer: () => null,
       setFocusSessionNoteSaveTimer: () => {},
       getDeferredFocusModeTimeGoalModals: () => [],
@@ -1982,8 +1998,8 @@ describe("task timer session tick", () => {
         focusTaskName: null,
       },
       runtime: { destroyed: false, tickRaf: null, tickTimeout: null } as unknown as TaskTimerRuntime,
+      focusSessionDrafts: createFocusSessionDraftsStub(),
       storageKeys: {
-        FOCUS_SESSION_NOTES_KEY: "tasktimer:focus-session-notes",
       },
       sharedTasks: {
         milestoneUnitSec: () => 3600,
@@ -2047,8 +2063,6 @@ describe("task timer session tick", () => {
       setFocusSessionDraft: () => {},
       syncFocusSessionNotesInput: () => {},
       syncFocusSessionNotesAccordion: () => {},
-      getFocusSessionNotesByTaskId: () => ({}),
-      setFocusSessionNotesByTaskId: () => {},
       getFocusSessionNoteSaveTimer: () => null,
       setFocusSessionNoteSaveTimer: () => {},
       getDeferredFocusModeTimeGoalModals: () => [],
@@ -2143,8 +2157,8 @@ describe("task timer session tick", () => {
         focusTaskName: null,
       },
       runtime: { destroyed: false, tickRaf: null, tickTimeout: null } as unknown as TaskTimerRuntime,
+      focusSessionDrafts: createFocusSessionDraftsStub(),
       storageKeys: {
-        FOCUS_SESSION_NOTES_KEY: "tasktimer:focus-session-notes",
       },
       sharedTasks: {
         milestoneUnitSec: () => 3600,
@@ -2199,6 +2213,7 @@ describe("task timer session tick", () => {
       normalizeHistoryTimestampMs: () => 0,
       getHistoryEntryNote: () => "",
       syncSharedTaskSummariesForTask: async () => {},
+      syncSharedTaskSummariesForTasks: async () => {},
       startTask: () => {},
       stopTask: () => {},
       resetTask: () => {},
@@ -2207,8 +2222,6 @@ describe("task timer session tick", () => {
       setFocusSessionDraft: () => {},
       syncFocusSessionNotesInput: () => {},
       syncFocusSessionNotesAccordion: () => {},
-      getFocusSessionNotesByTaskId: () => ({}),
-      setFocusSessionNotesByTaskId: () => {},
       getFocusSessionNoteSaveTimer: () => null,
       setFocusSessionNoteSaveTimer: () => {},
       getDeferredFocusModeTimeGoalModals: () => [],
@@ -2306,8 +2319,8 @@ describe("task timer session tick", () => {
         focusTaskName: null,
       },
       runtime: { destroyed: false, tickRaf: null, tickTimeout: null } as unknown as TaskTimerRuntime,
+      focusSessionDrafts: createFocusSessionDraftsStub(),
       storageKeys: {
-        FOCUS_SESSION_NOTES_KEY: "tasktimer:focus-session-notes",
       },
       sharedTasks: {
         milestoneUnitSec: () => 3600,
@@ -2362,6 +2375,7 @@ describe("task timer session tick", () => {
       normalizeHistoryTimestampMs: () => 0,
       getHistoryEntryNote: () => "",
       syncSharedTaskSummariesForTask: async () => {},
+      syncSharedTaskSummariesForTasks: async () => {},
       startTask: () => {},
       stopTask: () => {},
       resetTask: () => {},
@@ -2370,8 +2384,6 @@ describe("task timer session tick", () => {
       setFocusSessionDraft: () => {},
       syncFocusSessionNotesInput: () => {},
       syncFocusSessionNotesAccordion: () => {},
-      getFocusSessionNotesByTaskId: () => ({}),
-      setFocusSessionNotesByTaskId: () => {},
       getFocusSessionNoteSaveTimer: () => null,
       setFocusSessionNoteSaveTimer: () => {},
       getDeferredFocusModeTimeGoalModals: () => [],
@@ -2443,8 +2455,8 @@ describe("task timer session tick", () => {
         focusCheckpointLogEmpty: null,
       },
       runtime: { destroyed: false, tickRaf: null, tickTimeout: null } as unknown as TaskTimerRuntime,
+      focusSessionDrafts: createFocusSessionDraftsStub(),
       storageKeys: {
-        FOCUS_SESSION_NOTES_KEY: "tasktimer:focus-session-notes",
       },
       sharedTasks: { milestoneUnitSec: () => 60, milestoneUnitSuffix: () => "m" } as unknown as TaskTimerSharedTaskApi,
       getTasks: () => [activeTask],
@@ -2506,8 +2518,6 @@ describe("task timer session tick", () => {
       setFocusSessionDraft: () => {},
       syncFocusSessionNotesInput: () => {},
       syncFocusSessionNotesAccordion: () => {},
-      getFocusSessionNotesByTaskId: () => ({}),
-      setFocusSessionNotesByTaskId: () => {},
       getFocusSessionNoteSaveTimer: () => null,
       setFocusSessionNoteSaveTimer: () => {},
       getDeferredFocusModeTimeGoalModals: () => [],
@@ -2572,8 +2582,8 @@ describe("task timer session tick", () => {
         focusCheckpointLogEmpty: null,
       },
       runtime: { destroyed: false, tickRaf: null, tickTimeout: null } as unknown as TaskTimerRuntime,
+      focusSessionDrafts: createFocusSessionDraftsStub(),
       storageKeys: {
-        FOCUS_SESSION_NOTES_KEY: "tasktimer:focus-session-notes",
       },
       sharedTasks: { milestoneUnitSec: () => 60, milestoneUnitSuffix: () => "m" } as unknown as TaskTimerSharedTaskApi,
       getTasks: () => [activeTask],
@@ -2635,8 +2645,6 @@ describe("task timer session tick", () => {
       setFocusSessionDraft: () => {},
       syncFocusSessionNotesInput: () => {},
       syncFocusSessionNotesAccordion: () => {},
-      getFocusSessionNotesByTaskId: () => ({}),
-      setFocusSessionNotesByTaskId: () => {},
       getFocusSessionNoteSaveTimer: () => null,
       setFocusSessionNoteSaveTimer: () => {},
       getDeferredFocusModeTimeGoalModals: () => [],
@@ -2710,8 +2718,8 @@ describe("task timer session tick", () => {
         focusCheckpointLogEmpty: null,
       },
       runtime: { destroyed: false, tickRaf: null, tickTimeout: null } as unknown as TaskTimerRuntime,
+      focusSessionDrafts: createFocusSessionDraftsStub(),
       storageKeys: {
-        FOCUS_SESSION_NOTES_KEY: "tasktimer:focus-session-notes",
       },
       sharedTasks: { milestoneUnitSec: () => 60, milestoneUnitSuffix: () => "m" } as unknown as TaskTimerSharedTaskApi,
       getTasks: () => [activeTask],
@@ -2773,8 +2781,6 @@ describe("task timer session tick", () => {
       setFocusSessionDraft: () => {},
       syncFocusSessionNotesInput: () => {},
       syncFocusSessionNotesAccordion: () => {},
-      getFocusSessionNotesByTaskId: () => ({}),
-      setFocusSessionNotesByTaskId: () => {},
       getFocusSessionNoteSaveTimer: () => null,
       setFocusSessionNoteSaveTimer: () => {},
       getDeferredFocusModeTimeGoalModals: () => [],

@@ -10,10 +10,21 @@ import { createTaskTimerRootBootstrap } from "./root-state";
 import { createTaskTimerRuntime, type TaskTimerRuntime } from "./runtime";
 import type { TaskTimerScheduleState } from "./schedule-runtime";
 import type { AppPage, TaskTimerMutableState } from "./types";
+import {
+  createFocusSessionDrafts,
+  createLocalStorageFocusSessionDraftStorage,
+  type FocusSessionDraftState,
+  type FocusSessionDraftStorage,
+} from "./focus-session-drafts";
+
+type FocusSessionDraftView = Pick<FocusSessionDraftState, "getInputValue" | "setInputValue" | "setSectionOpen">;
 
 type RuntimeCompositionFactories = {
   createRuntime?: () => TaskTimerRuntime;
   createWorkspaceRepository?: () => TaskTimerWorkspaceRepository;
+  createFocusSessionDrafts?: typeof createFocusSessionDrafts;
+  createFocusSessionDraftStorage?: (storageKey: string) => FocusSessionDraftStorage;
+  focusSessionDraftView?: FocusSessionDraftView;
 };
 
 export function createTaskTimerRuntimeComposition(
@@ -90,6 +101,24 @@ export function createTaskTimerRuntimeComposition(
     focusSessionNotesByTaskId: initialState.focusSessionNotesByTaskId,
     focusSessionNoteSaveTimer: null as number | null,
   });
+  const focusSessionDraftView = factories.focusSessionDraftView ?? {
+    getInputValue: () => "",
+  };
+  const focusSessionDrafts = (factories.createFocusSessionDrafts ?? createFocusSessionDrafts)(
+    {
+      getDrafts: () => focusState.get("focusSessionNotesByTaskId"),
+      setDrafts: (drafts) => focusState.set("focusSessionNotesByTaskId", drafts),
+      getActiveTaskId: () => focusState.get("focusModeTaskId"),
+      getPersistedLiveValue: (taskId) =>
+        String(taskDataState.get("liveSessionsByTaskId")?.[taskId]?.note || "").trim(),
+      getPendingSaveTimer: () => focusState.get("focusSessionNoteSaveTimer"),
+      setPendingSaveTimer: (timer) => focusState.set("focusSessionNoteSaveTimer", timer),
+      ...focusSessionDraftView,
+    },
+    (factories.createFocusSessionDraftStorage ?? createLocalStorageFocusSessionDraftStorage)(
+      storageKeys.FOCUS_SESSION_NOTES_KEY
+    )
+  );
   const preferencesState = createTaskTimerMutableStore({
     themeMode: initialState.themeMode,
     addTaskCustomNames: initialState.addTaskCustomNames,
@@ -258,6 +287,7 @@ export function createTaskTimerRuntimeComposition(
     runtime,
     workspaceRepository,
     workspaceAdapters,
+    focusSessionDrafts,
     stores: {
       cloudSyncState,
       dashboardBusyState,

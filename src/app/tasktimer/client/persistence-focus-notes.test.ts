@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { LiveSessionsByTaskId, Task } from "../lib/types";
 import { createTaskTimerPersistence } from "./persistence";
+import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -45,10 +46,30 @@ function createHarness(overrides?: {
   let liveSessions: LiveSessionsByTaskId = {};
   let focusNotes: Record<string, string> = {};
   let inputValue = "";
+  let focusSessionNoteSaveTimer: number | null = null;
   let loadWorkspaceSnapshotCalls = 0;
   let setHistoryCalls = 0;
   let primeDashboardCalls = 0;
   let loadAddTaskCustomNamesCalls = 0;
+  const focusSessionDrafts = createFocusSessionDrafts(
+    {
+      getDrafts: () => focusNotes,
+      setDrafts: (value) => {
+        focusNotes = value;
+      },
+      getActiveTaskId: () => "task-1",
+      getPersistedLiveValue: (taskId) => String(liveSessions[taskId]?.note || "").trim(),
+      getPendingSaveTimer: () => focusSessionNoteSaveTimer,
+      setPendingSaveTimer: (value) => {
+        focusSessionNoteSaveTimer = value;
+      },
+      getInputValue: () => inputValue,
+      setInputValue: (value) => {
+        inputValue = value;
+      },
+    },
+    createLocalStorageFocusSessionDraftStorage("test:focus-notes")
+  );
   const api = createTaskTimerPersistence({
     workspaceRepository: {
       loadWorkspaceSnapshot: () => {
@@ -75,7 +96,7 @@ function createHarness(overrides?: {
       loadSnapshot: () => ({ historyByTaskId: {}, cleanedHistoryByTaskId: {}, historyWasCleaned: false }),
       saveCleanedSnapshot: () => {},
     },
-    focusSessionNotesKey: "test:focus-notes",
+    focusSessionDrafts,
     pendingTaskJumpKey: "test:pending-jump",
     getTasks: () => tasks,
     setTasks: (value) => {
@@ -94,22 +115,10 @@ function createHarness(overrides?: {
     setHistoryRangeDaysByTaskId: () => {},
     getHistoryRangeModeByTaskId: () => ({}),
     setHistoryRangeModeByTaskId: () => {},
-    getFocusSessionNotesByTaskId: () => focusNotes,
-    setFocusSessionNotesByTaskId: (value) => {
-      focusNotes = value;
-    },
     getPendingTaskJumpMemory: () => null,
     setPendingTaskJumpMemory: () => {},
     getRuntimeDestroyed: () => false,
     getCurrentUid: () => "",
-    getFocusModeTaskId: () => "task-1",
-    getFocusSessionNoteSaveTimer: () => null,
-    setFocusSessionNoteSaveTimer: () => {},
-    getFocusSessionNotesInputValue: () => inputValue,
-    setFocusSessionNotesInputValue: (value) => {
-      inputValue = value;
-    },
-    setFocusSessionNotesSectionOpen: () => {},
     getCurrentAppPage: () => "tasks",
     getInitialAppPageFromLocation: () => "tasks",
     initialAppPage: "tasks",
@@ -120,7 +129,6 @@ function createHarness(overrides?: {
     primeDashboardCacheFromShadow: () => {
       primeDashboardCalls += 1;
     },
-    loadFocusSessionNotes: () => overrides?.loadedDrafts || {},
     loadAddTaskCustomNames: () => {
       loadAddTaskCustomNamesCalls += 1;
     },
@@ -170,6 +178,7 @@ function createHarness(overrides?: {
     getSetHistoryCalls: () => setHistoryCalls,
     getPrimeDashboardCalls: () => primeDashboardCalls,
     getLoadAddTaskCustomNamesCalls: () => loadAddTaskCustomNamesCalls,
+    focusSessionDrafts,
   };
 }
 
@@ -209,6 +218,15 @@ describe("task timer persistence focus notes", () => {
     harness.api.hydrateUiStateFromCaches();
 
     expect(harness.getInputValue()).toBe("local draft");
+  });
+
+  it("uses the injected draft owner for persistence-facing draft operations", () => {
+    const harness = createHarness();
+
+    harness.focusSessionDrafts.setDraft("task-1", "shared draft");
+
+    expect(harness.api.getFocusSessionDraft("task-1")).toBe("shared draft");
+    expect(harness.getFocusNotes()).toEqual({ "task-1": "shared draft" });
   });
 
   it("hydrates focused timer state without running full cache hydration", () => {

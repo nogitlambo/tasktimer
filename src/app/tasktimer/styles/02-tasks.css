@@ -4759,6 +4759,9 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .
   min-width: var(--task-primary-action-size) !important;
   min-height: var(--task-primary-action-size) !important;
   max-width: var(--task-primary-action-size) !important;
+  -webkit-touch-callout: none;
+  user-select: none;
+  touch-action: manipulation;
   padding: 0 !important;
   border: 0 !important;
   border-radius: 50% !important;
@@ -5390,5 +5393,123 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
   background:linear-gradient(180deg, #edff95 0%, #d4ff3d 48%, #a6df00 100%) !important;
   color:#000 !important;
   transform:none !important;
+}
+
+/* Press-and-hold task actions and completed once-off grouping. */
+#app[aria-label="TaskLaunch App"] #appPageTasks .task.isTaskPrimaryHoldMenuOpen{
+  z-index:140;
+  overflow:visible;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .taskPrimaryHoldMenu[hidden]{
+  display:none !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .taskPrimaryHoldMenu{
+  position:absolute;
+  z-index:150;
+  top:50%;
+  left:50%;
+  width:min(220px, calc(100% - 28px));
+  padding:8px;
+  display:grid;
+  gap:6px;
+  transform:translate(-50%, -50%);
+  border:1px solid #1a1b20;
+  border-radius:0;
+  background:#0d0f13;
+  box-shadow:0 18px 40px rgba(0,0,0,.72), inset 0 0 0 1px rgba(255,255,255,.04);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .taskPrimaryHoldMenuItem{
+  min-height:36px;
+  padding:8px 10px;
+  border:1px solid rgba(174,182,192,.28);
+  border-radius:0;
+  background:#1a1b20;
+  color:#aeb6c0;
+  font-family:var(--font-orbitron), sans-serif;
+  font-size:11px;
+  letter-spacing:.04em;
+  text-align:left;
+  cursor:pointer;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .taskPrimaryHoldMenuItem:hover:not(:disabled),
+#app[aria-label="TaskLaunch App"] #appPageTasks .taskPrimaryHoldMenuItem:focus-visible:not(:disabled){
+  border-color:#c9ff19;
+  color:#c9ff19;
+  outline:none;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .taskPrimaryHoldMenuItem:disabled{
+  opacity:.42;
+  cursor:not-allowed;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksSection{
+  grid-column:1 / -1;
+  width:100%;
+  min-width:0;
+  margin-top:22px;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksToggle{
+  width:100%;
+  min-height:42px;
+  padding:10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border:1px solid rgba(174,182,192,.2);
+  border-radius:0;
+  background:#0d0f13;
+  color:#aeb6c0;
+  font-family:var(--font-orbitron), sans-serif;
+  font-size:12px;
+  letter-spacing:.04em;
+  text-align:left;
+  cursor:pointer;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksToggle:hover,
+#app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksToggle:focus-visible{
+  border-color:#c9ff19;
+  color:#c9ff19;
+  outline:none;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksChevron{
+  font-size:18px;
+  line-height:1;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksCards{
+  margin-top:14px;
+  display:grid;
+  grid-template-columns:minmax(0, 1fr);
+  gap:14px;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksCards[hidden]{
+  display:none !important;
+}
+
+@media (min-width:720px){
+  body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksCards[data-tile-columns="2"]{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width:1200px){
+  body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksCards[data-tile-columns="3"]{
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width:1500px){
+  body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksCards[data-tile-columns="4"]{
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+  }
 }
 

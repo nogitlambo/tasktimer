@@ -181,6 +181,14 @@ describe("Next Best Action recommendation persistence", () => {
       completed: true,
       history: [{ name: "Prepare launch", ms: 30 * 60000 }],
       focusWindowMatched: true,
+      productivityWindow: {
+        plannedDay: "mon",
+        plannedStartTime: "10:00",
+        days: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
+        startTime: "00:00",
+        endTime: "23:59",
+        matched: true,
+      },
     });
     expect(candidates[0]?.taskVersion).toEqual(expect.any(String));
   });
@@ -281,6 +289,28 @@ describe("Next Best Action recommendation persistence", () => {
 
     await expect(harness.repository.startRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs: Date.parse("2026-08-07T09:05:00.000Z") })).resolves.toMatchObject({ kind: "not-found" });
     expect(harness.updates).toHaveLength(0);
+  });
+
+  it("rejects starts for manually completed and currently snoozed tasks", async () => {
+    const nowMs = Date.parse("2026-08-07T09:05:00.000Z");
+    const manuallyDone = startHarness({ task: {
+      id: "task-1", name: "Prepare launch", active: true, actionable: true, taskType: "recurring", markedDoneAtMs: nowMs - 1000, markedDoneUntilMs: nowMs + 1000,
+    } });
+    const snoozed = startHarness({ task: {
+      id: "task-1", name: "Prepare launch", active: true, actionable: true, nextBestActionSnoozedUntilMs: nowMs + 1000,
+    } });
+
+    await expect(manuallyDone.repository.startRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs })).resolves.toMatchObject({ kind: "ineligible" });
+    await expect(snoozed.repository.startRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs })).resolves.toMatchObject({ kind: "ineligible" });
+  });
+
+  it("allows recurring manual completion and snooze exclusions after expiry", async () => {
+    const nowMs = Date.parse("2026-08-07T09:05:00.000Z");
+    const harness = startHarness({ task: {
+      id: "task-1", name: "Prepare launch", active: true, actionable: true, taskType: "recurring", markedDoneAtMs: nowMs - 5000, markedDoneUntilMs: nowMs - 1000, nextBestActionSnoozedUntilMs: nowMs - 1000,
+    } });
+
+    await expect(harness.repository.startRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs })).resolves.toMatchObject({ kind: "started" });
   });
 
   it("records alternative requests as skipped and dismissal feedback without mutating the Task", async () => {

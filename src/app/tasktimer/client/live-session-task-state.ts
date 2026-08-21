@@ -57,7 +57,8 @@ function getClosedAppCompletionTimestampMs(
 function hasStoppedSessionState(task: Task | null | undefined): boolean {
   if (!task || task.running) return false;
   const accumulatedMs = Math.max(0, Math.floor(Number(task.accumulatedMs || 0) || 0));
-  return accumulatedMs > 0 || task.resumePendingSinceDayKey != null;
+  const hasStartHistory = task.hasStarted === true && task.startMs == null;
+  return accumulatedMs > 0 || task.resumePendingSinceDayKey != null || hasStartHistory;
 }
 
 export function getClosedAppDailyTimeGoalCompletion(

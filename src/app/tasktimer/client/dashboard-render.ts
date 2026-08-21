@@ -1263,13 +1263,18 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return typeof window !== "undefined" && window.matchMedia?.("(max-width: 640px)").matches === true;
   }
 
+  function isDashboardActivityWideChart() {
+    return typeof window !== "undefined" && window.matchMedia?.("(min-width: 1601px)").matches === true;
+  }
+
   function getDashboardActivityChartView(model: DashboardActivityOverviewModel) {
     const mobile = isDashboardActivityMobileChart();
+    const showTwoWeekWindow = !mobile && isDashboardActivityWideChart() && ctx.getDashboardPreviousWeekVisible();
     const productivityDays = new Set(normalizeOptimalProductivityDays(ctx.getOptimalProductivityDays()));
     const filterProductivityDays = (days: DashboardActivityOverviewModel["days"]) =>
       days.filter((day) => productivityDays.has(localDayToDashboardWeekStart(day.startMs)));
     const previousDays: DashboardActivityOverviewModel["days"] = [];
-    const days = filterProductivityDays(model.days.slice(7, 14));
+    const days = filterProductivityDays(showTwoWeekWindow ? model.days : model.days.slice(7, 14));
     const maxVisibleDailyMs = days.reduce((max, day) => Math.max(max, day.totalMs), 0);
     const maxVisibleGoalMs = days.reduce((max, day) => Math.max(max, day.goalTargetMs, day.goalLineTargetMs), 0);
     return {
@@ -1613,15 +1618,16 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     renderDashboardActivityAxes(model);
     renderDashboardActivitySvg(model);
     syncDashboardActivityPaginationControls(model);
-    const rangeStart = model.days[7]?.dateLabel || "";
-    const rangeEnd = model.days[13]?.dateLabel || "";
+    const rangeStart = view.days[0]?.dateLabel || "";
+    const rangeEnd = view.days[view.days.length - 1]?.dateLabel || "";
+    const dayCountLabel = view.days.length === 14 ? "14-day" : "Seven-day";
     chartEl?.setAttribute(
       "aria-label",
-      `Seven day activity chart for ${rangeStart}${rangeStart && rangeEnd ? " through " : ""}${rangeEnd}`
+      `${dayCountLabel} activity chart for ${rangeStart}${rangeStart && rangeEnd ? " through " : ""}${rangeEnd}`
     );
     cardEl.setAttribute(
       "aria-label",
-      `Activity overview. Seven-day activity chart with ${formatDashboardDurationWithMinutes(view.visibleTotalMs)} logged for the selected week. ${model.hasGoal ? `${formatDashboardDurationWithMinutes(model.totalGoalMs)} weekly goal.` : "No weekly goal."}`
+      `Activity overview. ${dayCountLabel} activity chart with ${formatDashboardDurationWithMinutes(view.visibleTotalMs)} logged for the selected range. ${model.hasGoal ? `${formatDashboardDurationWithMinutes(model.totalGoalMs)} weekly goal.` : "No weekly goal."}`
     );
   }
 

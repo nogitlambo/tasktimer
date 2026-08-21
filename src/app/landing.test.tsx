@@ -9,21 +9,24 @@ describe("Landing", () => {
     const html = renderToStaticMarkup(<Landing showTitlePhase={true} showActions={true} />);
 
     expect(html).not.toContain('class="landingV2HeroVisual"');
+    expect(html).not.toContain('class="landingV2HeroImageWrap"');
+    expect(html).not.toContain('class="landingV2HeroImage"');
+    expect(html).not.toContain('src="/landing/hero_image_trans.png"');
     expect(html).not.toContain('src="/landing_feature_wide.png"');
-    expect(html).toContain('src="/rocket_breaking_chains4_opticalflow_60fps_50pct.mp4"');
+    expect(html).not.toContain('src="/rocket_breaking_chains4_opticalflow_60fps_50pct.mp4"');
     expect(html).not.toContain('poster="/rocket_breaking_chains3_poster.jpg"');
     expect(html).not.toContain("autoPlay");
-    expect(html).toContain('preload="auto"');
-    expect(html).toContain('class="landingV2RocketHotspot"');
-    expect(html).toContain('aria-label="Play rocket animation"');
+    expect(html).not.toContain('preload="auto"');
+    expect(html).not.toContain('class="landingV2RocketHotspot"');
+    expect(html).not.toContain('aria-label="Play rocket animation"');
     expect(html).not.toContain("loop");
     expect(html).not.toContain("isLaunchStarting");
     expect(html).toContain('href="/login"');
     expect(html).toContain("GET STARTED");
     expect(html).toContain("Get it on Google Play");
     expect(html).not.toContain('id="plans"');
-    expect(html).not.toContain("PLUS Lifetime");
-    expect(html).not.toContain("Get PLUS Lifetime");
+    expect(html).not.toContain("PLUS Yearly");
+    expect(html).not.toContain("Get PLUS Yearly");
     expect(html).toContain('src="/logo/googleplay.webp"');
     expect(html).toContain('class="landingV2SecondaryBtnIcon"');
     expect(html).toContain("https://play.google.com/store/apps/details?id=com.tasklaunch.app&amp;hl=en-US&amp;ah=n93boNLLkVvMLSey6j9qG9SPGek");
@@ -34,18 +37,18 @@ describe("Landing", () => {
     expect(html).not.toContain("Continue without account");
   });
 
-  it("uses static rocket still assets below 1080px on the landing page only", () => {
+  it("does not keep previous landing image or rocket still references", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
     const landingTabletBlock = css.match(/@media \(max-width: 1079px\) \{[\s\S]*?(?=\n@media|\n$)/)?.[0] || "";
     const landingMobileBlock = css.match(/@media \(max-width: 699px\) \{[\s\S]*?(?=\n@media|\n$)/)?.[0] || "";
 
     expect(css).toContain(".landingV2LandingPage");
-    expect(landingTabletBlock).toContain('url("/rocket_breaking_chains4_opticalflow_60fps_50pct_lastframe_tablet.webp")');
-    expect(landingTabletBlock).toContain(".landingV2LandingPage::before");
-    expect(landingTabletBlock).toContain("display: block;");
-    expect(landingTabletBlock).toContain(".landingV2LandingPage .landingV2BackgroundVideo");
-    expect(landingTabletBlock).toContain('display: none;');
-    expect(landingMobileBlock).toContain('url("/rocket_breaking_chains4_opticalflow_60fps_50pct_lastframe_mobile.webp")');
+    expect(css).not.toContain(".landingV2HeroImageWrap");
+    expect(css).not.toContain(".landingV2HeroImage");
+    expect(css).not.toContain("/landing/hero_image_trans.png");
+    expect(landingTabletBlock).not.toContain('url("/rocket_breaking_chains4_opticalflow_60fps_50pct_lastframe_tablet.webp")');
+    expect(landingTabletBlock).not.toContain(".landingV2LandingPage .landingV2BackgroundVideo");
+    expect(landingMobileBlock).not.toContain('url("/rocket_breaking_chains4_opticalflow_60fps_50pct_lastframe_mobile.webp")');
   });
 
   it("adds a scoped 32px gap between the public landing headers and hero text", () => {
@@ -78,13 +81,13 @@ describe("Landing", () => {
     expect(primaryCtaHoverRule).toContain("color: #000;");
   });
 
-  it("keeps the landing header transparent while setting the scroll boundary below it", () => {
+  it("keeps the landing header opaque while setting the scroll boundary below it", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
     const landingPageRule = css.match(/\.landingV2LandingPage \{[\s\S]*?\n\}/)?.[0] || "";
     const landingHeaderRule = css.match(/\.landingV2LandingPage \.landingV2Header \{[\s\S]*?\n\}/)?.[0] || "";
 
     expect(landingPageRule).toContain("scroll-padding-top: calc(86px + var(--landing-native-nav-offset));");
-    expect(landingHeaderRule).toContain("background: transparent;");
+    expect(landingHeaderRule).toContain("background: #000;");
     expect(landingHeaderRule).toContain("border-bottom: 1px solid rgba(255, 255, 255, 0.08);");
   });
 });

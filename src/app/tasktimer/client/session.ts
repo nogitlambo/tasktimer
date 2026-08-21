@@ -23,10 +23,10 @@ import {
   parseScheduleTimeMinutes,
 } from "../lib/schedule-placement";
 import { normalizeTaskColor } from "../lib/taskColors";
+import { isTaskMarkedDone } from "../lib/taskManualCompletion";
 import type { FocusModeTransitionOptions, TaskTimerSessionContext } from "./context";
 import { buildTaskProgressModel, getTaskPrimaryActionModel, type TaskPrimaryActionState } from "./task-card-view-model";
 import { formatCompactCheckpointDuration } from "./checkpoint-duration-format";
-import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 import { playCheckpointAlertVibration, playTaskCompleteConfettiHaptic } from "./interaction-haptics";
 import { buildNativeCheckpointSchedule } from "../lib/nativeCheckpointSchedule";
 import {
@@ -819,32 +819,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     input.style.overflowY = nextHeight > maxHeight ? "auto" : "hidden";
   }
 
-  const focusSessionDrafts = createFocusSessionDrafts(
-    {
-      getDrafts: () => ctx.getFocusSessionNotesByTaskId(),
-      setDrafts: (next) => ctx.setFocusSessionNotesByTaskId(next),
-      getActiveTaskId: () => ctx.getFocusModeTaskId(),
-      getPendingSaveTimer: () => ctx.getFocusSessionNoteSaveTimer(),
-      setPendingSaveTimer: (next) => ctx.setFocusSessionNoteSaveTimer(next),
-      getInputValue: () => getRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null),
-      setInputValue: (next) => {
-        if (els.focusSessionNotesInput) {
-          setRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null, next);
-          autosizeFocusSessionNotesInput();
-        }
-      },
-      setSectionOpen: (open) => {
-        if (els.focusSessionNotesSection) {
-          els.focusSessionNotesSection.setAttribute("data-notes-visible", String(open));
-        }
-      },
-    },
-    createLocalStorageFocusSessionDraftStorage(ctx.storageKeys.FOCUS_SESSION_NOTES_KEY)
-  );
-
-  function loadFocusSessionNotes() {
-    return focusSessionDrafts.load();
-  }
+  const focusSessionDrafts = ctx.focusSessionDrafts;
 
   function setFocusSessionDraft(taskId: string, noteRaw: string) {
     focusSessionDrafts.setDraft(taskId, noteRaw);
@@ -852,14 +827,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   function clearFocusSessionDraft(taskId: string) {
     focusSessionDrafts.clearDraft(taskId);
-  }
-
-  function getPreferredFocusSessionNote(taskId?: string | null) {
-    const normalizedTaskId = String(taskId || "").trim();
-    if (!normalizedTaskId) return "";
-    const liveNote = String(ctx.getLiveSessionsByTaskId()?.[normalizedTaskId]?.note || "").trim();
-    if (liveNote) return liveNote;
-    return focusSessionDrafts.getDraft(normalizedTaskId);
   }
 
   function syncFocusSessionNotesInput(taskId: string | null) {
@@ -870,8 +837,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       clearFocusSessionNotesSavedStatus();
       return;
     }
-    const nextValue = getPreferredFocusSessionNote(normalizedTaskId);
-    if (els.focusSessionNotesInput) setRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null, nextValue);
+    focusSessionDrafts.syncInput(normalizedTaskId);
     autosizeFocusSessionNotesInput();
     syncFocusSessionNoteAttachments(normalizedTaskId);
     clearFocusSessionNotesSavedStatus();
@@ -2989,8 +2955,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         if (!task) return;
         const isHeldResetPrimaryAction = getXpAwardButtonLabelOverride(task.id) === "Reset";
         const isCompletedForCurrentPeriod = isHeldResetPrimaryAction || isTaskTimeGoalLockedForCurrentPeriod(task);
+        const isManuallyDone = isTaskMarkedDone(task, nowMs());
         (node as HTMLElement).classList.toggle("taskRunning", !!task.running);
-        (node as HTMLElement).classList.toggle("taskCompleted", isCompletedForCurrentPeriod);
+        (node as HTMLElement).classList.toggle("taskCompleted", isCompletedForCurrentPeriod || isManuallyDone);
         const timeEl = node.querySelector(".time");
         const elapsedMs = getElapsedMs(task);
         if (timeEl) (timeEl as HTMLElement).innerHTML = ctx.formatMainTaskElapsedHtml(elapsedMs, !!task.running);
@@ -3001,14 +2968,22 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         const primaryActionBtn = node.querySelector('.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"], .actions > .btn[data-action="reset"]') as HTMLButtonElement | null;
         if (primaryActionBtn) {
           let primaryActionState: TaskPrimaryActionState = "launch";
-          if (isCompletedForCurrentPeriod) {
+          if (isManuallyDone) {
+            primaryActionState = "done";
+          } else if (isCompletedForCurrentPeriod) {
             primaryActionState = "reset";
           } else if (task.running) {
             primaryActionState = "stop";
           } else if (elapsedMs > 0) {
             primaryActionState = "resume";
           }
-          const primaryActionModel = getTaskPrimaryActionModel(primaryActionState);
+          const holdMenuEnabled = isManuallyDone || !isCompletedForCurrentPeriod;
+          const primaryActionModel = getTaskPrimaryActionModel(primaryActionState, holdMenuEnabled ? {
+            doneTitle: isManuallyDone ? (task.taskType === "once-off" ? "Completed" : "Done until tomorrow") : undefined,
+            doneLabel: isManuallyDone ? "Done" : undefined,
+            holdEnabledDone: isManuallyDone,
+            holdMenuId: `taskPrimaryHoldMenu-${String(task.id || "")}`,
+          } : undefined);
           const shouldRefreshPrimaryActionMarkup =
             primaryActionBtn.dataset.action !== primaryActionModel.dataAction ||
             primaryActionBtn.className !== primaryActionModel.className ||
@@ -3018,6 +2993,17 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
           primaryActionBtn.dataset.action = primaryActionModel.dataAction;
           primaryActionBtn.title = primaryActionModel.title;
           primaryActionBtn.setAttribute("aria-label", primaryActionModel.ariaLabel);
+          if (primaryActionModel.ariaDisabled) primaryActionBtn.setAttribute("aria-disabled", "true");
+          else primaryActionBtn.removeAttribute?.("aria-disabled");
+          if (primaryActionModel.holdMenuId) {
+            primaryActionBtn.setAttribute("aria-haspopup", "menu");
+            primaryActionBtn.setAttribute("aria-controls", primaryActionModel.holdMenuId);
+            primaryActionBtn.setAttribute("aria-expanded", (node as HTMLElement).classList.contains("isTaskPrimaryHoldMenuOpen") ? "true" : "false");
+          } else {
+            primaryActionBtn.removeAttribute?.("aria-haspopup");
+            primaryActionBtn.removeAttribute?.("aria-controls");
+            primaryActionBtn.removeAttribute?.("aria-expanded");
+          }
           primaryActionBtn.disabled = primaryActionModel.disabled;
           if (shouldRefreshPrimaryActionMarkup) primaryActionBtn.innerHTML = primaryActionModel.innerHtml;
         }
@@ -3285,7 +3271,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   return {
-    loadFocusSessionNotes,
     tick,
     getElapsedMs,
     getTaskElapsedMs,

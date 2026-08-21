@@ -66,13 +66,13 @@ env:
     availability:
       - BUILD
       - RUNTIME
-  - variable: STRIPE_PRICE_ID_PRO_MONTHLY
+  - variable: STRIPE_PRICE_ID_PLUS_MONTHLY
     value: "price_1U0BG0RoafccyHKoEsUZkKog"
     availability:
       - BUILD
       - RUNTIME
-  - variable: STRIPE_PRICE_ID_PLUS_LIFETIME
-    value: "price_1U0AvORoafccyHKo1ThKo0cG"
+  - variable: STRIPE_PRICE_ID_PLUS_YEARLY
+    value: "price_1U6fGORoafccyHKo4IUeAYw6"
     availability:
       - BUILD
       - RUNTIME

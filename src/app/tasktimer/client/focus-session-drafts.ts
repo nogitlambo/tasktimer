@@ -9,6 +9,7 @@ export type FocusSessionDraftState = {
   getDrafts: () => Record<string, string>;
   setDrafts: (drafts: Record<string, string>) => void;
   getActiveTaskId: () => string | null;
+  getPersistedLiveValue?: (taskId: string) => string;
   getPendingSaveTimer: () => number | null;
   setPendingSaveTimer: (timer: number | null) => void;
   getInputValue: () => string;
@@ -61,7 +62,9 @@ export function createLocalStorageFocusSessionDraftStorage(storageKey: string): 
 
 export function createFocusSessionDrafts(state: FocusSessionDraftState, storage: FocusSessionDraftStorage) {
   function load() {
-    return storage.load();
+    const drafts = normalizeDrafts(storage.load());
+    state.setDrafts(drafts);
+    return drafts;
   }
 
   function persist() {
@@ -95,12 +98,25 @@ export function createFocusSessionDrafts(state: FocusSessionDraftState, storage:
     storage.persist(nextDrafts);
   }
 
+  function getPreferredDraft(taskId?: string | null) {
+    const taskKey = normalizeTaskId(taskId);
+    if (!taskKey) return "";
+    const persistedLiveValue = String(state.getPersistedLiveValue?.(taskKey) || "").trim();
+    return persistedLiveValue || getDraft(taskKey);
+  }
+
   function syncInput(taskId: string | null) {
-    state.setInputValue?.(taskId ? getDraft(taskId) : "");
+    state.setInputValue?.(taskId ? getPreferredDraft(taskId) : "");
   }
 
   function syncAccordion(taskId: string | null) {
     state.setSectionOpen?.(!!normalizeTaskId(taskId));
+  }
+
+  function syncActive() {
+    const activeTaskId = normalizeTaskId(state.getActiveTaskId()) || null;
+    syncInput(activeTaskId);
+    syncAccordion(activeTaskId);
   }
 
   function flushPendingSave(taskId?: string | null) {
@@ -152,8 +168,10 @@ export function createFocusSessionDrafts(state: FocusSessionDraftState, storage:
     setDraft,
     getDraft,
     clearDraft,
+    getPreferredDraft,
     syncInput,
     syncAccordion,
+    syncActive,
     flushPendingSave,
     getLiveValue,
     captureSnapshot,

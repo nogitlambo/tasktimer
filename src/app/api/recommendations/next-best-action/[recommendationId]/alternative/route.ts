@@ -84,8 +84,8 @@ export async function POST(req: Request, context: RouteContext) {
     const excludedTaskIds = Array.from(new Set([...normalizeExcludedTaskIds(body.excludeTaskIds), previous.taskId, ...suppressedTaskIds]));
     const ranked = rankNextBestActionCandidates({ userId: uid, nowMs, todayDate: localDateForRecommendationTimezone(timezone, nowMs), availableMinutes, excludedTaskIds, candidates });
     if (!ranked.primary) return withAuthenticatedApiCors(req, NextResponse.json({ ok: true, recommendation: null, empty: true, alternativeIndex: nextIndex }));
-    const deterministicExplanation = buildNextBestActionExplanation(ranked.primary.reasonCodes, availableMinutes);
-    const explanation = await resolveNextBestActionExplanation({ reasonCodes: ranked.primary.reasonCodes, confidence: ranked.primary.confidence, availableMinutes }, deterministicExplanation);
+    const deterministicExplanation = buildNextBestActionExplanation(ranked.primary.reasonCodes, { availableMinutes, productivityWindow: ranked.primary.productivityWindow });
+    const explanation = await resolveNextBestActionExplanation({ reasonCodes: ranked.primary.reasonCodes, confidence: ranked.primary.confidence, availableMinutes, productivityWindow: ranked.primary.productivityWindow }, deterministicExplanation);
     const recommendation = createRecommendationForRanking({ id: randomUUID(), uid, ranked: ranked.primary, availableMinutes, alternativeIndex: nextIndex, explanation, nowMs });
     await repository.saveRecommendation(uid, recommendation);
     return withAuthenticatedApiCors(req, NextResponse.json({ ok: true, recommendation: responseRecommendation(recommendation) }));

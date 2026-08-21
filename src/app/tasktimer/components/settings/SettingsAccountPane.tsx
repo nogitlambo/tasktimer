@@ -30,8 +30,12 @@ function formatMemberSinceDate(value: string | null) {
 
 function formatSubscriptionPlan(plan: SettingsAccountViewModel["authPlan"]) {
   if (plan === "plus_lifetime") return "PLUS Lifetime";
-  if (plan === "plus") return "PLUS";
+  if (plan === "plus" || plan === "plus_monthly" || plan === "plus_yearly" || plan === "pro") return "PLUS";
   return "FREE";
+}
+
+function isPlusSubscriptionPlan(plan: SettingsAccountViewModel["authPlan"]) {
+  return plan === "plus" || plan === "plus_monthly" || plan === "plus_yearly" || plan === "pro";
 }
 
 function formatPlanRenewalDate(value: number | null) {
@@ -231,7 +235,7 @@ export function SettingsAccountPane({
                             </button>
                           </>
                         ) : null}
-                        {account.authPlan === "plus" ? (
+                        {isPlusSubscriptionPlan(account.authPlan) ? (
                           <>
                             <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
                             <button className="settingsAccountUpgradeLink" type="button" onClick={() => void account.onOpenPlanAction()}>
@@ -250,7 +254,7 @@ export function SettingsAccountPane({
                         </button>
                       </dd>
                     </div>
-                    {account.authPlan === "plus" ? (
+                    {isPlusSubscriptionPlan(account.authPlan) ? (
                       <div className="settingsAccountMetaListItem">
                         <dt className="settingsAccountUidLabel">Renews On</dt>
                         <dd className="settingsAccountMemberSinceValue">{formatPlanRenewalDate(account.authPlanRenewalAtMs)}</dd>

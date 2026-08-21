@@ -35,7 +35,7 @@ describe("firestore user root rules", () => {
   it("allows every mirrored TaskTimer plan value", () => {
     const block = functionBlock(readRules(), "isValidUserPlanValue");
 
-    expect(block).toContain('["free", "plus", "plus_lifetime", "pro"]');
+    expect(block).toContain('["free", "plus", "plus_monthly", "plus_yearly", "plus_lifetime", "pro"]');
   });
 
   it("allows completed task count as an optional integer mirror", () => {
@@ -151,6 +151,15 @@ describe("firestore shared task summary rules", () => {
 });
 
 describe("firestore task document rules", () => {
+  it("allows manual completion and Next Best Action snooze timestamps", () => {
+    const block = functionBlock(readRules(), "isTaskDoc");
+
+    for (const field of ["markedDoneAtMs", "markedDoneUntilMs", "nextBestActionSnoozedUntilMs"]) {
+      expect(block).toContain(`"${field}"`);
+      expect(block).toContain(`request.resource.data.${field} == null || request.resource.data.${field} is int`);
+    }
+  });
+
   it("allows imported shared task source metadata", () => {
     const block = functionBlock(readRules(), "isTaskDoc");
 

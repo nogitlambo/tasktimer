@@ -1,7 +1,5 @@
 "use client";
 
-import AppImg from "@/components/AppImg";
-
 type DashboardPageContentProps = {
   active: boolean;
 };
@@ -16,27 +14,6 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
               <div className="dashboardShellScene" id="dashboardShellScene">
                 <div className="dashboardShellContent dashboardShellFace dashboardShellFaceFront" id="dashboardShellContent">
                   <div className="dashboardGrid dashboardIntegratedPanel">
-                    <section className="dashboardCard dashboardExecutiveSummary" id="dashboardExecutiveSummary" aria-labelledby="dashboardExecutiveSummaryHeading" data-executive-summary-state="loading">
-                      <div className="dashboardPanelLabelRow dashboardExecutiveSummaryTitleRow">
-                        <h2 className="dashboardCardTitle dashboardPanelTitle dashboardExecutiveSummaryTitle" id="dashboardExecutiveSummaryHeading">
-                          <span className="dashboardPanelTitleDot dashboardPanelTitleDotExecutive" aria-hidden="true" />
-                          <span>Executive Summary</span>
-                        </h2>
-                      </div>
-                      <div className="dashboardExecutiveSummaryStatus" id="dashboardExecutiveSummaryStatus" role="status" aria-live="polite">Loading today&apos;s plan...</div>
-                      <div className="dashboardExecutiveSummaryContent" id="dashboardExecutiveSummaryContent" hidden>
-                        <p className="dashboardExecutiveSummaryPlanHealth" id="dashboardExecutiveSummaryPlanHealth" />
-                        <div className="dashboardExecutiveSummaryDivider" aria-hidden="true" />
-                        <div className="dashboardExecutiveSummaryNext" id="dashboardExecutiveSummaryNext" hidden>
-                          <div><strong>NEXT BEST ACTION</strong><span id="dashboardExecutiveSummaryNextTitle" /><span id="dashboardExecutiveSummaryNextFirstAction" /></div>
-                          <button className="btn btn-accent dashboardStartNowButton" type="button" id="dashboardExecutiveSummaryStart" disabled hidden><AppImg className="dashboardStartNowButtonIcon" src="/icons/icons_default/launch_black.webp" alt="" aria-hidden="true" /><span className="dashboardStartNowButtonLabel">LAUNCH</span></button>
-                        </div>
-                      </div>
-                      <div className="dashboardExecutiveSummaryFallback" id="dashboardExecutiveSummaryFallback" hidden>
-                        Today&apos;s executive plan is unavailable. Your tasks and performance data are still available.
-                      </div>
-                    </section>
-
                   <section className="dashboardCard dashboardActivityOverviewCard" data-dashboard-id="activity-overview" data-dashboard-label="Activity Overview" aria-label="Activity overview">
                     <div className="dashboardPanelLabelRow dashboardActivityOverviewTitleRow">
                       <div className="dashboardCardTitle dashboardPanelTitle">
@@ -44,6 +21,18 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                         <span>Time Tracked</span>
                       </div>
                     </div>
+                    <section className="dashboardCard dashboardExecutiveSummary" id="dashboardExecutiveSummary" aria-label="Executive summary" data-executive-summary-state="loading">
+                      <div className="dashboardExecutiveSummaryStatusRow">
+                        <span className="dashboardExecutiveSummaryStatusLabel">Workload Assessment</span>
+                        <div className="dashboardExecutiveSummaryStatus" id="dashboardExecutiveSummaryStatus" role="status" aria-live="polite">Loading today&apos;s plan...</div>
+                      </div>
+                      <div className="dashboardExecutiveSummaryContent" id="dashboardExecutiveSummaryContent" hidden>
+                        <p className="dashboardExecutiveSummaryPlanHealth" id="dashboardExecutiveSummaryPlanHealth" />
+                      </div>
+                      <div className="dashboardExecutiveSummaryFallback" id="dashboardExecutiveSummaryFallback" hidden>
+                        Today&apos;s executive plan is unavailable. Your tasks and performance data are still available.
+                      </div>
+                    </section>
                     <div className="dashboardActivityOverviewHead">
                       <aside className="dashboardActivitySummaryStack" aria-label="Today and weekly summaries">
                         <section className="dashboardActivitySummaryMini" aria-label="Today's logged time">

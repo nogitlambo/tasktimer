@@ -126,8 +126,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const deterministicExplanation = buildNextBestActionExplanation(ranked.primary.reasonCodes, availableMinutes);
-    const explanation = await resolveNextBestActionExplanation({ reasonCodes: ranked.primary.reasonCodes, confidence: ranked.primary.confidence, availableMinutes }, deterministicExplanation);
+    const deterministicExplanation = buildNextBestActionExplanation(ranked.primary.reasonCodes, { availableMinutes, productivityWindow: ranked.primary.productivityWindow });
+    const explanation = await resolveNextBestActionExplanation({ reasonCodes: ranked.primary.reasonCodes, confidence: ranked.primary.confidence, availableMinutes, productivityWindow: ranked.primary.productivityWindow }, deterministicExplanation);
     const recommendation = createRecommendationForRanking({
       id: randomUUID(),
       uid,

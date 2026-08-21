@@ -155,6 +155,58 @@ describe("saveTask Firestore planned start payloads", () => {
     expect(taskWrites[1]).not.toHaveProperty("bgTimeGoalPushSentDueAtMs");
   });
 
+  it("strips manual completion fields from the compatibility task fallback payload", async () => {
+    firestoreMocks.setDoc.mockImplementation(async (ref?: { path?: string }, row?: Record<string, unknown>) => {
+      if (ref?.path !== "users/user-1/tasks/task-1") return undefined;
+      const hasCurrentOnlyField = Object.keys(row || {}).some((key) =>
+        key.startsWith("bgTimeGoalPush") ||
+        key === "markedDoneAtMs" ||
+        key === "markedDoneUntilMs" ||
+        key === "nextBestActionSnoozedUntilMs"
+      );
+      if (!hasCurrentOnlyField) return undefined;
+      const error = new Error("Missing or insufficient permissions.") as Error & { code?: string };
+      error.code = "permission-denied";
+      throw error;
+    });
+
+    await saveTask(
+      "user-1",
+      task({
+        plannedStartTime: "09:00",
+        plannedStartPushRemindersEnabled: true,
+        markedDoneAtMs: 1_000,
+        markedDoneUntilMs: 2_000,
+        nextBestActionSnoozedUntilMs: 3_000,
+      })
+    );
+
+    const taskWrites = (firestoreMocks.setDoc.mock.calls as unknown as Array<[{ path: string }, Record<string, unknown>]>)
+      .filter(([ref]) => ref.path === "users/user-1/tasks/task-1")
+      .map(([, row]) => row);
+
+    expect(taskWrites).toHaveLength(3);
+    expect(taskWrites[0]).toEqual(expect.objectContaining({
+      bgTimeGoalPushEligible: true,
+      markedDoneAtMs: 1_000,
+      markedDoneUntilMs: 2_000,
+      nextBestActionSnoozedUntilMs: 3_000,
+    }));
+    expect(taskWrites[1]).toEqual(expect.objectContaining({
+      markedDoneAtMs: 1_000,
+      markedDoneUntilMs: 2_000,
+      nextBestActionSnoozedUntilMs: 3_000,
+    }));
+    expect(taskWrites[1]).not.toHaveProperty("bgTimeGoalPushEligible");
+    expect(taskWrites[2]).not.toHaveProperty("bgTimeGoalPushEligible");
+    expect(taskWrites[2]).not.toHaveProperty("bgTimeGoalPushDueAtMs");
+    expect(taskWrites[2]).not.toHaveProperty("bgTimeGoalPushSentAtMs");
+    expect(taskWrites[2]).not.toHaveProperty("bgTimeGoalPushSentDueAtMs");
+    expect(taskWrites[2]).not.toHaveProperty("markedDoneAtMs");
+    expect(taskWrites[2]).not.toHaveProperty("markedDoneUntilMs");
+    expect(taskWrites[2]).not.toHaveProperty("nextBestActionSnoozedUntilMs");
+  });
+
   it("maps legacy elapsed cloud task time into accumulated time", async () => {
     firestoreMocks.getDocs.mockImplementation(async (ref?: { path?: string }) => {
       if (ref?.path === "users/user-1/tasks") {

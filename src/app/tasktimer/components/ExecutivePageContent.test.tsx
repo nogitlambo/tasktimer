@@ -52,7 +52,7 @@ describe("ExecutivePageContent", () => {
       '#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveToolLinks>.btn .executiveToolLabel{font-family:Orbitron,"Bahnschrift","Segoe UI Variable","Segoe UI",Arial,sans-serif!important}',
     );
     expect(css).toContain(
-      '#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveToolLinks>.btn,#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveToolLinks>.btn:hover:not(:disabled),#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveToolLinks>.btn:focus-visible{border-color:#1a1b20!important;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012) 48%,rgba(0,0,0,.08)),#111216!important}',
+      '#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveToolLinks>.btn{border-color:#3a3d45!important;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012) 48%,rgba(0,0,0,.08)),#111216!important}',
     );
     expect(css).toContain(
       "background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012) 48%,rgba(0,0,0,.08)),#111216 !important",
@@ -61,13 +61,25 @@ describe("ExecutivePageContent", () => {
       ".executiveHeader{padding:2px 2px 18px;border-bottom:0}",
     );
     expect(css).toContain(
-      ".executiveToolIcon{box-sizing:content-box;flex:0 0 26px;width:26px;height:26px;padding-inline:8px",
+      ".executiveToolIcon{box-sizing:content-box;flex:0 0 auto;width:28px;height:28px;padding:0",
     );
     expect(css).toContain(
       ".executiveToolCopy small{color:#aeb6c7;font-family:var(--font-readable)",
     );
     expect(css).toContain(".dashboardNextBestActionTimeGoal{");
     expect(css).toContain(".dashboardNextBestActionTimeGoal[hidden]{");
+    expect(css).toContain(
+      'grid-template-columns:minmax(0,3fr) minmax(240px,1fr);grid-template-areas:"nba tools"',
+    );
+    expect(css).toContain(
+      ".executiveToolLinks{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(4,minmax(0,1fr))",
+    );
+    expect(css).toContain(
+      ".executiveTools{grid-area:tools;display:flex;flex-direction:column;padding:12px;border:0;background:transparent;box-shadow:none}",
+    );
+    expect(css).toContain(
+      ".executiveMetricCopy>span{color:#7f8ba1;font:700 13px var(--font-orbitron);letter-spacing:.04em;text-transform:uppercase}",
+    );
   });
 
   it("renders the decision-support hierarchy and keeps existing feature hooks", () => {
@@ -86,9 +98,9 @@ describe("ExecutivePageContent", () => {
     expect(html).toContain("Refresh");
     expect(html).toContain("Remaining capacity");
     expect(html).toContain('src="/icons/icons_default/capacity_full.webp"');
-    expect(html).toContain("Capacity confidence");
-    expect(html).toContain('id="executiveCapacityConfidence"');
-    expect(html.match(/data-executive-metric-loading="true"/g)).toHaveLength(4);
+    expect(html).not.toContain("Capacity confidence");
+    expect(html).not.toContain('id="executiveCapacityConfidence"');
+    expect(html.match(/data-executive-metric-loading="true"/g)).toHaveLength(3);
     expect(html).toContain('data-executive-metric-helper-card="plan-health"');
     expect(html).toContain('role="tooltip"');
     expect(html).toContain(
@@ -100,14 +112,8 @@ describe("ExecutivePageContent", () => {
     expect(html).toContain(
       'class="executivePlanHealthSignificantlyOverloaded"',
     );
-    expect(html).toContain('class="executiveCapacityConfidenceHigh"');
-    expect(html).toContain('class="executiveCapacityConfidenceMedium"');
-    expect(html).toContain('class="executiveCapacityConfidenceLow"');
     expect(html).toContain(
       "TaskLaunch starts with your manual capacity setting or recent focus history",
-    );
-    expect(html).toContain(
-      "at least 14 valid history days with stable results.",
     );
     expect(html).toContain('aria-label="Executive tools"');
     expect(html).not.toContain('id="executiveToolsHeading"');
@@ -143,7 +149,10 @@ describe("ExecutivePageContent", () => {
     expect(html).toContain('id="dashboardDailyCapacityCard"');
     expect(html).toContain("executiveCapacityServiceHost");
     expect(html).toContain('id="dashboardScheduleRepairOverlay"');
-    expect(html).toContain('id="dashboardRecoveryCard"');
+    expect(html).not.toContain('id="dashboardScheduleRepairCard"');
+    expect(html).not.toContain('id="dashboardRecoveryCard"');
+    expect(html).not.toContain('id="executiveAttentionHeading"');
+    expect(html).not.toContain("Needs attention");
     expect(html).toContain('data-executive-brain-dump-open="true"');
     expect(html).toContain('data-brain-dump-entry="executive"');
     expect(html).toContain('class="executiveFlipScene"');
@@ -162,7 +171,7 @@ describe("ExecutivePageContent", () => {
     expect(html).toContain("executiveCapacityServiceHost");
     expect(html).toContain('data-daily-capacity="adjust"');
     expect(html).toContain('id="dashboardDailyCapacityAdjustOverlay"');
-    expect(html).toContain('class="executiveAttentionStack"');
+    expect(html).not.toContain('class="executiveAttentionStack"');
     expect(html).not.toContain(
       "Recovery Mode is available whenever your plan needs a reset.",
     );

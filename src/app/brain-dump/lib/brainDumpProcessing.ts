@@ -71,6 +71,7 @@ const imageInterpretationResponseSchema = z
 export type BrainDumpItemType = z.infer<typeof brainDumpItemTypeSchema>;
 export type BrainDumpDateSource = z.infer<typeof brainDumpDateSourceSchema>;
 export type BrainDumpPriority = z.infer<typeof brainDumpPrioritySchema>;
+export type BrainDumpReviewTaskType = "recurring" | "once-off";
 
 export type BrainDumpReviewDate = {
   originalDateText: string | null;
@@ -88,6 +89,9 @@ export type BrainDumpReviewDate = {
 export type BrainDumpReviewEnrichment = {
   notes: string | null;
   estimatedDurationMinutes: number | null;
+  timeGoalValue: number | null;
+  timeGoalUnit: "minute" | "hour";
+  timeGoalPeriod: "day" | "week";
   priority: BrainDumpPriority | null;
   firstAction: string | null;
 };
@@ -113,6 +117,7 @@ export type BrainDumpDuplicateWarning = {
 export type BrainDumpReviewItem = {
   id: string;
   itemType: BrainDumpItemType;
+  taskType?: BrainDumpReviewTaskType;
   title: string;
   selected: boolean;
   sourceEvidence: string[];
@@ -134,6 +139,9 @@ export type BrainDumpReviewDateUpdate = {
 export type BrainDumpReviewEnrichmentUpdate = Partial<{
   notes: string | null;
   estimatedDurationMinutes: number | string | null;
+  timeGoalValue: number | string | null;
+  timeGoalUnit: "minute" | "hour";
+  timeGoalPeriod: "day" | "week";
   priority: BrainDumpPriority | "" | null;
   firstAction: string | null;
 }>;
@@ -141,6 +149,7 @@ export type BrainDumpReviewEnrichmentUpdate = Partial<{
 export type BrainDumpReviewItemUpdate = {
   itemId: string;
   title?: string;
+  taskType?: BrainDumpReviewTaskType;
   selected?: boolean;
   date?: BrainDumpReviewDateUpdate;
   enrichment?: BrainDumpReviewEnrichmentUpdate;
@@ -494,8 +503,75 @@ function normalizeDurationMinutes(value: unknown) {
   return Math.max(1, Math.min(24 * 60, minutes));
 }
 
-function normalizePriority(value: unknown): BrainDumpPriority | null {
-  return value === "low" || value === "medium" || value === "high" ? value : null;
+function normalizeTimeGoalUnit(value: unknown): BrainDumpReviewEnrichment["timeGoalUnit"] {
+  return value === "hour" ? "hour" : "minute";
+}
+
+function normalizeTimeGoalPeriod(value: unknown): BrainDumpReviewEnrichment["timeGoalPeriod"] {
+  return value === "week" ? "week" : "day";
+}
+
+function maxTimeGoalValueFor(unit: BrainDumpReviewEnrichment["timeGoalUnit"], period: BrainDumpReviewEnrichment["timeGoalPeriod"]) {
+  if (period === "day") return unit === "minute" ? 24 * 60 : 24;
+  return unit === "minute" ? 7 * 24 * 60 : 7 * 24;
+}
+
+function normalizeTimeGoalValue(
+  value: unknown,
+  unit: BrainDumpReviewEnrichment["timeGoalUnit"],
+  period: BrainDumpReviewEnrichment["timeGoalPeriod"]
+) {
+  if (value === null || value === "") return null;
+  const amount = Math.floor(Number(value));
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return Math.min(maxTimeGoalValueFor(unit, period), amount);
+}
+
+function timeGoalMinutesFrom(
+  value: number | null,
+  unit: BrainDumpReviewEnrichment["timeGoalUnit"]
+) {
+  if (!value || value <= 0) return null;
+  return unit === "hour" ? value * 60 : value;
+}
+
+function normalizeReviewEnrichment(input: {
+  notes?: unknown;
+  estimatedDurationMinutes?: unknown;
+  timeGoalValue?: unknown;
+  timeGoalUnit?: unknown;
+  timeGoalPeriod?: unknown;
+  priority?: unknown;
+  firstAction?: unknown;
+  useEstimatedDurationFallback?: boolean;
+}): BrainDumpReviewEnrichment {
+  const unit = normalizeTimeGoalUnit(input.timeGoalUnit);
+  const period = normalizeTimeGoalPeriod(input.timeGoalPeriod);
+  const fallbackMinutes = normalizeDurationMinutes(input.estimatedDurationMinutes);
+  const hasTimeGoalValue = Object.prototype.hasOwnProperty.call(input, "timeGoalValue");
+  const hasExplicitTimeGoalValue = hasTimeGoalValue && input.timeGoalValue !== null && input.timeGoalValue !== "";
+  const value = normalizeTimeGoalValue(
+    hasExplicitTimeGoalValue || !input.useEstimatedDurationFallback ? input.timeGoalValue : fallbackMinutes,
+    unit,
+    period
+  );
+  return {
+    notes: normalizeNullableText(input.notes, 1000),
+    estimatedDurationMinutes: timeGoalMinutesFrom(value, unit),
+    timeGoalValue: value,
+    timeGoalUnit: unit,
+    timeGoalPeriod: period,
+    priority: normalizePriority(input.priority),
+    firstAction: normalizeNullableText(input.firstAction, 240),
+  };
+}
+
+function normalizePriority(value: unknown): BrainDumpPriority {
+  return value === "low" || value === "high" ? value : "medium";
+}
+
+function normalizeReviewTaskType(value: unknown): BrainDumpReviewTaskType {
+  return value === "once-off" ? "once-off" : "recurring";
 }
 
 function normalizeDuplicateDecision(value: unknown): BrainDumpDuplicateDecision | undefined {
@@ -730,12 +806,7 @@ function buildReviewEnrichment(input: {
   priority?: BrainDumpPriority;
   firstAction?: string;
 }): BrainDumpReviewEnrichment {
-  return {
-    notes: normalizeNullableText(input.notes, 1000),
-    estimatedDurationMinutes: normalizeDurationMinutes(input.estimatedDurationMinutes),
-    priority: normalizePriority(input.priority),
-    firstAction: normalizeNullableText(input.firstAction, 240),
-  };
+  return normalizeReviewEnrichment({ ...input, useEstimatedDurationFallback: true });
 }
 
 export function normalizeBrainDumpReviewItemUpdate(update: BrainDumpReviewItemUpdate | null | undefined) {
@@ -744,6 +815,7 @@ export function normalizeBrainDumpReviewItemUpdate(update: BrainDumpReviewItemUp
   return {
     itemId: asTrimmedString(update?.itemId, 120),
     title: update && Object.prototype.hasOwnProperty.call(update, "title") ? asTrimmedString(update.title, 200) : undefined,
+    taskType: update && Object.prototype.hasOwnProperty.call(update, "taskType") ? normalizeReviewTaskType(update.taskType) : undefined,
     selected: typeof update?.selected === "boolean" ? update.selected : undefined,
     date:
       date && typeof date === "object"
@@ -761,6 +833,15 @@ export function normalizeBrainDumpReviewItemUpdate(update: BrainDumpReviewItemUp
             notes: Object.prototype.hasOwnProperty.call(enrichment, "notes") ? normalizeNullableText(enrichment.notes, 1000) : undefined,
             estimatedDurationMinutes: Object.prototype.hasOwnProperty.call(enrichment, "estimatedDurationMinutes")
               ? normalizeDurationMinutes(enrichment.estimatedDurationMinutes)
+              : undefined,
+            timeGoalValue: Object.prototype.hasOwnProperty.call(enrichment, "timeGoalValue")
+              ? enrichment.timeGoalValue
+              : undefined,
+            timeGoalUnit: Object.prototype.hasOwnProperty.call(enrichment, "timeGoalUnit")
+              ? normalizeTimeGoalUnit(enrichment.timeGoalUnit)
+              : undefined,
+            timeGoalPeriod: Object.prototype.hasOwnProperty.call(enrichment, "timeGoalPeriod")
+              ? normalizeTimeGoalPeriod(enrichment.timeGoalPeriod)
               : undefined,
             priority: Object.prototype.hasOwnProperty.call(enrichment, "priority") ? normalizePriority(enrichment.priority) : undefined,
             firstAction: Object.prototype.hasOwnProperty.call(enrichment, "firstAction")
@@ -789,14 +870,21 @@ function applyEnrichmentUpdate(
   update: ReturnType<typeof normalizeBrainDumpReviewItemUpdate>["enrichment"]
 ): BrainDumpReviewEnrichment {
   if (!update) return enrichment;
-  return {
+  const merged = {
     notes: typeof update.notes !== "undefined" ? (update.notes ?? null) : enrichment.notes,
     estimatedDurationMinutes: typeof update.estimatedDurationMinutes !== "undefined"
       ? (update.estimatedDurationMinutes ?? null)
       : enrichment.estimatedDurationMinutes,
+    timeGoalValue: typeof update.timeGoalValue !== "undefined" ? (update.timeGoalValue ?? null) : enrichment.timeGoalValue,
+    timeGoalUnit: typeof update.timeGoalUnit !== "undefined" ? update.timeGoalUnit : enrichment.timeGoalUnit,
+    timeGoalPeriod: typeof update.timeGoalPeriod !== "undefined" ? update.timeGoalPeriod : enrichment.timeGoalPeriod,
     priority: typeof update.priority !== "undefined" ? (update.priority ?? null) : enrichment.priority,
     firstAction: typeof update.firstAction !== "undefined" ? (update.firstAction ?? null) : enrichment.firstAction,
+    useEstimatedDurationFallback:
+      typeof update.timeGoalValue === "undefined" &&
+      (typeof update.estimatedDurationMinutes !== "undefined" || enrichment.timeGoalValue == null),
   };
+  return normalizeReviewEnrichment(merged);
 }
 
 function validateReviewItem(item: BrainDumpReviewItem): BrainDumpReviewValidationError[] {
@@ -807,16 +895,29 @@ function validateReviewItem(item: BrainDumpReviewItem): BrainDumpReviewValidatio
   return errors;
 }
 
+function dateCanDefaultToOnceOff(date: BrainDumpReviewDate) {
+  if (!date.resolvedDate) return false;
+  if (date.ambiguity === "ambiguous" && !date.userConfirmedDate) return false;
+  if (date.dateSource === "suggested" && !date.userConfirmedDate) return false;
+  return date.dateSource === "explicit" || date.dateSource === "inferred" || date.userConfirmedDate;
+}
+
+function defaultReviewTaskType(date: BrainDumpReviewDate): BrainDumpReviewTaskType {
+  return dateCanDefaultToOnceOff(date) ? "once-off" : "recurring";
+}
+
 export function applyBrainDumpReviewItemUpdate(
   item: BrainDumpReviewItem,
   update: ReturnType<typeof normalizeBrainDumpReviewItemUpdate> | null
 ): BrainDumpReviewItem {
   const nextTitle = update && typeof update.title !== "undefined" ? update.title : item.title;
+  const nextDate = applyDateUpdate(item.date, update?.date);
   const nextItem: BrainDumpReviewItem = {
     ...item,
+    taskType: update?.taskType ?? item.taskType ?? defaultReviewTaskType(nextDate),
     title: nextTitle,
     selected: typeof update?.selected === "boolean" && item.supported ? update.selected : item.supported ? item.selected : false,
-    date: applyDateUpdate(item.date, update?.date),
+    date: nextDate,
     enrichment: applyEnrichmentUpdate(item.enrichment, update?.enrichment),
     duplicateDecision: update?.duplicateDecision ?? item.duplicateDecision,
   };
@@ -859,23 +960,25 @@ export async function processTypedBrainDump(input: {
   const items = parsed.data.items.map<BrainDumpReviewItem>((item, index) => {
     const supported = itemIsSupported(item.itemType);
     const selected = supported && item.ambiguityFlags.length === 0;
+    const date = buildReviewDate({
+      dueDateText: item.dueDateText,
+      dateSource: item.dateSource,
+      timezone,
+      nowMs,
+      recurrenceText: item.recurrenceText,
+      dependencyTimingText: item.dependencyTimingText,
+    });
     return {
       id: createItemId(sessionId, index, item.id),
       itemType: item.itemType,
+      taskType: defaultReviewTaskType(date),
       title: item.title,
       selected,
       sourceEvidence: item.sourceEvidence,
       confidence: item.confidence,
       ambiguityFlags: item.ambiguityFlags,
       supported,
-      date: buildReviewDate({
-        dueDateText: item.dueDateText,
-        dateSource: item.dateSource,
-        timezone,
-        nowMs,
-        recurrenceText: item.recurrenceText,
-        dependencyTimingText: item.dependencyTimingText,
-      }),
+      date,
       enrichment: buildReviewEnrichment({
         notes: item.notes,
         estimatedDurationMinutes: item.estimatedDurationMinutes,

@@ -36,7 +36,10 @@ export async function resolveDailyBriefNextBestAction(input: {
     .slice(0, 20);
   if (!ranked.primary) return { recommendation: null, clarificationTaskIds };
 
-  const explanation = buildNextBestActionExplanation(ranked.primary.reasonCodes, null);
+  const explanation = buildNextBestActionExplanation(ranked.primary.reasonCodes, {
+    availableMinutes: null,
+    productivityWindow: ranked.primary.productivityWindow,
+  });
   const created = createRecommendationForRanking({
     id: randomUUID(),
     uid: input.uid,

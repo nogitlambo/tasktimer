@@ -53,13 +53,8 @@ function createDocumentHarness() {
     "dashboardExecutiveSummaryPlanHealth",
     "dashboardExecutiveSummaryCapacity",
     "dashboardExecutiveSummaryWorkload",
-    "dashboardExecutiveSummaryNext",
-    "dashboardExecutiveSummaryNextTitle",
-    "dashboardExecutiveSummaryNextFirstAction",
-    "dashboardExecutiveSummaryStart",
   ];
   const byId = new Map(ids.map((id) => [id, new FakeElement(id)]));
-  byId.get("dashboardExecutiveSummaryStart")!.labelElement = { textContent: "LAUNCH" };
   const documentRef = {
     getElementById: (id: string) => byId.get(id) ?? null,
     addEventListener: (type: string, listener: (event: Event) => void) => listeners.set(type, listener),
@@ -153,46 +148,14 @@ describe("renderDashboardExecutiveSummary", () => {
     expect(byId.get("dashboardExecutiveSummaryPlanHealth")!.textContent).toBe(
       "Move flexible work later and protect the first focus block."
     );
-    expect(byId.get("dashboardExecutiveSummaryNextTitle")!.textContent).toBe("Tidy small area");
-    expect(byId.get("dashboardExecutiveSummaryNextFirstAction")!.textContent).toBe("11 min");
-    expect(byId.get("dashboardExecutiveSummaryStart")!.hidden).toBe(false);
-    expect(byId.get("dashboardExecutiveSummaryStart")!.textContent).toBe("");
-    expect(byId.get("dashboardExecutiveSummaryStart")!.labelElement?.textContent).toBe("LAUNCH");
   });
 
-  it("keeps the summary content visible but hides Start now when no next best action exists", () => {
+  it("keeps the summary content visible when no next best action exists", () => {
     const { byId, documentRef } = createDocumentHarness();
 
     renderDashboardExecutiveSummary(documentRef, readySnapshotWithoutNextBestAction());
 
     expect(byId.get("dashboardExecutiveSummaryContent")!.hidden).toBe(false);
-    expect(byId.get("dashboardExecutiveSummaryNext")!.hidden).toBe(true);
-    expect(byId.get("dashboardExecutiveSummaryStart")!.hidden).toBe(true);
-  });
-
-  it("marks the compact summary start action in progress after start", async () => {
-    const { byId, documentRef, listeners } = createDocumentHarness();
-    renderDashboardExecutiveSummary(documentRef, readySnapshot("REALISTIC"));
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 })));
-    const startTaskById = vi.fn(() => "started" as const);
-    const api = createDashboardExecutiveSummary({
-      documentRef,
-      windowRef: { addEventListener: vi.fn() } as unknown as Window,
-      getCurrentAppPage: () => "other",
-      getIdToken: async () => "token",
-      startTaskById,
-    });
-
-    api.register();
-    listeners.get("click")?.({ target: { closest: () => byId.get("dashboardExecutiveSummaryStart") } } as unknown as Event);
-    await new Promise((resolve) => setTimeout(resolve, 10));
-
-    expect(byId.get("dashboardExecutiveSummaryStart")!.textContent).toBe("");
-    expect(byId.get("dashboardExecutiveSummaryStart")!.labelElement?.textContent).toBe("In Progress");
-    expect(byId.get("dashboardExecutiveSummaryStart")!.hidden).toBe(false);
-    expect(byId.get("dashboardExecutiveSummaryStart")!.disabled).toBe(true);
-    expect(byId.get("dashboardExecutiveSummaryStatus")!.textContent).toBe("Task in progress.");
-    expect(startTaskById).toHaveBeenCalledWith("task-1");
   });
 
   it("clears the plan health pill attribute for fallback status text", () => {

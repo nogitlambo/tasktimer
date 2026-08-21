@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { NextBestActionReasonCode } from "./nextBestActionRecommendation";
+import type { NextBestActionProductivityWindowExplanation } from "./nextBestActionExplanation";
 
 export const NEXT_BEST_ACTION_EXPLANATION_PROMPT_VERSION = "next-best-action-explanation-v1";
 export const DEFAULT_NEXT_BEST_ACTION_OPENAI_MODEL = "gpt-5.6-terra";
@@ -11,6 +12,7 @@ export type NextBestActionExplanationProviderInput = {
   reasonCodes: readonly NextBestActionReasonCode[];
   confidence: "LOW" | "MEDIUM" | "HIGH";
   availableMinutes?: number | null;
+  productivityWindow?: NextBestActionProductivityWindowExplanation | null;
 };
 
 export class NextBestActionExplanationProviderUnavailableError extends Error {
@@ -69,11 +71,45 @@ const claimKeywords: Record<NextBestActionReasonCode, string[]> = {
   USER_PREFERENCE_MATCH: ["preference", "usually prefer"],
 };
 
+const dayNames: Record<string, string> = {
+  sun: "sunday",
+  mon: "monday",
+  tue: "tuesday",
+  wed: "wednesday",
+  thu: "thursday",
+  fri: "friday",
+  sat: "saturday",
+};
+
+function timeVariants(value: string | null | undefined) {
+  const match = String(value || "").trim().match(/^(\d{2}):(\d{2})$/);
+  if (!match) return [];
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return [];
+  const period = hour >= 12 ? "pm" : "am";
+  const displayHour = hour % 12 || 12;
+  return [
+    `${match[1]}:${match[2]}`,
+    `${displayHour}:${match[2]}`,
+    `${displayHour}:${match[2]} ${period}`,
+  ];
+}
+
 export function validateNextBestActionAiExplanation(value: unknown, input: NextBestActionExplanationProviderInput) {
   const parsed = ExplanationResponseSchema.safeParse(value);
   if (!parsed.success) return null;
   const explanation = parsed.data.explanation;
+  if (/no deterministic reason codes were provided/i.test(explanation)) return null;
   if (/\b(?:20\d{2}[-/]\d{1,2}[-/]\d{1,2}|tomorrow|yesterday|overdue|deadline|urgent)\b/i.test(explanation)) return null;
+  if (input.productivityWindow) {
+    if (!/\b(?:productivity|focus window|scheduled|inside)\b/i.test(explanation)) return null;
+    const lower = explanation.toLowerCase();
+    const plannedDay = dayNames[String(input.productivityWindow.plannedDay || "").toLowerCase()];
+    if (plannedDay && !lower.includes(plannedDay)) return null;
+    const plannedTimeVariants = timeVariants(input.productivityWindow.plannedStartTime);
+    if (plannedTimeVariants.length && !plannedTimeVariants.some((time) => lower.includes(time))) return null;
+  }
   const allowedKeywords = new Set(input.reasonCodes.flatMap((reason) => claimKeywords[reason] || []));
   const claimChecks: Array<[RegExp, string[]]> = [
     [/\bpriority\b/i, ["priority"]],
@@ -90,11 +126,11 @@ function buildPrompt(input: NextBestActionExplanationProviderInput) {
   return [
     {
       role: "system",
-      content: "Rephrase only the supplied deterministic reason codes into one concise neutral explanation. Do not invent deadlines, history, priority, blockers, task details, or facts. Return only the requested JSON object and no reasoning.",
+      content: "Rephrase only the supplied deterministic reason codes and productivity window into one concise neutral explanation. Do not invent deadlines, history, priority, blockers, task details, or facts. If productivityWindow is supplied, mention how the scheduled day/time fits or was checked against the productivity days/hours. Return only the requested JSON object and no reasoning.",
     },
     {
       role: "user",
-      content: JSON.stringify({ reasonCodes: input.reasonCodes, confidence: input.confidence, availableMinutes: input.availableMinutes ?? null }),
+      content: JSON.stringify({ reasonCodes: input.reasonCodes, confidence: input.confidence, availableMinutes: input.availableMinutes ?? null, productivityWindow: input.productivityWindow ?? null }),
     },
   ];
 }

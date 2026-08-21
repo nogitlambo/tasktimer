@@ -174,10 +174,6 @@ export default function Landing(props: LandingProps) {
               </Link>
             </div>
           </div>
-
-          <div className="landingV2HeroImageWrap" aria-hidden="true">
-            <AppImg src="/landing/hero_image_trans.png" alt="" className="landingV2HeroImage" />
-          </div>
         </section>
 
         <section className={`landingV2Section ${showLowerSections ? "isVisible" : ""}`} id="features">

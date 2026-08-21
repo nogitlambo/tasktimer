@@ -2,7 +2,7 @@ import { FieldValue, Timestamp, type Firestore } from "firebase-admin/firestore"
 
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 
-export type SubscriptionPlan = "free" | "plus" | "plus_lifetime" | "pro";
+export type SubscriptionPlan = "free" | "plus" | "plus_monthly" | "plus_yearly" | "plus_lifetime" | "pro";
 export type SubscriptionPlanLike = SubscriptionPlan;
 
 export type UserSubscriptionRecord = {
@@ -55,6 +55,8 @@ function asString(value: unknown) {
 
 function normalizePlan(value: unknown): SubscriptionPlan {
   const raw = asString(value).toLowerCase();
+  if (raw === "plus_monthly") return "plus_monthly";
+  if (raw === "plus_yearly") return "plus_yearly";
   if (raw === "plus_lifetime") return "plus_lifetime";
   if (raw === "plus" || raw === "pro") return "plus";
   return "free";
@@ -64,9 +66,24 @@ function normalizeEmailKey(email: unknown) {
   return asString(email).toLowerCase();
 }
 
-export function planFromStripeSubscriptionStatus(status: unknown): SubscriptionPlan {
+export function planFromStripeSubscriptionStatus(
+  status: unknown,
+  context?: {
+    offer?: unknown;
+    priceId?: unknown;
+  }
+): SubscriptionPlan {
   const activeStatuses = new Set(["trialing", "active", "past_due"]);
-  return activeStatuses.has(asString(status).toLowerCase()) ? "plus" : "free";
+  if (!activeStatuses.has(asString(status).toLowerCase())) return "free";
+
+  const offer = asString(context?.offer).toLowerCase();
+  if (offer === "plus_monthly" || offer === "plus_yearly") return offer;
+
+  const priceId = asString(context?.priceId);
+  if (priceId && priceId === asString(process.env.STRIPE_PRICE_ID_PLUS_MONTHLY)) return "plus_monthly";
+  if (priceId && priceId === asString(process.env.STRIPE_PRICE_ID_PLUS_YEARLY)) return "plus_yearly";
+
+  return "plus";
 }
 
 export function isActiveSubscriptionStatus(status: unknown) {
