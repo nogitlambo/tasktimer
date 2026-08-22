@@ -23,6 +23,7 @@ export type DailyCapacityPlanningInput = {
   primarySource?: DailyCapacityPrimarySource;
   sourceSignals?: DailyCapacityReasonCode[];
   historicalSampleSize?: number;
+  isProductivityDay?: boolean;
   manualOverride?: DailyCapacitySnapshot["manualOverride"];
   sourceVersion?: string;
 };
@@ -113,6 +114,7 @@ export function calculateDailyCapacity(input: DailyCapacityPlanningInput): Daily
     remainingRange,
     completedMinutesToday,
     availableMinutesCeiling,
+    isProductivityDay: input.isProductivityDay !== false,
     state,
     confidence: input.confidence ?? "LOW",
     primarySource,

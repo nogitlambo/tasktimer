@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
     flushPendingCloudWrites: vi.fn(() => Promise.resolve()),
     hasPendingTaskOrHistorySync: vi.fn(() => false),
     hasPendingPreferenceSync: vi.fn(() => false),
+    getPendingPreferenceSyncError: vi.fn(() => null),
     clearScopedState: vi.fn(),
   },
 }));
@@ -61,6 +62,8 @@ function resetWorkspaceRepositoryMocks() {
   mocks.workspaceRepository.hasPendingTaskOrHistorySync.mockReturnValue(false);
   mocks.workspaceRepository.hasPendingPreferenceSync.mockClear();
   mocks.workspaceRepository.hasPendingPreferenceSync.mockReturnValue(false);
+  mocks.workspaceRepository.getPendingPreferenceSyncError.mockClear();
+  mocks.workspaceRepository.getPendingPreferenceSyncError.mockReturnValue(null);
   mocks.workspaceRepository.clearScopedState.mockClear();
 }
 
@@ -129,40 +132,53 @@ describe("handleSignOutFlow", () => {
     expect(callOrder).toEqual(["waitForPendingTaskSync", "flushPendingCloudWrites", "signOut"]);
   });
 
-  it("signs out when preference sync is still pending after a best-effort flush", async () => {
+  it("keeps the session active when preference sync remains pending", async () => {
     mocks.authState.currentUser = { isAnonymous: false };
     mocks.workspaceRepository.hasPendingPreferenceSync.mockReturnValue(true);
 
-    await handleSignOutFlow();
+    await expect(handleSignOutFlow()).rejects.toThrow("Could not sync your latest local data to the cloud. Please try again.");
 
-    expect(signOut).toHaveBeenCalledTimes(1);
-    expect(mocks.workspaceRepository.clearScopedState).toHaveBeenCalledTimes(1);
-    expect(window.location.assign).toHaveBeenCalledWith("/login");
+    expect(signOut).not.toHaveBeenCalled();
+    expect(mocks.workspaceRepository.clearScopedState).not.toHaveBeenCalled();
+    expect(window.location.assign).not.toHaveBeenCalled();
   });
 
-  it("signs out when task or history sync is still pending after a best-effort flush", async () => {
+  it("includes the last Firebase preference-sync failure in the sign-out error", async () => {
+    mocks.authState.currentUser = { isAnonymous: false };
+    mocks.workspaceRepository.hasPendingPreferenceSync.mockReturnValue(true);
+    mocks.workspaceRepository.getPendingPreferenceSyncError.mockReturnValue("permission-denied: Missing or insufficient permissions.");
+
+    await expect(handleSignOutFlow()).rejects.toThrow(
+      "Could not sync your latest local data to the cloud. Please try again. Firebase: permission-denied: Missing or insufficient permissions."
+    );
+  });
+
+  it("keeps the session active when task or history sync remains pending", async () => {
     mocks.authState.currentUser = { isAnonymous: false };
     mocks.workspaceRepository.hasPendingTaskOrHistorySync.mockReturnValue(true);
 
-    await handleSignOutFlow();
+    await expect(handleSignOutFlow()).rejects.toThrow("Could not sync your latest local data to the cloud. Please try again.");
 
-    expect(signOut).toHaveBeenCalledTimes(1);
-    expect(mocks.workspaceRepository.clearScopedState).toHaveBeenCalledTimes(1);
-    expect(window.location.assign).toHaveBeenCalledWith("/login");
+    expect(signOut).not.toHaveBeenCalled();
+    expect(mocks.workspaceRepository.clearScopedState).not.toHaveBeenCalled();
+    expect(window.location.assign).not.toHaveBeenCalled();
   });
 
-  it("signs out after a best-effort sync timeout", async () => {
+  it("keeps the session active after a sync timeout", async () => {
     mocks.authState.currentUser = { isAnonymous: false };
     vi.useFakeTimers();
     mocks.workspaceRepository.flushPendingCloudWrites.mockImplementationOnce(() => new Promise(() => {}));
 
     const pending = handleSignOutFlow();
+    const rejection = expect(pending).rejects.toThrow(
+      "Could not sync your latest local data to the cloud because the sync timed out. Please try again."
+    );
     await vi.advanceTimersByTimeAsync(15000);
-    await pending;
+    await rejection;
 
-    expect(signOut).toHaveBeenCalledTimes(1);
-    expect(mocks.workspaceRepository.clearScopedState).toHaveBeenCalledTimes(1);
-    expect(window.location.assign).toHaveBeenCalledWith("/login");
+    expect(signOut).not.toHaveBeenCalled();
+    expect(mocks.workspaceRepository.clearScopedState).not.toHaveBeenCalled();
+    expect(window.location.assign).not.toHaveBeenCalled();
     vi.useRealTimers();
   });
 

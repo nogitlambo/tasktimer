@@ -27,14 +27,16 @@ describe("account upgrade wiring", () => {
 
   it("uses shared API URL helpers for native checkout and billing portal requests", () => {
     const source = readSource("./settings/useSettingsAccountState.ts");
+    const upsellSource = readSource("./useNativePlusUpsell.ts");
 
-    expect(source).toContain('const checkoutApiUrl = getApiUrl("/api/stripe/create-checkout-session/");');
-    expect(source).toContain("fetch(checkoutApiUrl, {");
+    expect(source).toContain('import { useNativePlusUpsell } from "../useNativePlusUpsell";');
+    expect(upsellSource).toContain('getApiUrl("/api/stripe/create-checkout-session/")');
+    expect(upsellSource).toContain("successReturnPath: returnPath");
+    expect(upsellSource).toContain("cancelReturnPath: returnPath");
     expect(source).toContain('fetch(getApiUrl("/api/stripe/create-billing-portal-session/"), {');
     expect(source).toContain("await Browser.open({ url: data.url });");
-    expect(source).toContain("window.location.assign(data.url);");
-    expect(source).toContain('logNativePlusCheckout("Starting native checkout"');
-    expect(source).toContain('warnNativePlusCheckout("Native checkout failed"');
+    expect(upsellSource).toContain("window.location.assign(data.url);");
     expect(source).not.toContain('window.location.assign("/pricing")');
+    expect(upsellSource).not.toContain('window.location.assign("/pricing")');
   });
 });

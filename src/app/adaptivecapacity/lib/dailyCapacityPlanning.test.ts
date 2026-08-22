@@ -17,6 +17,7 @@ describe("calculateDailyCapacity", () => {
     expect(snapshot.confidence).toBe("LOW");
     expect(snapshot.primarySource).toBe("DEFAULT");
     expect(snapshot.sourceSignals).toEqual(["DEFAULT_BASELINE", "INSUFFICIENT_HISTORY"]);
+    expect(snapshot.isProductivityDay).toBe(true);
   });
 
   it("applies a custom minute override while preserving the hard ceiling", () => {
@@ -50,5 +51,18 @@ describe("calculateDailyCapacity", () => {
     expect(snapshot.primarySource).toBe("USER_STATE");
     expect(snapshot.confidence).toBe("HIGH");
     expect(snapshot.sourceSignals).toContain("USER_OVERRIDE");
+  });
+
+  it("persists explicit non-productivity days", () => {
+    const snapshot = calculateDailyCapacity({
+      localDate: "2026-08-08",
+      completedMinutesToday: 0,
+      availableMinutesCeiling: 0,
+      isProductivityDay: false,
+      nowMs: Date.parse("2026-08-08T09:00:00.000Z"),
+    });
+
+    expect(snapshot.isProductivityDay).toBe(false);
+    expect(snapshot.remainingRange).toEqual({ min: 0, max: 0 });
   });
 });

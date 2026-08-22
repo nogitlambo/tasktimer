@@ -60,6 +60,7 @@ export const DailyCapacitySnapshotSchema = z.object({
   remainingRange: DailyCapacityRangeSchema,
   completedMinutesToday: minutesSchema,
   availableMinutesCeiling: minutesSchema.nullable().optional(),
+  isProductivityDay: z.boolean().default(true),
   state: DailyCapacityStateSchema,
   confidence: DailyCapacityConfidenceSchema,
   primarySource: DailyCapacityPrimarySourceSchema,

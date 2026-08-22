@@ -1,7 +1,7 @@
 "use client";
 
 import AppImg from "@/components/AppImg";
-import type { FormEvent } from "react";
+import type { CSSProperties, FormEvent } from "react";
 
 type WebSignInProps = {
   authUserEmail: string | null;
@@ -19,6 +19,23 @@ type WebSignInProps = {
   onCompleteEmailLink: () => void;
   onAuthEmailChange: (value: string) => void;
   onAuthEmailFocus: () => void;
+};
+
+const fullScreenAuthColumnStyle: CSSProperties = {
+  justifyContent: "center",
+};
+
+const fullScreenAuthFrameStyle: CSSProperties = {
+  width: "100%",
+  maxWidth: "100%",
+  background: "transparent",
+  border: 0,
+  boxShadow: "none",
+  backdropFilter: "none",
+};
+
+const sloganStyle: CSSProperties = {
+  color: "#c9ff24",
 };
 
 function RecaptchaDisclaimer() {
@@ -97,8 +114,12 @@ export default function WebSignIn(props: WebSignInProps) {
 
       <div className="webSignInContainer webSignInSplitContainer">
         <div className="webSignInSplit">
-          <section className="webSignInAuthColumn" aria-label="TaskLaunch sign in">
-            <div className="webSignInAuthFrame">
+          <section
+            className="webSignInAuthColumn"
+            aria-label="TaskLaunch sign in"
+            style={fullScreenAuthColumnStyle}
+          >
+            <div className="webSignInAuthFrame" style={fullScreenAuthFrameStyle}>
               <div className="relative z-10 flex flex-col items-center gap-3">
                 <div className="launchWordBrand webSignInWordBrand" aria-label="TaskLaunch">
                   <AppImg
@@ -107,6 +128,7 @@ export default function WebSignIn(props: WebSignInProps) {
                     className="webSignInLogo"
                   />
                 </div>
+                <p className="webSignInSlogan" style={sloganStyle}>Your executive function, outsourced.</p>
               </div>
 
               <section
@@ -251,9 +273,6 @@ export default function WebSignIn(props: WebSignInProps) {
             </div>
           </section>
 
-          <section className="webSignInVisualColumn" aria-label="TaskLaunch preview">
-            <div className="webSignInLandingImage" aria-hidden="true" />
-          </section>
         </div>
       </div>
     </main>

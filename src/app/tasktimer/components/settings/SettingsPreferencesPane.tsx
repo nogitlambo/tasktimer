@@ -4,6 +4,7 @@ import AppImg from "@/components/AppImg";
 import type { ChangeEvent, MouseEvent } from "react";
 import { SettingsDownwardSelect } from "./SettingsDownwardSelect";
 import { SettingsDetailPane } from "./SettingsShared";
+import { saveOptimalProductivityPreferencesToFirestore } from "./settingsPreferencesBridge";
 
 const TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_DAYS_CHANGE_EVENT = "tasktimer:settings-optimal-productivity-days-change";
 const TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_PERIOD_CHANGE_EVENT = "tasktimer:settings-optimal-productivity-period-change";
@@ -59,11 +60,14 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
   function handleOptimalProductivityDayChange(event: ChangeEvent<HTMLInputElement>) {
     event.stopPropagation();
     const input = event.currentTarget;
-    dispatchOptimalProductivityDaysChange(getSelectedOptimalProductivityDays(input.closest("#optimalProductivityDaysMenu")), input.id);
+    const days = getSelectedOptimalProductivityDays(input.closest("#optimalProductivityDaysMenu"));
+    saveOptimalProductivityPreferencesToFirestore({ optimalProductivityDays: days });
+    dispatchOptimalProductivityDaysChange(days, input.id);
   }
 
   function handleOptimalProductivityAllClick(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
+    saveOptimalProductivityPreferencesToFirestore({ optimalProductivityDays: OPTIMAL_PRODUCTIVITY_DAYS });
     dispatchOptimalProductivityDaysChange(OPTIMAL_PRODUCTIVITY_DAYS);
   }
 
@@ -83,6 +87,9 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
   function handleOptimalProductivityTimeChange(event: ChangeEvent<HTMLInputElement>, field: OptimalProductivityPeriodField) {
     event.stopPropagation();
     const input = event.currentTarget;
+    saveOptimalProductivityPreferencesToFirestore(
+      field === "start" ? { optimalProductivityStartTime: input.value } : { optimalProductivityEndTime: input.value }
+    );
     dispatchOptimalProductivityPeriodChange(field, input.value, input.id);
   }
 

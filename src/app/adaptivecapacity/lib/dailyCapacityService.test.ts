@@ -5,6 +5,7 @@ import { getDailyCapacity } from "./dailyCapacityService";
 const baseSource = {
   completedMinutesToday: 15,
   availableMinutesCeiling: null,
+  isProductivityDay: true,
   sourceVersion: "b".repeat(64),
 };
 
@@ -104,6 +105,32 @@ describe("getDailyCapacity", () => {
 
     expect(result.snapshot.fullDayRange).toEqual({ min: 20, max: 20 });
     expect(result.snapshot.sourceSignals).toContain("FOCUS_WINDOW_REMAINING");
+  });
+
+  it("preserves non-productivity days separately from zero remaining capacity", async () => {
+    const repository = {
+      loadSourceContext: vi.fn().mockResolvedValue({ ...baseSource, availableMinutesCeiling: 0, isProductivityDay: false }),
+      loadSnapshot: vi.fn().mockResolvedValue(null),
+      saveSnapshot: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const result = await getDailyCapacity({ uid: "uid-1", localDate: "2026-08-08", timezone: "UTC", nowMs: Date.parse("2026-08-08T09:00:00.000Z"), repository });
+
+    expect(result.snapshot.isProductivityDay).toBe(false);
+    expect(result.snapshot.remainingRange).toEqual({ min: 0, max: 0 });
+  });
+
+  it("keeps after-hours productivity days as productivity days", async () => {
+    const repository = {
+      loadSourceContext: vi.fn().mockResolvedValue({ ...baseSource, availableMinutesCeiling: 0, isProductivityDay: true }),
+      loadSnapshot: vi.fn().mockResolvedValue(null),
+      saveSnapshot: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const result = await getDailyCapacity({ uid: "uid-1", localDate: "2026-08-07", timezone: "UTC", nowMs: Date.parse("2026-08-07T11:30:00.000Z"), repository });
+
+    expect(result.snapshot.isProductivityDay).toBe(true);
+    expect(result.snapshot.remainingRange).toEqual({ min: 0, max: 0 });
   });
 
   it("preserves a valid snapshot when source loading fails during a normal refresh", async () => {

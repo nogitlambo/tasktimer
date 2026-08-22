@@ -30,6 +30,7 @@ describe("Firestore Daily Capacity repository", () => {
 
     expect(context.completedMinutesToday).toBe(20);
     expect(context.availableMinutesCeiling).toBeNull();
+    expect(context.isProductivityDay).toBe(true);
     expect(context.sourceVersion).toMatch(/^[a-f0-9]{64}$/);
     expect(context.sourceVersion).not.toContain("Private task");
     expect(context.sourceVersion).not.toContain("Private note");
@@ -57,6 +58,32 @@ describe("Firestore Daily Capacity repository", () => {
 
     expect(first.availableMinutesCeiling).toBe(20);
     expect(second.availableMinutesCeiling).toBe(80);
+    expect(first.isProductivityDay).toBe(true);
     expect(second.sourceVersion).not.toBe(first.sourceVersion);
+  });
+
+  it("distinguishes non-productivity days from after-hours productivity days", async () => {
+    const historyGet = vi.fn().mockResolvedValue({ docs: [] });
+    const aggregateGet = vi.fn().mockResolvedValue({ exists: false, data: () => null });
+    const aggregateSet = vi.fn().mockResolvedValue(undefined);
+    const preferencesGet = vi.fn().mockResolvedValue({ exists: true, data: () => ({ optimalProductivityStartTime: "09:00", optimalProductivityEndTime: "10:00", optimalProductivityDays: ["fri"] }) });
+    const user = {
+      collection: vi.fn((name: string) => {
+        if (name === "historyEntries") return { get: historyGet };
+        if (name === "behaviourFeatures") return { doc: vi.fn(() => ({ get: aggregateGet, set: aggregateSet })) };
+        return { doc: vi.fn(() => ({ get: preferencesGet })) };
+      }),
+    };
+    const db = { collection: vi.fn(() => ({ doc: vi.fn(() => user) })) };
+    const repository = createFirestoreDailyCapacityRepository(db as never);
+
+    const afterHours = await repository.loadSourceContext({ uid: "uid-1", localDate: "2026-08-07", timezone: "UTC", nowMs: Date.parse("2026-08-07T11:30:00.000Z") });
+    const restDay = await repository.loadSourceContext({ uid: "uid-1", localDate: "2026-08-08", timezone: "UTC", nowMs: Date.parse("2026-08-08T09:30:00.000Z") });
+
+    expect(afterHours.availableMinutesCeiling).toBe(0);
+    expect(afterHours.isProductivityDay).toBe(true);
+    expect(restDay.availableMinutesCeiling).toBe(0);
+    expect(restDay.isProductivityDay).toBe(false);
+    expect(restDay.sourceVersion).not.toBe(afterHours.sourceVersion);
   });
 });

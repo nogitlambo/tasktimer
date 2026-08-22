@@ -2,6 +2,7 @@
 /* Executive experience and compact Dashboard summary */
 .executiveShell{--executive-accent:#c9ff24;--executive-panel:#111216;--executive-line:#1a1b20;--executive-status-good:var(--executive-accent);--executive-status-warning:#ffd84d;--executive-status-danger:#ff7462;--executive-plan-health-good:#22c55e;--executive-plan-health-warning:#ffd84d;--executive-plan-health-danger:#ff7462;width:min(1560px,100%);margin:0 auto;padding:20px 24px 28px;color:#f5f7fb}
 .executiveFlipScene{position:relative;width:100%;min-height:100px;perspective:2200px;transform-style:preserve-3d;isolation:isolate;transition:height .76s cubic-bezier(.16,1,.3,1);will-change:height}
+#appPageExecutive .executiveUpgradePanel{position:relative}#appPageExecutive.isExecutivePlanLocked .executiveFlipScene{filter:brightness(.48);opacity:.58}#appPageExecutive .executiveUpgradeGate{position:absolute;inset:0;z-index:20;display:grid;place-items:center;pointer-events:none}#appPageExecutive .executiveUpgradeGateButton{pointer-events:auto;min-width:176px}
 .executiveFlipFace{position:absolute;inset:0;width:100%;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:translateZ(0);transform-style:preserve-3d;transform-origin:center center;transition:transform .76s cubic-bezier(.16,1,.3,1);will-change:transform}
 .executiveFlipFaceFront{transform:translateZ(0) rotateY(0)}
 .executiveFlipFaceBack{transform:translateZ(0) rotateY(180deg)}

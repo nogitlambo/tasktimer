@@ -5,9 +5,12 @@ import { createPortal } from "react-dom";
 import AppImg from "@/components/AppImg";
 import BrainDumpClient from "@/app/brain-dump/BrainDumpClient";
 import { trackEvent } from "@/lib/firebaseTelemetry";
+import NativePlusUpsellModal from "./NativePlusUpsellModal";
+import { useNativePlusUpsell } from "./useNativePlusUpsell";
 import {
   hasTaskTimerEntitlement,
   readTaskTimerPlanFromStorage,
+  TASKTIMER_PLAN_CHANGED_EVENT,
 } from "../lib/entitlements";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import { STORAGE_KEY } from "../lib/storage";
@@ -239,9 +242,31 @@ export default function ExecutivePageContent({ active }: Props) {
   const [currentLocalTime, setCurrentLocalTime] = useState("");
   const [overlayPortalHost, setOverlayPortalHost] =
     useState<HTMLElement | null>(null);
+  const [isExecutivePlanLocked, setIsExecutivePlanLocked] = useState(
+    () => !hasTaskTimerEntitlement(readTaskTimerPlanFromStorage(), "executiveFunction"),
+  );
+  const nativePlusUpsell = useNativePlusUpsell({
+    returnPath: "/executive",
+    sourcePage: "executive",
+  });
 
   useEffect(() => {
     setOverlayPortalHost(document.body);
+  }, []);
+
+  useEffect(() => {
+    const syncPlanLock = () => {
+      setIsExecutivePlanLocked(
+        !hasTaskTimerEntitlement(
+          readTaskTimerPlanFromStorage(),
+          "executiveFunction",
+        ),
+      );
+    };
+    syncPlanLock();
+    window.addEventListener(TASKTIMER_PLAN_CHANGED_EVENT, syncPlanLock);
+    return () =>
+      window.removeEventListener(TASKTIMER_PLAN_CHANGED_EVENT, syncPlanLock);
   }, []);
 
   useEffect(() => {
@@ -382,14 +407,17 @@ export default function ExecutivePageContent({ active }: Props) {
 
   return (
     <section
-      className={`appPage${active ? " appPageOn" : ""}`}
+      className={`appPage${active ? " appPageOn" : ""}${isExecutivePlanLocked ? " isExecutivePlanLocked" : ""}`}
       id="appPageExecutive"
       aria-label="Executive page"
     >
-      <div
-        className={`executiveFlipScene${isBrainDumpOpen ? " isFlipped" : ""}`}
-        ref={sceneRef}
-      >
+      <div className="executiveUpgradePanel">
+        <div
+          className={`executiveFlipScene${isBrainDumpOpen ? " isFlipped" : ""}`}
+          ref={sceneRef}
+          aria-hidden={isExecutivePlanLocked}
+          inert={isExecutivePlanLocked ? true : undefined}
+        >
         <div
           className="executiveFlipFace executiveFlipFaceFront"
           ref={frontRef}
@@ -1054,7 +1082,28 @@ export default function ExecutivePageContent({ active }: Props) {
         >
           <BrainDumpClient embedded onBack={closeBrainDump} />
         </div>
+        </div>
+        {isExecutivePlanLocked ? (
+          <div className="executiveUpgradeGate">
+            <button
+              className="btn btn-accent executiveUpgradeGateButton"
+              type="button"
+              onClick={nativePlusUpsell.show}
+            >
+              Upgrade to PLUS
+            </button>
+          </div>
+        ) : null}
       </div>
+      <NativePlusUpsellModal
+        open={nativePlusUpsell.open}
+        busy={nativePlusUpsell.busy}
+        error={nativePlusUpsell.error}
+        selectedOffer={nativePlusUpsell.selectedOffer}
+        onClose={nativePlusUpsell.close}
+        onSelectOffer={nativePlusUpsell.setSelectedOffer}
+        onConfirm={nativePlusUpsell.startCheckout}
+      />
       {overlayPortalHost ? (
         <>
           {createPortal(<DailyCapacityAdjustOverlay />, overlayPortalHost)}

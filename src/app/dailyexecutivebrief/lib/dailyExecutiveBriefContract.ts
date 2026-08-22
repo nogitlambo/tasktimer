@@ -30,6 +30,7 @@ export const DailyExecutiveBriefCapacitySummarySchema = z.object({
   sourceSignals: z.array(DailyCapacityReasonCodeSchema).max(20),
   completedMinutesToday: z.number().int().min(0),
   availableMinutesCeiling: z.number().int().min(0).nullable(),
+  isProductivityDay: z.boolean().default(true),
   sourceVersion: z.string().regex(/^[a-f0-9]{64}$/),
 });
 

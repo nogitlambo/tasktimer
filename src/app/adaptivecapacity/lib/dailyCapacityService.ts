@@ -30,7 +30,7 @@ export async function getDailyCapacity(input: GetDailyCapacityInput): Promise<{ 
     : Math.floor(input.availableMinutesCeiling);
   const effectiveOverride = input.manualOverride === undefined ? existing?.manualOverride ?? null : input.manualOverride;
   const sourceVersion = createHash("sha256")
-    .update(JSON.stringify({ sourceVersion: source.sourceVersion, availableMinutesCeiling, manualOverride: effectiveOverride }))
+    .update(JSON.stringify({ sourceVersion: source.sourceVersion, availableMinutesCeiling, isProductivityDay: source.isProductivityDay !== false, manualOverride: effectiveOverride }))
     .digest("hex");
   if (!input.forceRefresh && existing && existing.sourceVersion === sourceVersion && Date.parse(existing.expiresAt) > input.nowMs) {
     return { snapshot: existing, reused: true };
@@ -42,6 +42,7 @@ export async function getDailyCapacity(input: GetDailyCapacityInput): Promise<{ 
     localDate: input.localDate,
     completedMinutesToday: source.completedMinutesToday,
     availableMinutesCeiling,
+    isProductivityDay: source.isProductivityDay !== false,
     nowMs: input.nowMs,
     baselineRange: baseline?.range,
     state: baseline?.state,

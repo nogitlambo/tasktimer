@@ -6,13 +6,13 @@ const preferencesPersistenceMocks = vi.hoisted(() => ({
 
 const workspaceRepositoryMocks = vi.hoisted(() => ({
   createTaskTimerWorkspacePreferencesPersistence: vi.fn(() => preferencesPersistenceMocks),
-  createTaskTimerWorkspaceRepository: vi.fn(() => ({ kind: "workspace-repository" })),
+  createTaskTimerWorkspaceRepository: vi.fn(() => ({ kind: "workspace-repository", flushPendingCloudWrites: vi.fn() })),
 }));
 
 vi.mock("@/app/tasktimer/lib/workspaceRepository", () => workspaceRepositoryMocks);
 
 import { DEFAULT_REWARD_PROGRESS } from "@/app/tasktimer/lib/rewards";
-import { saveRewardProgressToPreferences } from "./settingsPreferencesBridge";
+import { saveOptimalProductivityPreferencesToFirestore, saveRewardProgressToPreferences } from "./settingsPreferencesBridge";
 
 describe("saveRewardProgressToPreferences", () => {
   beforeEach(() => {
@@ -30,5 +30,14 @@ describe("saveRewardProgressToPreferences", () => {
 
     expect(preferencesPersistenceMocks.update).toHaveBeenCalledTimes(1);
     expect(preferencesPersistenceMocks.update).toHaveBeenCalledWith({ rewards });
+  });
+
+  it("persists productivity fields and flushes their Firestore write", () => {
+    const mutation = { optimalProductivityDays: ["mon", "wed"], optimalProductivityStartTime: "09:00", optimalProductivityEndTime: "16:00" };
+
+    saveOptimalProductivityPreferencesToFirestore(mutation);
+
+    expect(preferencesPersistenceMocks.update).toHaveBeenCalledWith(mutation);
+    expect(workspaceRepositoryMocks.createTaskTimerWorkspaceRepository.mock.results[0]?.value.flushPendingCloudWrites).toHaveBeenCalledTimes(1);
   });
 });

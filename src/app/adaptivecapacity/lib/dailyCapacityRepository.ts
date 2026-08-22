@@ -5,7 +5,7 @@ import { Timestamp, type Firestore } from "firebase-admin/firestore";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { localDateForRecommendationTimezone } from "@/app/nextbestaction/lib/nextBestActionRepository";
 
-import { calculateRemainingFocusWindowMinutes } from "./capacityAvailability";
+import { calculateRemainingFocusWindowMinutes, isConfiguredProductivityDay } from "./capacityAvailability";
 import { aggregateCapacityHistory, CapacityHistoryFeaturesSchema, type CapacityHistoryFeatures } from "./capacityHistory";
 import { DailyCapacitySnapshotSchema, type DailyCapacitySnapshot } from "./dailyCapacityContract";
 
@@ -53,7 +53,7 @@ function historyFeaturesFromFirestore(row: RawRow): CapacityHistoryFeatures | nu
   return parsed.success ? parsed.data : null;
 }
 
-function stableSourceVersion(rows: Array<{ timestampMs: number; minutes: number }>, preferences: RawRow | null = null, focusWindowRemainingMinutes: number | null = null) {
+function stableSourceVersion(rows: Array<{ timestampMs: number; minutes: number }>, preferences: RawRow | null = null, focusWindowRemainingMinutes: number | null = null, isProductivityDay = true) {
   return createHash("sha256").update(JSON.stringify({
     rows: rows.sort((a, b) => a.timestampMs - b.timestampMs),
     preferences: preferences ? {
@@ -62,12 +62,14 @@ function stableSourceVersion(rows: Array<{ timestampMs: number; minutes: number 
       optimalProductivityDays: Array.isArray(preferences.optimalProductivityDays) ? preferences.optimalProductivityDays.map((day) => safeString(day, 8)).sort() : [],
     } : null,
     focusWindowRemainingMinutes,
+    isProductivityDay,
   })).digest("hex");
 }
 
 export type DailyCapacitySourceContext = {
   completedMinutesToday: number;
   availableMinutesCeiling: number | null;
+  isProductivityDay: boolean;
   sourceVersion: string;
   historyFeatures?: CapacityHistoryFeatures | null;
 };
@@ -87,7 +89,7 @@ export function createFirestoreDailyCapacityRepository(db: Firestore = getFireba
     async loadSourceContext({ uid, localDate, timezone, nowMs = Date.now() }) {
       const safeUid = safeString(uid, 120);
       const normalizedDate = normalizeDate(localDate);
-      if (!safeUid || !normalizedDate) return { completedMinutesToday: 0, availableMinutesCeiling: null, sourceVersion: stableSourceVersion([]), historyFeatures: null };
+      if (!safeUid || !normalizedDate) return { completedMinutesToday: 0, availableMinutesCeiling: null, isProductivityDay: true, sourceVersion: stableSourceVersion([]), historyFeatures: null };
       const historyRef = userDoc(safeUid).collection("historyEntries");
       const aggregateRef = userDoc(safeUid).collection("behaviourFeatures").doc("capacity");
       const preferencesRef = userDoc(safeUid).collection("preferences").doc("v1");
@@ -122,10 +124,18 @@ export function createFirestoreDailyCapacityRepository(db: Firestore = getFireba
             days: Array.isArray(preferences.optimalProductivityDays) ? preferences.optimalProductivityDays.map((day) => safeString(day, 8)) : [],
           })
         : null;
+      const isProductivityDay = preferences
+        ? isConfiguredProductivityDay({
+            nowMs,
+            timezone,
+            days: Array.isArray(preferences.optimalProductivityDays) ? preferences.optimalProductivityDays.map((day) => safeString(day, 8)) : [],
+          })
+        : true;
       return {
         completedMinutesToday: todayRows.reduce((sum, row) => sum + row.minutes, 0),
         availableMinutesCeiling: focusWindowRemainingMinutes,
-        sourceVersion: stableSourceVersion(rows, preferences, focusWindowRemainingMinutes),
+        isProductivityDay,
+        sourceVersion: stableSourceVersion(rows, preferences, focusWindowRemainingMinutes, isProductivityDay),
         historyFeatures,
       };
     },

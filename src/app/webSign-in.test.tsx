@@ -67,6 +67,12 @@ describe("WebSignIn", () => {
 
     expect(html.indexOf("Continue with Google")).toBeGreaterThanOrEqual(0);
     expect(html).toContain("Continue with email");
+    expect(html).toContain("Your executive function, outsourced.");
+    expect(html).toContain('style="color:#c9ff24"');
+    expect(html).not.toContain("webSignInVisualColumn");
+    expect(html).not.toContain("webSignInLandingImage");
+    expect(html).toContain('style="justify-content:center"');
+    expect(html).toContain('style="width:100%;max-width:100%;background:transparent;border:0;box-shadow:none;backdrop-filter:none"');
     expect(html).not.toContain("Continue without account");
     expect(html).not.toContain("Guest account");
     expect(html).not.toContain('href="/tasklaunch"');
@@ -131,6 +137,15 @@ describe("WebSignIn", () => {
     expect(sendLinkHoverRule).toContain("opacity: 1;");
     expect(sendLinkHoverRule).not.toContain("linear-gradient(180deg, #edff95");
     expect(sendLinkHoverRule).not.toContain("color: #000;");
+  });
+
+  it("renders the sign-in slogan in the display font with proper case styling", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8").replace(/\r\n/g, "\n");
+    const sloganRule = css.match(/\.webSignInSlogan \{[\s\S]*?\n\}/)?.[0] || "";
+
+    expect(sloganRule).toContain("font-family: var(--font-display-ui);");
+    expect(sloganRule).toContain("color: #c9ff24;");
+    expect(sloganRule).not.toContain("text-transform: uppercase;");
   });
 
   it("keeps email controls mounted but inert before email mode is selected", () => {

@@ -15,7 +15,6 @@ import {
   readTaskTimerPlanCacheFromStorage,
   readTaskTimerPlanFromStorage,
   TASKTIMER_PLAN_CHANGED_EVENT,
-  type TaskTimerPaidOffer,
   writeTaskTimerPlanToStorage,
 } from "@/app/tasktimer/lib/entitlements";
 import {
@@ -27,6 +26,7 @@ import {
 } from "./settingsAccountService";
 import type { SettingsAccountViewModel } from "./types";
 import { useSharedProfileSessionActions } from "./useSharedProfileSessionActions";
+import { useNativePlusUpsell } from "../useNativePlusUpsell";
 
 type UseSettingsAccountStateOptions = {
   nativeCheckoutReturnPath?: string;
@@ -36,41 +36,6 @@ function resolveNativeCheckoutReturnPath(value: string | undefined) {
   const normalized = String(value || "").trim();
   if (!normalized) return "/settings";
   return normalized.startsWith("/") ? normalized : `/${normalized}`;
-}
-
-function logNativePlusCheckout(
-  message: string,
-  details?: Record<string, unknown>
-) {
-  if (details) {
-    console.info(`[native-plus-checkout] ${message}`, details);
-    return;
-  }
-  console.info(`[native-plus-checkout] ${message}`);
-}
-
-function warnNativePlusCheckout(
-  message: string,
-  details?: Record<string, unknown>
-) {
-  if (details) {
-    console.warn(`[native-plus-checkout] ${message}`, details);
-    return;
-  }
-  console.warn(`[native-plus-checkout] ${message}`);
-}
-
-function describeCheckoutError(error: unknown) {
-  if (error instanceof Error) {
-    const errorWithCause = error as Error & { cause?: unknown };
-    return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack || null,
-      cause: errorWithCause.cause ?? null,
-    };
-  }
-  return { value: error };
 }
 
 export function useSettingsAccountState(options: UseSettingsAccountStateOptions = {}): {
@@ -111,10 +76,10 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
   const [signOutError, setSignOutError] = useState("");
   const [uidCopyStatus, setUidCopyStatus] = useState("");
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
-  const [showNativePlusUpsellModal, setShowNativePlusUpsellModal] = useState(false);
-  const [nativePlusCheckoutBusy, setNativePlusCheckoutBusy] = useState(false);
-  const [nativePlusCheckoutError, setNativePlusCheckoutError] = useState("");
-  const [nativePlusCheckoutOffer, setNativePlusCheckoutOffer] = useState<TaskTimerPaidOffer>("plus_monthly");
+  const nativePlusUpsell = useNativePlusUpsell({
+    returnPath: nativeCheckoutReturnPath,
+    sourcePage: nativeCheckoutReturnPath === "/account" ? "account" : "settings",
+  });
   const lastConfirmedPlanRef = useRef<SettingsAccountViewModel["authPlan"]>(initialPlanCache.plan);
   const lastConfirmedPlanUidRef = useRef<string | null>(initialPlanCache.uid);
   const pendingPlanRefreshRef = useRef(false);
@@ -428,81 +393,6 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
     }
   }, [authIsAnonymous, authUserAlias, authUserAliasDraft, authUserUid, markSynced]);
 
-  const onStartNativePlusCheckout = useCallback(async (offer: TaskTimerPaidOffer) => {
-    const auth = getFirebaseAuthClient();
-    const currentUser = auth?.currentUser || null;
-    const uid = String(currentUser?.uid || "").trim();
-    if (!uid || nativePlusCheckoutBusy) return;
-
-    setNativePlusCheckoutBusy(true);
-    setNativePlusCheckoutError("");
-    setAuthError("");
-    setAuthStatus("");
-    try {
-      const idToken = await currentUser?.getIdToken();
-      if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-      const checkoutApiUrl = getApiUrl("/api/stripe/create-checkout-session/");
-      logNativePlusCheckout("Starting native checkout", {
-        checkoutApiUrl,
-        hasBrowserPlugin: typeof Browser?.open === "function",
-        nativeCheckoutReturnPath,
-        sourcePage: nativeCheckoutReturnPath === "/account" ? "account" : "settings",
-        offer,
-        uid,
-      });
-      const res = await fetch(checkoutApiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
-        body: JSON.stringify({
-          uid,
-          offer,
-          returnTarget: "native",
-          successReturnPath: nativeCheckoutReturnPath,
-          cancelReturnPath: nativeCheckoutReturnPath,
-        }),
-      });
-      const data = await readApiJson<{ url?: string; error?: string }>(res, "Could not start checkout.");
-      logNativePlusCheckout("Checkout session response received", {
-        hasCheckoutUrl: Boolean(data.url),
-        responseOk: res.ok,
-        status: res.status,
-        statusText: res.statusText,
-      });
-      if (!res.ok || !data.url) {
-        throw new Error(data.error || "Could not start checkout.");
-      }
-      logNativePlusCheckout("Opening Stripe checkout", {
-        checkoutUrl: data.url,
-      });
-      try {
-        await Browser.open({ url: data.url });
-        logNativePlusCheckout("Stripe checkout opened with Capacitor Browser");
-      } catch (browserError) {
-        warnNativePlusCheckout("Capacitor Browser.open failed; falling back to window.location.assign", {
-          browserError: describeCheckoutError(browserError),
-          checkoutUrl: data.url,
-        });
-        window.location.assign(data.url);
-        logNativePlusCheckout("Fallback navigation dispatched", {
-          checkoutUrl: data.url,
-        });
-      }
-    } catch (err: unknown) {
-      warnNativePlusCheckout("Native checkout failed", {
-        error: describeCheckoutError(err),
-        nativeCheckoutReturnPath,
-        offer,
-        sourcePage: nativeCheckoutReturnPath === "/account" ? "account" : "settings",
-      });
-      void recordNonFatal(err, {
-        flow: "billing_checkout",
-        source_page: nativeCheckoutReturnPath === "/account" ? "account" : "settings",
-      });
-      setNativePlusCheckoutError(getErrorMessage(err, "Could not start checkout."));
-      setNativePlusCheckoutBusy(false);
-    }
-  }, [nativeCheckoutReturnPath, nativePlusCheckoutBusy]);
-
   const onOpenPlanAction = useCallback(async () => {
     if (typeof window === "undefined") return;
 
@@ -550,10 +440,8 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       return;
     }
 
-    setNativePlusCheckoutError("");
-    setNativePlusCheckoutOffer("plus_monthly");
-    setShowNativePlusUpsellModal(true);
-  }, [authPlan, nativeCheckoutReturnPath]);
+    nativePlusUpsell.show();
+  }, [authPlan, nativeCheckoutReturnPath, nativePlusUpsell]);
 
   return {
     account: {
@@ -584,18 +472,12 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       signOutError,
       uidCopyStatus,
       showDeleteAccountConfirm,
-      showNativePlusUpsellModal,
-      nativePlusCheckoutBusy,
-      nativePlusCheckoutError,
-      nativePlusCheckoutOffer,
+      showNativePlusUpsellModal: nativePlusUpsell.open,
+      nativePlusCheckoutBusy: nativePlusUpsell.busy,
+      nativePlusCheckoutError: nativePlusUpsell.error,
+      nativePlusCheckoutOffer: nativePlusUpsell.selectedOffer,
       setShowDeleteAccountConfirm,
-      setShowNativePlusUpsellModal: (open) => {
-        setShowNativePlusUpsellModal(open);
-        if (open) return;
-        setNativePlusCheckoutError("");
-        setNativePlusCheckoutBusy(false);
-        setNativePlusCheckoutOffer("plus_monthly");
-      },
+      setShowNativePlusUpsellModal: (open) => open ? nativePlusUpsell.show() : nativePlusUpsell.close(),
       onDeleteAccount,
       onCopyUid,
       onSyncNow,
@@ -614,8 +496,8 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       onSaveAlias,
       onAliasDraftChange: setAuthUserAliasDraft,
       onOpenPlanAction,
-      onSelectNativePlusCheckoutOffer: setNativePlusCheckoutOffer,
-      onStartNativePlusCheckout,
+      onSelectNativePlusCheckoutOffer: nativePlusUpsell.setSelectedOffer,
+      onStartNativePlusCheckout: nativePlusUpsell.startCheckout,
     },
     authUserUid,
     authUserEmail,

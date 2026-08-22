@@ -1045,7 +1045,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     } catch {
       // ignore localStorage write failures
     }
-    persistPreferencesToCloud();
+    void persistPreferencesToCloudImmediately();
   }
 
   function loadOptimalProductivityPeriodPreference() {
@@ -1060,7 +1060,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     } catch {
       // ignore localStorage write failures
     }
-    persistPreferencesToCloud();
+    void persistPreferencesToCloudImmediately();
   }
 
   function persistOptimalProductivityDaysFromInputs(changedInput?: HTMLInputElement | null, explicitDays?: unknown) {

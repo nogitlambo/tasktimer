@@ -192,7 +192,7 @@ body.webSignInNativeRoute .webSignInPage {
 .webSignInAuthColumn {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   padding: 0;
   background: transparent;
 }
@@ -214,17 +214,14 @@ body.webSignInNativeRoute .webSignInPage {
 }
 
 .webSignInAuthFrame {
-  width: 460px;
+  width: 100%;
   max-width: 100%;
   min-height: 100svh;
   padding: 48px 32px 96px;
-  background:
-    linear-gradient(180deg, rgba(6, 7, 10, 0.5) 0%, rgba(5, 6, 8, 0.5) 100%),
-    rgba(5, 6, 8, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-width: 0 1px 0 0;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
-  backdrop-filter: blur(10px);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .webSignInLogo {
@@ -233,6 +230,16 @@ body.webSignInNativeRoute .webSignInPage {
   max-width: 100%;
   height: auto;
   object-fit: contain;
+}
+
+.webSignInSlogan {
+  margin: 2px 0 0;
+  color: #c9ff24;
+  font-family: var(--font-display-ui);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  text-align: center;
 }
 
 .webSignInLaunchLogo {
@@ -564,8 +571,8 @@ body[data-theme="lime"] #landingEmailInput.webSignInAuthInput:focus-visible {
   }
 
   .webSignInAuthFrame {
-    width: 460px;
-    max-width: none;
+    width: 100%;
+    max-width: 100%;
   }
 }
 

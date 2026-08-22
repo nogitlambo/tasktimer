@@ -140,6 +140,7 @@ describe("createExecutiveSurface", () => {
           sourceSignals: [],
           completedMinutesToday: 15,
           availableMinutesCeiling: null,
+          isProductivityDay: true,
           manualOverride: null,
         },
       },
@@ -179,6 +180,7 @@ describe("createExecutiveSurface", () => {
           sourceSignals: [],
           completedMinutesToday: 15,
           availableMinutesCeiling: null,
+          isProductivityDay: true,
           manualOverride: null,
         },
       },
@@ -196,6 +198,65 @@ describe("createExecutiveSurface", () => {
     await Promise.resolve();
 
     expect(documentRef.elements.get("executiveCapacityRange")!.textContent).toBe("~40 min");
+  });
+
+  it("renders rest day metrics without plan health styling", async () => {
+    const documentRef = makeDocument();
+    const planHealth = documentRef.elements.get("executivePlanHealth")!;
+    planHealth.setAttribute("data-plan-health", "REALISTIC");
+    vi.mocked(loadExecutiveData).mockResolvedValue({
+      brief: {
+        status: "ready",
+        value: {
+          date: "2026-08-08",
+          status: "READY",
+          plan: {
+            planHealth: "REALISTIC",
+            deadlineRisk: "LOW",
+            plannedMinutes: 90,
+            completedMinutes: 0,
+            remainingMinutes: 90,
+            realisticWorkloadRange: { minMinutes: 0, maxMinutes: 0 },
+            adjustments: [],
+          },
+          summary: "Normal summary should not show.",
+          nextBestAction: null,
+          clarificationTaskIds: [],
+          expiresAt: "2026-08-08T12:00:00.000Z",
+        },
+      },
+      capacity: {
+        status: "ready",
+        value: {
+          localDate: "2026-08-08",
+          remainingRange: { min: 0, max: 0 },
+          state: "STANDARD",
+          confidence: "HIGH",
+          primarySource: "DEFAULT",
+          sourceSignals: [],
+          completedMinutesToday: 0,
+          availableMinutesCeiling: 0,
+          isProductivityDay: false,
+          manualOverride: null,
+        },
+      },
+      nba: { status: "error", message: "" },
+      repair: { status: "error", message: "" },
+      recovery: { status: "error", message: "" },
+    });
+
+    createExecutiveSurface({
+      documentRef,
+      windowRef: makeWindow(),
+      getCurrentAppPage: () => "executive",
+      getIdToken: async () => null,
+    }).register();
+    await Promise.resolve();
+
+    expect(planHealth.textContent).toBe("Rest Day");
+    expect(planHealth.getAttribute("data-plan-health")).toBeNull();
+    expect(documentRef.elements.get("executiveCapacityRange")!.textContent).toBe("N/A");
+    expect(documentRef.elements.get("executiveWorkRemaining")!.textContent).toBe("N/A");
   });
 
   it("keeps the plan health metric loading when Executive Function is plan-locked", () => {

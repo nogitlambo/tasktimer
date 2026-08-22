@@ -94,6 +94,7 @@ function readySnapshot(planHealth: string): ExecutiveDataSnapshot {
         primarySource: "DEFAULT",
         sourceSignals: ["DEFAULT_BASELINE"],
         availableMinutesCeiling: null,
+        isProductivityDay: true,
         completedMinutesToday: 10,
         manualOverride: null,
       },
@@ -159,6 +160,22 @@ describe("renderDashboardExecutiveSummary", () => {
     renderDashboardExecutiveSummary(documentRef, snapshot);
 
     expect(byId.get("dashboardExecutiveSummaryCapacity")!.textContent).toBe("~40 min remaining");
+  });
+
+  it("renders rest day copy and suppresses capacity and workload numbers", () => {
+    const { byId, documentRef } = createDocumentHarness();
+    const snapshot = readySnapshot("REALISTIC");
+    if (snapshot.capacity.status === "ready") snapshot.capacity.value.isProductivityDay = false;
+    const status = byId.get("dashboardExecutiveSummaryStatus")!;
+    status.setAttribute("data-plan-health", "REALISTIC");
+
+    renderDashboardExecutiveSummary(documentRef, snapshot);
+
+    expect(status.textContent).toBe("Rest Day");
+    expect(status.getAttribute("data-plan-health")).toBeNull();
+    expect(byId.get("dashboardExecutiveSummaryPlanHealth")!.textContent).toBe("Today is outside your productivity days.");
+    expect(byId.get("dashboardExecutiveSummaryCapacity")!.textContent).toBe("N/A");
+    expect(byId.get("dashboardExecutiveSummaryWorkload")!.textContent).toBe("N/A");
   });
 
   it("keeps the summary content visible when no next best action exists", () => {

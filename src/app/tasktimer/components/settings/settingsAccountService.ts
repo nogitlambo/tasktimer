@@ -105,7 +105,9 @@ export async function syncLocalProfileDataToCloud({
     "Could not sync your latest local data to the cloud because the sync timed out. Please try again."
   );
   if (hasPendingProfileSyncState()) {
-    throw new ProfileSyncError("pending", "Could not sync your latest local data to the cloud. Please try again.");
+    const preferenceError = workspaceRepository.getPendingPreferenceSyncError?.();
+    const detail = preferenceError ? ` Firebase: ${preferenceError}` : "";
+    throw new ProfileSyncError("pending", `Could not sync your latest local data to the cloud. Please try again.${detail}`);
   }
   return {
     checkedAtMs: Date.now(),
@@ -124,10 +126,7 @@ export async function loadClaimedUsername(uid: string): Promise<string> {
 export async function handleSignOutFlow() {
   const auth = getFirebaseAuthClient();
   if (!auth) throw new Error("Email sign-in is not configured for this environment.");
-  await syncLocalProfileDataToCloud().catch(() => {
-    // Sign-out is a session action, not a sync confirmation. Manual Sync still
-    // reports cloud failures, but logout must clear local state and exit.
-  });
+  await syncLocalProfileDataToCloud();
   await signOut(auth);
   workspaceRepository.clearScopedState();
   redirectToLogin();

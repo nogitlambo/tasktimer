@@ -206,6 +206,24 @@ describe("firestore device rules", () => {
   });
 });
 
+describe("firestore preference rules", () => {
+  it("allows every current client preference field written by the normalized preference document", () => {
+    const block = functionBlock(readRules(), "isPreferencesV1");
+
+    for (const field of [
+      "timeGoalCompleteNextTasksEnabled",
+      "dashboardPreviousWeekVisible",
+      "fullColorTaskCardsEnabled",
+      "executiveFunctionEnabled",
+      "checkpointAlertVibrationEnabled",
+      "checkpointAlertFlashEnabled",
+    ]) {
+      expect(block).toContain(`"${field}"`);
+      expect(block).toContain(`request.resource.data.${field} is bool`);
+    }
+  });
+});
+
 describe("firestore adaptive capacity rules", () => {
   it("keeps capacity snapshots and aggregates owner-readable and server-maintained", () => {
     const rules = readRules();

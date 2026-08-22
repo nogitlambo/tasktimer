@@ -53,6 +53,10 @@ function setPlanHealthStatus(status: HTMLElement | null, planHealth: string) {
   status.setAttribute("data-plan-health", normalizedPlanHealth);
 }
 
+function isRestDay(snapshot: ExecutiveDataSnapshot) {
+  return snapshot.capacity.status === "ready" && snapshot.capacity.value.isProductivityDay === false;
+}
+
 export function renderDashboardExecutiveSummary(documentRef: Document, snapshot: ExecutiveDataSnapshot) {
   const card = getElement(documentRef, "dashboardExecutiveSummary");
   if (!card) return;
@@ -61,18 +65,20 @@ export function renderDashboardExecutiveSummary(documentRef: Document, snapshot:
   const status = getElement(documentRef, "dashboardExecutiveSummaryStatus");
   const brief = snapshot.brief.status === "ready" ? snapshot.brief.value : null;
   const capacity = snapshot.capacity.status === "ready" ? snapshot.capacity.value : null;
+  const restDay = isRestDay(snapshot);
   const hasPlan = Boolean(brief || capacity);
   card.setAttribute("data-executive-summary-state", hasPlan ? "ready" : "fallback");
   setHidden(content, !hasPlan);
   setHidden(fallback, hasPlan);
-  if (brief) setPlanHealthStatus(status, brief.plan.planHealth);
+  if (restDay) setPlainStatus(status, "Rest Day");
+  else if (brief) setPlanHealthStatus(status, brief.plan.planHealth);
   else setPlainStatus(status, hasPlan ? "Today's executive summary is ready." : "Executive data is unavailable right now.");
   const health = getElement(documentRef, "dashboardExecutiveSummaryPlanHealth");
-  if (health) health.textContent = brief ? brief.summary : "Plan health is unavailable.";
+  if (health) health.textContent = restDay ? "Today is outside your productivity days." : brief ? brief.summary : "Plan health is unavailable.";
   const range = getElement(documentRef, "dashboardExecutiveSummaryCapacity");
-  if (range) range.textContent = capacity ? formatRange(capacity.remainingRange.min, capacity.remainingRange.max) : "Capacity unavailable";
+  if (range) range.textContent = restDay ? "N/A" : capacity ? formatRange(capacity.remainingRange.min, capacity.remainingRange.max) : "Capacity unavailable";
   const workload = getElement(documentRef, "dashboardExecutiveSummaryWorkload");
-  if (workload) workload.textContent = brief ? `${brief.plan.remainingMinutes}m work remaining` : "Plan workload unavailable";
+  if (workload) workload.textContent = restDay ? "N/A" : brief ? `${brief.plan.remainingMinutes}m work remaining` : "Plan workload unavailable";
 }
 
 export function createDashboardExecutiveSummary(options: Options) {

@@ -147,6 +147,7 @@ function defaultDependencies(): Required<Pick<PlanningRefreshDependencies, "dail
           sourceSignals: capacity.snapshot.sourceSignals,
           completedMinutesToday: capacity.snapshot.completedMinutesToday,
           availableMinutesCeiling: capacity.snapshot.availableMinutesCeiling ?? null,
+          isProductivityDay: capacity.snapshot.isProductivityDay,
           sourceVersion: capacity.snapshot.sourceVersion,
         };
       },

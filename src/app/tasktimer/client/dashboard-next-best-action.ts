@@ -36,6 +36,9 @@ export type NextBestActionDashboardResponse =
 const TIME_OPTIONS = [10, 20, 30, 60, null] as const;
 const PLUS_REQUIRED_MESSAGE =
   "Upgrade to PLUS to use executive function features.";
+const EMPTY_NEXT_BEST_ACTION_MESSAGE = "No eligible task is ready right now.";
+const REST_DAY_NEXT_BEST_ACTION_MESSAGE =
+  "Rest day. Today is outside your productivity days.";
 
 function asString(value: unknown, maxLength = 240) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
@@ -293,6 +296,7 @@ type CreateDashboardNextBestActionOptions = {
   canUseExecutiveFunction?: () => boolean;
   getExecutiveFunctionUnavailableMessage?: () => string;
   showUpgradePrompt?: (featureName: string, plan?: "plus") => void;
+  getTodayIsProductivityDay?: () => boolean;
   getIdToken?: () => Promise<string | null>;
   startTaskById?: (taskId: string) => TaskLaunchResult;
 };
@@ -311,7 +315,14 @@ export function createDashboardNextBestAction(
   function setStatus(
     message: string,
     state:
-      "loading" | "empty" | "error" | "stale" | "ready" | "locked" | "started",
+      | "loading"
+      | "empty"
+      | "rest"
+      | "error"
+      | "stale"
+      | "ready"
+      | "locked"
+      | "started",
   ) {
     const status = getElement(documentRef, "dashboardNextBestActionStatus");
     if (status) {
@@ -325,7 +336,7 @@ export function createDashboardNextBestAction(
     );
     setHidden(
       getElement(documentRef, "dashboardNextBestActionEmpty"),
-      state !== "empty",
+      state !== "empty" && state !== "rest",
     );
     setHidden(
       getElement(documentRef, "dashboardNextBestActionError"),
@@ -355,6 +366,11 @@ export function createDashboardNextBestAction(
     if (state === "locked")
       card?.setAttribute("data-plan-locked", "executiveFunction");
     else card?.removeAttribute("data-plan-locked");
+  }
+
+  function setEmptyMessage(message = EMPTY_NEXT_BEST_ACTION_MESSAGE) {
+    const empty = getElement(documentRef, "dashboardNextBestActionEmpty");
+    if (empty) empty.textContent = message;
   }
 
   function lockIfNeeded() {
@@ -457,6 +473,13 @@ export function createDashboardNextBestAction(
     )
       return;
     if (lockIfNeeded()) return;
+    if (options.getTodayIsProductivityDay?.() === false) {
+      abortController?.abort();
+      setEmptyMessage(REST_DAY_NEXT_BEST_ACTION_MESSAGE);
+      setStatus(REST_DAY_NEXT_BEST_ACTION_MESSAGE, "rest");
+      return;
+    }
+    setEmptyMessage();
     shownTaskIds.clear();
     abortController?.abort();
     abortController = new AbortController();
@@ -495,8 +518,10 @@ export function createDashboardNextBestAction(
       const parsed = parseNextBestActionDashboardResponse(payload);
       if (parsed.kind === "recommendation")
         renderRecommendation(parsed.recommendation);
-      else if (parsed.kind === "empty")
+      else if (parsed.kind === "empty") {
+        setEmptyMessage();
         setStatus("Nothing needs your attention right now.", "empty");
+      }
       else if (parsed.kind === "stale")
         setStatus(
           "That recommendation is out of date. Refresh to choose again.",
@@ -817,6 +842,10 @@ export function createDashboardNextBestAction(
         void refresh(getSelectedMinutes());
     });
     windowRef.addEventListener("tasklaunch:recovery-undone", () => {
+      if (["dashboard", "executive"].includes(options.getCurrentAppPage()))
+        void refresh(getSelectedMinutes());
+    });
+    windowRef.addEventListener("tasktimer:optimal-productivity-days-changed", () => {
       if (["dashboard", "executive"].includes(options.getCurrentAppPage()))
         void refresh(getSelectedMinutes());
     });

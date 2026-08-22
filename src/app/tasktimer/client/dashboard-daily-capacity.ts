@@ -31,6 +31,7 @@ export type DailyCapacityDashboardSnapshot = {
   primarySource: DailyCapacityPrimarySource;
   sourceSignals: DailyCapacityReasonCode[];
   availableMinutesCeiling: number | null;
+  isProductivityDay: boolean;
   completedMinutesToday: number;
   manualOverride: { type: "STATE" | "MINUTES"; state?: DailyCapacityState; minutes?: number } | null;
 };
@@ -71,6 +72,7 @@ export function parseDailyCapacityResponse(payload: unknown): ParsedCapacityResp
   const localDate = asString(snapshot.localDate, 10);
   const completedMinutesToday = Number(snapshot.completedMinutesToday);
   const ceiling = snapshot.availableMinutesCeiling == null ? null : Number(snapshot.availableMinutesCeiling);
+  const isProductivityDay = snapshot.isProductivityDay !== false;
   const rawOverride = snapshot.manualOverride;
   const manualOverride = rawOverride && typeof rawOverride === "object"
     ? {
@@ -88,7 +90,7 @@ export function parseDailyCapacityResponse(payload: unknown): ParsedCapacityResp
   if (manualOverride && manualOverride.type !== "STATE" && manualOverride.type !== "MINUTES") return { kind: "invalid" };
   return {
     kind: "capacity",
-    capacity: { localDate, remainingRange, state, confidence, primarySource, sourceSignals, availableMinutesCeiling: ceiling, completedMinutesToday, manualOverride },
+    capacity: { localDate, remainingRange, state, confidence, primarySource, sourceSignals, availableMinutesCeiling: ceiling, isProductivityDay, completedMinutesToday, manualOverride },
   };
 }
 

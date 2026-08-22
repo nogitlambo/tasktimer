@@ -13,22 +13,37 @@ function timeToMinutes(value: string) {
   return match ? Number(match[1]) * 60 + Number(match[2]) : null;
 }
 
+function localDayForTimezone(nowMs: number, timezone: string) {
+  let formatter: Intl.DateTimeFormat;
+  try {
+    formatter = new Intl.DateTimeFormat("en-US", { timeZone: timezone, weekday: "long", hour: "2-digit", minute: "2-digit", hour12: false });
+  } catch {
+    formatter = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", weekday: "long", hour: "2-digit", minute: "2-digit", hour12: false });
+  }
+  const parts = formatter.formatToParts(new Date(nowMs));
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return {
+    day: weekdayMap[values.weekday] || "",
+    minuteOfDay: Number(values.hour) * 60 + Number(values.minute),
+  };
+}
+
+function configuredProductivityDays(days: string[]) {
+  return days.map((value) => String(value || "").trim().toLowerCase()).filter(Boolean);
+}
+
+export function isConfiguredProductivityDay(input: Pick<CapacityAvailabilityInput, "nowMs" | "timezone" | "days">) {
+  const configuredDays = configuredProductivityDays(input.days);
+  if (!configuredDays.length) return true;
+  return configuredDays.includes(localDayForTimezone(input.nowMs, input.timezone).day);
+}
+
 export function calculateRemainingFocusWindowMinutes(input: CapacityAvailabilityInput) {
   const start = timeToMinutes(input.startTime);
   const end = timeToMinutes(input.endTime);
   if (start == null || end == null) return null;
-  let formatter: Intl.DateTimeFormat;
-  try {
-    formatter = new Intl.DateTimeFormat("en-US", { timeZone: input.timezone, weekday: "long", hour: "2-digit", minute: "2-digit", hour12: false });
-  } catch {
-    formatter = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", weekday: "long", hour: "2-digit", minute: "2-digit", hour12: false });
-  }
-  const parts = formatter.formatToParts(new Date(input.nowMs));
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  const day = weekdayMap[values.weekday] || "";
-  const configuredDays = input.days.map((value) => String(value || "").trim().toLowerCase()).filter(Boolean);
-  if (configuredDays.length && !configuredDays.includes(day)) return 0;
-  const current = Number(values.hour) * 60 + Number(values.minute);
+  if (!isConfiguredProductivityDay(input)) return 0;
+  const current = localDayForTimezone(input.nowMs, input.timezone).minuteOfDay;
   if (start <= end) {
     if (current < start) return end - start;
     if (current > end) return 0;

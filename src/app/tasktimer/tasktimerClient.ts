@@ -21,6 +21,10 @@ import {
 import {
   STORAGE_KEY,
 } from "./lib/storage";
+import {
+  localDayToDashboardWeekStart,
+  normalizeOptimalProductivityDays,
+} from "./lib/productivityPeriod";
 import type { DashboardConfig, TaskUiConfig } from "./lib/cloudStore";
 import {
   DEFAULT_REWARD_PROGRESS,
@@ -862,6 +866,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     windowRef: window,
     getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
     canUseExecutiveFunction,
+    getTodayIsProductivityDay: () =>
+      normalizeOptimalProductivityDays(preferencesState.get("optimalProductivityDays")).includes(
+        localDayToDashboardWeekStart(nowMs()),
+      ),
     startTaskById: launchRecommendedTask,
     getExecutiveFunctionUnavailableMessage,
     showUpgradePrompt,

@@ -157,6 +157,33 @@ describe("ExecutivePageContent", () => {
     expect(html).toContain('data-brain-dump-entry="executive"');
     expect(html).toContain('class="executiveFlipScene"');
     expect(html).toContain('id="brainDumpTitle"');
+    expect(html).toContain('class="executiveUpgradeGate"');
+    expect(html).toContain(">Upgrade to PLUS</button>");
+  });
+
+  it("defines an inert, centered FREE-plan gate and reuses the PLUS upsell flow", () => {
+    const css = readFileSync(
+      resolve(process.cwd(), "src/app/tasktimer/styles/03-dashboard.css"),
+      "utf8",
+    );
+    const source = readFileSync(
+      resolve(process.cwd(), "src/app/tasktimer/components/ExecutivePageContent.tsx"),
+      "utf8",
+    );
+    const upsellSource = readFileSync(
+      resolve(process.cwd(), "src/app/tasktimer/components/useNativePlusUpsell.ts"),
+      "utf8",
+    );
+
+    expect(css).toContain("#appPageExecutive .executiveUpgradePanel{position:relative}");
+    expect(css).toContain("#appPageExecutive.isExecutivePlanLocked .executiveFlipScene{filter:brightness(.48);opacity:.58}");
+    expect(css).toContain("#appPageExecutive .executiveUpgradeGate{position:absolute;inset:0;z-index:20;display:grid;place-items:center");
+    expect(source).toContain('TASKTIMER_PLAN_CHANGED_EVENT, syncPlanLock');
+    expect(source).toContain('inert={isExecutivePlanLocked ? true : undefined}');
+    expect(source).toContain('returnPath: "/executive"');
+    expect(source).toContain("<NativePlusUpsellModal");
+    expect(upsellSource).toContain("successReturnPath: returnPath");
+    expect(upsellSource).toContain("cancelReturnPath: returnPath");
   });
 
   it("removes the duplicated Today's Plan card and keeps adjustment hooks", () => {

@@ -512,8 +512,8 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
     expect(localStorageStub.get(storageKeys.OPTIMAL_PRODUCTIVITY_DAYS_KEY)).toBe("mon,tue,wed,thu,fri");
   });
 
-  it("persists productivity day changes from the React settings event bridge", () => {
-    const { fakeDocument, localStorageStub, state } = createHarness();
+  it("persists productivity day changes from the React settings event bridge", async () => {
+    const { fakeDocument, flushPendingCloudWrites, localStorageStub, saveCloudPreferences, state } = createHarness({ currentUid: "uid-1" });
     const { dayInputs } = addOptimalProductivityControls(fakeDocument);
 
     dayInputs.find((input) => input.value === "sun")!.checked = false;
@@ -529,6 +529,9 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
 
     expect(state.optimalProductivityDays).toEqual(["mon", "tue", "wed", "thu", "fri"]);
     expect(localStorageStub.get(storageKeys.OPTIMAL_PRODUCTIVITY_DAYS_KEY)).toBe("mon,tue,wed,thu,fri");
+    expect(saveCloudPreferences).toHaveBeenLastCalledWith(expect.objectContaining({ optimalProductivityDays: ["mon", "tue", "wed", "thu", "fri"] }));
+    await Promise.resolve();
+    expect(flushPendingCloudWrites).toHaveBeenCalledTimes(1);
   });
 
   it("persists productivity period changes and updates clock labels after controls are inserted", () => {
@@ -548,8 +551,8 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
     expect(endValue.textContent).toBe("5:45 PM");
   });
 
-  it("persists productivity period changes from the React settings event bridge", () => {
-    const { fakeDocument, localStorageStub, state } = createHarness();
+  it("persists productivity period changes from the React settings event bridge", async () => {
+    const { fakeDocument, flushPendingCloudWrites, localStorageStub, saveCloudPreferences, state } = createHarness({ currentUid: "uid-1" });
     const { endInput, endValue, startInput, startValue } = addOptimalProductivityControls(fakeDocument);
 
     window.dispatchEvent(
@@ -569,6 +572,11 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
     expect(localStorageStub.get(storageKeys.OPTIMAL_PRODUCTIVITY_END_TIME_KEY)).toBe("15:30");
     expect(startValue.textContent).toBe("6:45 AM");
     expect(endValue.textContent).toBe("3:30 PM");
+    expect(saveCloudPreferences).toHaveBeenLastCalledWith(
+      expect.objectContaining({ optimalProductivityStartTime: "06:45", optimalProductivityEndTime: "15:30" })
+    );
+    await Promise.resolve();
+    expect(flushPendingCloudWrites).toHaveBeenCalledTimes(2);
   });
 
   it("persists executive function changes from the React settings event bridge", async () => {

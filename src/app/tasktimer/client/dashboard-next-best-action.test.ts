@@ -257,6 +257,67 @@ describe("dashboard Next Best Action contract", () => {
     expect(retry.textContent).not.toBe("Upgrade to PLUS");
   });
 
+  it("shows rest day copy instead of fetching a recommendation on non-productivity days", async () => {
+    const attrs = new Map<string, string>();
+    const elements = new Map<
+      string,
+      {
+        textContent: string;
+        hidden: boolean;
+        dataset: Record<string, string>;
+        setAttribute: (key: string, value: string) => void;
+      }
+    >();
+    const card = {
+      classList: { toggle: vi.fn() },
+      setAttribute: (key: string, value: string) => attrs.set(key, value),
+      removeAttribute: (key: string) => attrs.delete(key),
+    };
+    const getOrCreateElement = (id: string) => {
+      if (!elements.has(id)) {
+        elements.set(id, {
+          textContent: "",
+          hidden: false,
+          dataset: {},
+          setAttribute(key, value) {
+            if (key === "aria-hidden") this.dataset.ariaHidden = value;
+          },
+        });
+      }
+      return elements.get(id);
+    };
+    const documentRef = {
+      getElementById: (id: string) =>
+        id === "dashboardNextBestActionCard" ? card : getOrCreateElement(id),
+      querySelectorAll: () => [],
+      addEventListener: vi.fn(),
+    } as unknown as Document;
+    const fetchImpl = vi.fn();
+    const api = createDashboardNextBestAction({
+      documentRef,
+      windowRef: {
+        fetch: fetchImpl,
+        addEventListener: vi.fn(),
+      } as unknown as Window,
+      fetchImpl,
+      getCurrentAppPage: () => "executive",
+      getTodayIsProductivityDay: () => false,
+      getIdToken: async () => "token",
+    });
+
+    await api.refresh();
+
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(attrs.get("data-next-best-action-state")).toBe("rest");
+    expect(elements.get("dashboardNextBestActionEmpty")).toMatchObject({
+      textContent: "Rest day. Today is outside your productivity days.",
+      hidden: false,
+    });
+    expect(
+      elements.get("dashboardNextBestActionEmpty")?.dataset.ariaHidden,
+    ).toBe("false");
+  });
+
   it("shows the status text while loading and hides it when a recommendation is ready", async () => {
     const elements = new Map<
       string,

@@ -239,6 +239,7 @@ let queuedPreferencesSyncSnapshot: UserPreferencesV1 | null = null;
 let queuedPreferencesSyncUid = "";
 let lastSuccessfulPreferencesSyncSignature = "";
 let lastSuccessfulPreferencesSyncUid = "";
+let lastPreferenceSyncError: string | null = null;
 let inFlightTaskQueueSync: Promise<void> | null = null;
 const queuedTaskUpsertsById = new Map<string, Task>();
 const queuedTaskDeletes = new Set<string>();
@@ -278,6 +279,15 @@ function resetPreferenceSyncQueueState(): void {
   queuedPreferencesSyncUid = "";
   lastSuccessfulPreferencesSyncSignature = "";
   lastSuccessfulPreferencesSyncUid = "";
+  lastPreferenceSyncError = null;
+}
+
+function describePreferenceSyncError(error: unknown): string {
+  const record = error && typeof error === "object" ? error as { code?: unknown; message?: unknown } : null;
+  const code = typeof record?.code === "string" ? record.code.trim() : "";
+  const message = typeof record?.message === "string" ? record.message.trim() : "";
+  const detail = code && message ? `${code}: ${message}` : code || message || "Unknown Firestore error";
+  return detail.slice(0, 300);
 }
 
 function trackInFlightTaskSync<T>(promise: Promise<T>): Promise<T> {
@@ -1880,18 +1890,20 @@ function flushQueuedCloudPreferences(uidRaw: string): void {
       if (syncGeneration !== preferencesSyncGeneration || inFlightPreferencesSyncUid !== uid) return;
       lastSuccessfulPreferencesSyncUid = uid;
       lastSuccessfulPreferencesSyncSignature = nextSignature;
+      lastPreferenceSyncError = null;
       clearPendingPreferencesSyncIfMatches(uid, nextSignature);
       debugLogCloudQueue("preferences", "drain", { uid, status: "ok" });
     })
-    .catch(() => {
+    .catch((error: unknown) => {
       if (syncGeneration !== preferencesSyncGeneration || inFlightPreferencesSyncUid !== uid) return;
+      lastPreferenceSyncError = describePreferenceSyncError(error);
       const pending = loadPendingPreferencesSync(uid)?.preferences || null;
       const hasNewerPending =
         !!pending &&
         preferencesSyncSignature(pending) !== nextSignature &&
         Number(pending.updatedAtMs || 0) >= Number(nextSnapshot.updatedAtMs || 0);
       if (!hasNewerPending) savePendingPreferencesSync(nextSnapshot, uid);
-      debugLogCloudQueue("preferences", "error", { uid, status: "save-pending" });
+      debugLogCloudQueue("preferences", "error", { uid, status: "save-pending", error: lastPreferenceSyncError });
     })
     .finally(() => {
       if (
@@ -2394,6 +2406,10 @@ export function hasPendingTaskOrLiveSessionSync(): boolean {
 export function hasPendingPreferenceSync(): boolean {
   const uid = currentUid() || scopedUid();
   return !!inFlightPreferencesSync || !!queuedPreferencesSyncSnapshot || !!loadPendingPreferencesSync(uid);
+}
+
+export function getPendingPreferenceSyncError(): string | null {
+  return lastPreferenceSyncError;
 }
 
 export function saveLiveSessionLocally(session: LiveTaskSession | null): void {

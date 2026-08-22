@@ -14,6 +14,7 @@ describe("Daily Capacity dashboard parser", () => {
         primarySource: "DEFAULT",
         sourceSignals: ["DEFAULT_BASELINE", "INSUFFICIENT_HISTORY"],
         availableMinutesCeiling: null,
+        isProductivityDay: true,
         completedMinutesToday: 0,
         ignored: "private detail",
       },
@@ -29,6 +30,7 @@ describe("Daily Capacity dashboard parser", () => {
         primarySource: "DEFAULT",
         sourceSignals: ["DEFAULT_BASELINE", "INSUFFICIENT_HISTORY"],
         availableMinutesCeiling: null,
+        isProductivityDay: true,
         completedMinutesToday: 0,
         manualOverride: null,
       },
@@ -56,6 +58,50 @@ describe("Daily Capacity dashboard parser", () => {
     })).toMatchObject({
       kind: "capacity",
       capacity: { availableMinutesCeiling: 0, remainingRange: { min: 0, max: 0 } },
+    });
+  });
+
+  it("does not infer rest days from zero availability", () => {
+    const parsed = parseDailyCapacityResponse({
+      ok: true,
+      snapshot: {
+        localDate: "2026-08-15",
+        remainingRange: { min: 0, max: 0 },
+        state: "STANDARD",
+        confidence: "MEDIUM",
+        primarySource: "DEFAULT",
+        sourceSignals: ["FOCUS_WINDOW_REMAINING", "AVAILABLE_TIME_CAP"],
+        availableMinutesCeiling: 0,
+        isProductivityDay: true,
+        completedMinutesToday: 5,
+        manualOverride: null,
+      },
+    });
+
+    expect(parsed).toMatchObject({
+      kind: "capacity",
+      capacity: { isProductivityDay: true, remainingRange: { min: 0, max: 0 } },
+    });
+  });
+
+  it("accepts explicit non-productivity days", () => {
+    expect(parseDailyCapacityResponse({
+      ok: true,
+      snapshot: {
+        localDate: "2026-08-16",
+        remainingRange: { min: 0, max: 0 },
+        state: "STANDARD",
+        confidence: "MEDIUM",
+        primarySource: "DEFAULT",
+        sourceSignals: ["FOCUS_WINDOW_REMAINING", "AVAILABLE_TIME_CAP"],
+        availableMinutesCeiling: 0,
+        isProductivityDay: false,
+        completedMinutesToday: 0,
+        manualOverride: null,
+      },
+    })).toMatchObject({
+      kind: "capacity",
+      capacity: { isProductivityDay: false },
     });
   });
 });

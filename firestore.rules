@@ -215,14 +215,20 @@ service cloud.firestore {
         "taskView",
         "taskOrderBy",
         "autoFocusOnTaskLaunchEnabled",
+        "timeGoalCompleteNextTasksEnabled",
+        "dashboardPreviousWeekVisible",
         "mobilePushAlertsEnabled",
         "webPushAlertsEnabled",
         "dynamicColorsEnabled",
+        "fullColorTaskCardsEnabled",
+        "executiveFunctionEnabled",
         "interactionClickSoundEnabled",
         "achievementSoundsEnabled",
         "interactionHapticsEnabled",
         "interactionHapticsIntensity",
         "checkpointAlertSoundEnabled",
+        "checkpointAlertVibrationEnabled",
+        "checkpointAlertFlashEnabled",
         "checkpointAlertToastEnabled",
         "checkpointAlertSoundMode",
         "checkpointAlertToastMode",
@@ -241,14 +247,20 @@ service cloud.firestore {
       && (!("taskView" in request.resource.data) || request.resource.data.taskView in ["list", "tile"])
       && (!("taskOrderBy" in request.resource.data) || request.resource.data.taskOrderBy in ["custom", "alpha", "schedule", "dateAddedAsc", "dateAddedDesc"])
       && (!("autoFocusOnTaskLaunchEnabled" in request.resource.data) || request.resource.data.autoFocusOnTaskLaunchEnabled is bool)
+      && (!("timeGoalCompleteNextTasksEnabled" in request.resource.data) || request.resource.data.timeGoalCompleteNextTasksEnabled is bool)
+      && (!("dashboardPreviousWeekVisible" in request.resource.data) || request.resource.data.dashboardPreviousWeekVisible is bool)
       && (!("mobilePushAlertsEnabled" in request.resource.data) || request.resource.data.mobilePushAlertsEnabled is bool)
       && (!("webPushAlertsEnabled" in request.resource.data) || request.resource.data.webPushAlertsEnabled is bool)
       && (!("dynamicColorsEnabled" in request.resource.data) || request.resource.data.dynamicColorsEnabled is bool)
+      && (!("fullColorTaskCardsEnabled" in request.resource.data) || request.resource.data.fullColorTaskCardsEnabled is bool)
+      && (!("executiveFunctionEnabled" in request.resource.data) || request.resource.data.executiveFunctionEnabled is bool)
       && (!("interactionClickSoundEnabled" in request.resource.data) || request.resource.data.interactionClickSoundEnabled is bool)
       && (!("achievementSoundsEnabled" in request.resource.data) || request.resource.data.achievementSoundsEnabled is bool)
       && (!("interactionHapticsEnabled" in request.resource.data) || request.resource.data.interactionHapticsEnabled is bool)
       && (!("interactionHapticsIntensity" in request.resource.data) || request.resource.data.interactionHapticsIntensity in ["max", "medium", "low"])
       && (!("checkpointAlertSoundEnabled" in request.resource.data) || request.resource.data.checkpointAlertSoundEnabled is bool)
+      && (!("checkpointAlertVibrationEnabled" in request.resource.data) || request.resource.data.checkpointAlertVibrationEnabled is bool)
+      && (!("checkpointAlertFlashEnabled" in request.resource.data) || request.resource.data.checkpointAlertFlashEnabled is bool)
       && (!("checkpointAlertToastEnabled" in request.resource.data) || request.resource.data.checkpointAlertToastEnabled is bool)
       && (!("checkpointAlertSoundMode" in request.resource.data) || request.resource.data.checkpointAlertSoundMode in ["once", "repeat"])
       && (!("checkpointAlertToastMode" in request.resource.data) || request.resource.data.checkpointAlertToastMode in ["auto5s", "manual"])

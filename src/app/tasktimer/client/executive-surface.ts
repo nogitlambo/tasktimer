@@ -179,12 +179,20 @@ export function createExecutiveSurface(options: Options) {
       snapshot.brief.status === "ready" ? snapshot.brief.value : null;
     const capacity =
       snapshot.capacity.status === "ready" ? snapshot.capacity.value : null;
+    const restDay = capacity?.isProductivityDay === false;
     const planHealth = element(documentRef, "executivePlanHealth");
-    setExecutivePlanHealth(planHealth, brief?.plan.planHealth || null);
+    if (restDay) {
+      setMetricText(planHealth, "Rest Day");
+      planHealth?.removeAttribute("data-plan-health");
+    } else {
+      setExecutivePlanHealth(planHealth, brief?.plan.planHealth || null);
+    }
     const capacityRange = element(documentRef, "executiveCapacityRange");
     setMetricText(
       capacityRange,
-      capacity
+      restDay
+        ? "N/A"
+        : capacity
         ? formatCapacityRange(
             capacity.remainingRange.min,
             capacity.remainingRange.max,
@@ -194,7 +202,7 @@ export function createExecutiveSurface(options: Options) {
     const work = element(documentRef, "executiveWorkRemaining");
     setMetricText(
       work,
-      brief ? `${brief.plan.remainingMinutes} min` : "Unavailable",
+      restDay ? "N/A" : brief ? `${brief.plan.remainingMinutes} min` : "Unavailable",
     );
     const date = element(documentRef, "executiveTodayDate");
     if (date)
