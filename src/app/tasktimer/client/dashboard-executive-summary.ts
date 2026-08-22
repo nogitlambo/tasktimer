@@ -24,7 +24,7 @@ function setHidden(element: HTMLElement | null, hidden: boolean) {
 }
 
 function formatRange(min: number, max: number) {
-  return `${min}-${max} min remaining`;
+  return min === max ? `~${min} min remaining` : `${min}-${max} min remaining`;
 }
 
 function formatPlanHealthLabel(planHealth: string) {

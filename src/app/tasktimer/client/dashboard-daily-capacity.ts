@@ -96,6 +96,10 @@ function element(documentRef: Document, id: string) {
   return documentRef.getElementById(id) as HTMLElement | null;
 }
 
+function formatRemainingCapacityRange(min: number, max: number) {
+  return min === max ? `~${min} min remaining` : `${min}-${max} min remaining`;
+}
+
 type Options = { documentRef?: Document; windowRef?: Window; fetchImpl?: typeof fetch; requestCoordinator?: ExecutiveRequestCoordinator; getCurrentAppPage: () => string; canUseExecutiveFunction?: () => boolean; getExecutiveFunctionUnavailableMessage?: () => string; showUpgradePrompt?: (featureName: string, plan?: "plus") => void; getIdToken?: () => Promise<string | null> };
 
 export function createDashboardDailyCapacity(options: Options) {
@@ -153,7 +157,7 @@ export function createDashboardDailyCapacity(options: Options) {
   function render(capacity: DailyCapacityDashboardSnapshot) {
     currentCapacity = capacity;
     const range = element(documentRef, "dashboardDailyCapacityRange");
-    if (range) range.textContent = `${capacity.remainingRange.min}-${capacity.remainingRange.max} min remaining`;
+    if (range) range.textContent = formatRemainingCapacityRange(capacity.remainingRange.min, capacity.remainingRange.max);
     const state = element(documentRef, "dashboardDailyCapacityState");
     if (state) state.textContent = capacity.state.replaceAll("_", " ");
     const confidence = element(documentRef, "dashboardDailyCapacityConfidence");

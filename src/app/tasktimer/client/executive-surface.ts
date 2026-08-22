@@ -36,6 +36,10 @@ function formatPlanHealthLabel(planHealth: string) {
     .join(" ");
 }
 
+function formatCapacityRange(min: number, max: number) {
+  return min === max ? `~${min} min` : `${min}-${max} min`;
+}
+
 function setExecutivePlanHealth(
   elementRef: HTMLElement | null,
   planHealth: string | null,
@@ -181,7 +185,10 @@ export function createExecutiveSurface(options: Options) {
     setMetricText(
       capacityRange,
       capacity
-        ? `${capacity.remainingRange.min}-${capacity.remainingRange.max} min`
+        ? formatCapacityRange(
+            capacity.remainingRange.min,
+            capacity.remainingRange.max,
+          )
         : "Unavailable",
     );
     const work = element(documentRef, "executiveWorkRemaining");

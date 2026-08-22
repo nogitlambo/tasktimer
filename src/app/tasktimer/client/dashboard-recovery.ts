@@ -113,6 +113,10 @@ function element(documentRef: Document, id: string) {
   return documentRef.getElementById(id) as HTMLElement | null;
 }
 
+function formatRemainingCapacityRange(min: number, max: number) {
+  return min === max ? `~${min} min remaining` : `${min}-${max} min remaining`;
+}
+
 function humanizeReason(value: string) {
   return value.replaceAll("_", " ").toLowerCase();
 }
@@ -184,7 +188,7 @@ export function createDashboardRecovery(options: Options) {
     const title = element(documentRef, "dashboardRecoverySummaryTitle");
     if (title) title.textContent = `${session.backlogCount} task${session.backlogCount === 1 ? "" : "s"} carried over`;
     const details = element(documentRef, "dashboardRecoverySummaryDetails");
-    if (details) details.textContent = `${session.urgentCount} need attention soon${session.remainingCapacity ? `; ${session.remainingCapacity.min}-${session.remainingCapacity.max} min remaining` : ""}.`;
+    if (details) details.textContent = `${session.urgentCount} need attention soon${session.remainingCapacity ? `; ${formatRemainingCapacityRange(session.remainingCapacity.min, session.remainingCapacity.max)}` : ""}.`;
   }
 
   function renderActionList(targetId: string, actions: RecoveryAction[]) {

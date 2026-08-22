@@ -148,6 +148,17 @@ describe("renderDashboardExecutiveSummary", () => {
     expect(byId.get("dashboardExecutiveSummaryPlanHealth")!.textContent).toBe(
       "Move flexible work later and protect the first focus block."
     );
+    expect(byId.get("dashboardExecutiveSummaryCapacity")!.textContent).toBe("45-75 min remaining");
+  });
+
+  it("shows one approximate remaining capacity value when both bounds match", () => {
+    const { byId, documentRef } = createDocumentHarness();
+    const snapshot = readySnapshot("REALISTIC");
+    if (snapshot.capacity.status === "ready") snapshot.capacity.value.remainingRange = { min: 40, max: 40 };
+
+    renderDashboardExecutiveSummary(documentRef, snapshot);
+
+    expect(byId.get("dashboardExecutiveSummaryCapacity")!.textContent).toBe("~40 min remaining");
   });
 
   it("keeps the summary content visible when no next best action exists", () => {

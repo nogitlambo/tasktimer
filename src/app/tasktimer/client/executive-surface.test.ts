@@ -161,6 +161,41 @@ describe("createExecutiveSurface", () => {
     const planHealth = documentRef.elements.get("executivePlanHealth")!;
     expect(planHealth.textContent).toBe("Slightly Overloaded");
     expect(planHealth.getAttribute("data-plan-health")).toBe("SLIGHTLY_OVERLOADED");
+    expect(documentRef.elements.get("executiveCapacityRange")!.textContent).toBe("30-60 min");
+  });
+
+  it("collapses equal remaining capacity bounds into a single approximate value", async () => {
+    const documentRef = makeDocument();
+    vi.mocked(loadExecutiveData).mockResolvedValue({
+      brief: { status: "error", message: "" },
+      capacity: {
+        status: "ready",
+        value: {
+          localDate: "2026-08-10",
+          remainingRange: { min: 40, max: 40 },
+          state: "USER_DEFINED",
+          confidence: "HIGH",
+          primarySource: "USER_CUSTOM",
+          sourceSignals: [],
+          completedMinutesToday: 15,
+          availableMinutesCeiling: null,
+          manualOverride: null,
+        },
+      },
+      nba: { status: "error", message: "" },
+      repair: { status: "error", message: "" },
+      recovery: { status: "error", message: "" },
+    });
+
+    createExecutiveSurface({
+      documentRef,
+      windowRef: makeWindow(),
+      getCurrentAppPage: () => "executive",
+      getIdToken: async () => null,
+    }).register();
+    await Promise.resolve();
+
+    expect(documentRef.elements.get("executiveCapacityRange")!.textContent).toBe("~40 min");
   });
 
   it("keeps the plan health metric loading when Executive Function is plan-locked", () => {

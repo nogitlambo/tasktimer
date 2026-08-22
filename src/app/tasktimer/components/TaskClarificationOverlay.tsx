@@ -17,6 +17,7 @@ import {
   type TaskClarificationReviewState,
   type TaskClarificationReviewTask,
 } from "../client/task-clarification-review";
+import { buildTaskClarificationApplyPayload } from "../client/task-clarification-apply-payload";
 import { trackTaskClarificationLifecycle } from "../../taskclarification/lib/taskClarificationTelemetry";
 
 type ClarificationApiPayload = {
@@ -282,38 +283,26 @@ export default function TaskClarificationOverlay() {
     setApplyStatus("applying");
     setApplyError(null);
     const applyStartedAt = Date.now();
-    const selectedSubtasks = state.recommendation.subtasks
-      .filter((subtask) => selectedSubtaskIds.includes(subtask.id))
-      .map((subtask) => ({
-        id: subtask.id,
-        title: (draftSubtaskTitles[subtask.id] || subtask.title).trim(),
-        estimatedMinutes: subtask.estimatedMinutes,
-      }));
     try {
       const auth = getFirebaseAuthClient();
       const idToken = await auth?.currentUser?.getIdToken();
       if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
       const idempotencyKey = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const applyPayload = buildTaskClarificationApplyPayload({
+        titleSelected,
+        draftTitle,
+        selectedSubtaskIds,
+        draftSubtaskTitles,
+        subtasks: state.recommendation.subtasks,
+        idempotencyKey,
+      });
+      if (!applyPayload) throw new Error("Choose at least one valid change to apply.");
       const response = await fetch(
         getApiUrl(`/api/tasks/${encodeURIComponent(state.task?.taskId || "")}/clarify/${encodeURIComponent(state.recommendation.recommendationId)}/apply`),
         {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
-          body: JSON.stringify({
-            acceptedFields: [
-              ...(titleSelected ? (["name"] as const) : []),
-              ...(selectedSubtaskIds.length ? (["subtasks"] as const) : []),
-            ],
-            values: {
-              ...(titleSelected ? { name: draftTitle.trim() } : {}),
-              ...(selectedSubtaskIds.length
-                ? {
-                    subtasks: selectedSubtasks,
-                  }
-                : {}),
-            },
-            idempotencyKey,
-          }),
+          body: JSON.stringify(applyPayload),
         }
       );
       const payload = (await response.json().catch(() => ({}))) as { error?: unknown; code?: unknown; recommendation?: unknown };
@@ -329,7 +318,7 @@ export default function TaskClarificationOverlay() {
            : [];
       setCreatedSubtaskIds(nextCreatedSubtaskIds);
       setCreatedSubtaskLabels(
-        Object.fromEntries(nextCreatedSubtaskIds.map((taskId, index) => [taskId, selectedSubtasks[index]?.title || "Created task"]))
+        Object.fromEntries(nextCreatedSubtaskIds.map((taskId, index) => [taskId, applyPayload.values.subtasks?.[index]?.title || "Created task"]))
       );
       const reversibleUntil = recommendationPayload && typeof recommendationPayload === "object" ? (recommendationPayload as { reversibleUntil?: unknown }).reversibleUntil : null;
       const reversibleUntilMs = typeof reversibleUntil === "string" ? Date.parse(reversibleUntil) : Number.NaN;
@@ -340,8 +329,8 @@ export default function TaskClarificationOverlay() {
       setApplyStatus("applied");
       void trackTaskClarificationLifecycle("applied", {
         latencyMs: Date.now() - applyStartedAt,
-        acceptedFieldCount: (titleSelected ? 1 : 0) + (selectedSubtaskIds.length ? 1 : 0),
-        selectedSubtaskCount: selectedSubtaskIds.length,
+        acceptedFieldCount: applyPayload.acceptedFields.length,
+        selectedSubtaskCount: applyPayload.values.subtasks?.length || 0,
       });
     } catch (error) {
       void trackTaskClarificationLifecycle("failed", { errorCategory: "apply_conflict" });
