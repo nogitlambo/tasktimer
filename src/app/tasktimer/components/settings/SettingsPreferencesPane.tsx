@@ -4,24 +4,25 @@ import AppImg from "@/components/AppImg";
 import type { ChangeEvent, MouseEvent } from "react";
 import { SettingsDownwardSelect } from "./SettingsDownwardSelect";
 import { SettingsDetailPane } from "./SettingsShared";
+import { normalizeDashboardWeekStart, type DashboardWeekStart } from "../../lib/historyChart";
 import { saveOptimalProductivityPreferencesToFirestore } from "./settingsPreferencesBridge";
 
 const TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_DAYS_CHANGE_EVENT = "tasktimer:settings-optimal-productivity-days-change";
 const TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_PERIOD_CHANGE_EVENT = "tasktimer:settings-optimal-productivity-period-change";
 const TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_TIME_PICKER_OPEN_EVENT = "tasktimer:settings-optimal-productivity-time-picker-open";
-const OPTIMAL_PRODUCTIVITY_DAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const OPTIMAL_PRODUCTIVITY_DAYS: DashboardWeekStart[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 type TimePickerInput = HTMLInputElement & { showPicker?: () => void };
 type OptimalProductivityPeriodField = "start" | "end";
 
-function getSelectedOptimalProductivityDays(menu: Element | null) {
+function getSelectedOptimalProductivityDays(menu: Element | null): DashboardWeekStart[] {
   if (!menu) return [];
   return Array.from(menu.querySelectorAll<HTMLInputElement>("input[data-optimal-productivity-day]"))
     .filter((input) => input.checked)
-    .map((input) => input.value);
+    .map((input) => normalizeDashboardWeekStart(input.value));
 }
 
-function dispatchOptimalProductivityDaysChange(days: string[], inputId?: string) {
+function dispatchOptimalProductivityDaysChange(days: DashboardWeekStart[], inputId?: string) {
   window.dispatchEvent(
     new CustomEvent(TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_DAYS_CHANGE_EVENT, {
       detail: { days, inputId },

@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
     flushPendingCloudWrites: vi.fn(() => Promise.resolve()),
     hasPendingTaskOrHistorySync: vi.fn(() => false),
     hasPendingPreferenceSync: vi.fn(() => false),
-    getPendingPreferenceSyncError: vi.fn(() => null),
+    getPendingPreferenceSyncError: vi.fn<() => string | null>(() => null),
     clearScopedState: vi.fn(),
   },
 }));

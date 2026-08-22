@@ -318,6 +318,85 @@ describe("dashboard Next Best Action contract", () => {
     ).toBe("false");
   });
 
+  it("keeps the rest-day state when a pending recommendation resolves after the day changes", async () => {
+    const attrs = new Map<string, string>();
+    const elements = new Map<
+      string,
+      {
+        textContent: string;
+        hidden: boolean;
+        dataset: Record<string, string>;
+        setAttribute: (key: string, value: string) => void;
+      }
+    >();
+    const card = {
+      classList: { toggle: vi.fn() },
+      setAttribute: (key: string, value: string) => attrs.set(key, value),
+      removeAttribute: (key: string) => attrs.delete(key),
+    };
+    const getOrCreateElement = (id: string) => {
+      if (!elements.has(id)) {
+        elements.set(id, {
+          textContent: "",
+          hidden: false,
+          dataset: {},
+          setAttribute(key, value) {
+            if (key === "aria-hidden") this.dataset.ariaHidden = value;
+          },
+        });
+      }
+      return elements.get(id);
+    };
+    const documentRef = {
+      getElementById: (id: string) =>
+        id === "dashboardNextBestActionCard" ? card : getOrCreateElement(id),
+      querySelectorAll: () => [],
+      addEventListener: vi.fn(),
+    } as unknown as Document;
+    let productivityDay = true;
+    let resolveResponse: ((value: Response) => void) | undefined;
+    const fetchImpl = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveResponse = resolve;
+        }),
+    );
+    const api = createDashboardNextBestAction({
+      documentRef,
+      windowRef: {
+        fetch: fetchImpl,
+        addEventListener: vi.fn(),
+      } as unknown as Window,
+      fetchImpl,
+      getCurrentAppPage: () => "executive",
+      getTodayIsProductivityDay: () => productivityDay,
+      getIdToken: async () => "token",
+    });
+
+    const pendingRefresh = api.refresh();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    productivityDay = false;
+    resolveResponse?.(
+      new Response(
+        JSON.stringify({
+          ok: true,
+          recommendation: {
+            recommendationId: "recommendation-1",
+            type: "NEXT_BEST_ACTION",
+            taskId: "task-1",
+            title: "Late recommendation",
+            estimatedMinutes: 20,
+            expiresAt: "2099-08-07T09:30:00.000Z",
+          },
+        }),
+        { status: 200 },
+      ),
+    );
+    await pendingRefresh;
+
+    expect(attrs.get("data-next-best-action-state")).toBe("rest");
+  });
+
   it("shows the status text while loading and hides it when a recommendation is ready", async () => {
     const elements = new Map<
       string,
@@ -587,5 +666,51 @@ describe("dashboard Next Best Action contract", () => {
         body: JSON.stringify({ completedTaskId: "task-2" }),
       }),
     );
+  });
+
+  it("stops listening for page changes after destruction", async () => {
+    const windowListeners = new Map<string, (event: Event) => void>();
+    let page = "other";
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ ok: true, recommendation: null }), {
+          status: 200,
+        }),
+    );
+    const api = createDashboardNextBestAction({
+      documentRef: {
+        getElementById: (id: string) =>
+          id === "dashboardNextBestActionCard"
+            ? {
+                classList: { toggle: vi.fn() },
+                setAttribute: vi.fn(),
+                removeAttribute: vi.fn(),
+              }
+            : null,
+        querySelectorAll: () => [],
+        addEventListener: vi.fn(),
+      } as unknown as Document,
+      windowRef: {
+        fetch: fetchImpl,
+        addEventListener: (type: string, listener: (event: Event) => void) =>
+          windowListeners.set(type, listener),
+        removeEventListener: (type: string) => windowListeners.delete(type),
+      } as unknown as Window,
+      fetchImpl,
+      getCurrentAppPage: () => page,
+      getIdToken: async () => "token",
+    });
+
+    api.register();
+    api.destroy();
+    page = "executive";
+    windowListeners.get("tasklaunch:app-page-changed")?.(
+      new CustomEvent("tasklaunch:app-page-changed", {
+        detail: { page: "executive" },
+      }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 });

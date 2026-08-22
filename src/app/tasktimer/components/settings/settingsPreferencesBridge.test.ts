@@ -12,6 +12,7 @@ const workspaceRepositoryMocks = vi.hoisted(() => ({
 vi.mock("@/app/tasktimer/lib/workspaceRepository", () => workspaceRepositoryMocks);
 
 import { DEFAULT_REWARD_PROGRESS } from "@/app/tasktimer/lib/rewards";
+import type { DashboardWeekStart } from "@/app/tasktimer/lib/historyChart";
 import { saveOptimalProductivityPreferencesToFirestore, saveRewardProgressToPreferences } from "./settingsPreferencesBridge";
 
 describe("saveRewardProgressToPreferences", () => {
@@ -33,7 +34,11 @@ describe("saveRewardProgressToPreferences", () => {
   });
 
   it("persists productivity fields and flushes their Firestore write", () => {
-    const mutation = { optimalProductivityDays: ["mon", "wed"], optimalProductivityStartTime: "09:00", optimalProductivityEndTime: "16:00" };
+    const mutation = {
+      optimalProductivityDays: ["mon", "wed"] as DashboardWeekStart[],
+      optimalProductivityStartTime: "09:00",
+      optimalProductivityEndTime: "16:00",
+    };
 
     saveOptimalProductivityPreferencesToFirestore(mutation);
 

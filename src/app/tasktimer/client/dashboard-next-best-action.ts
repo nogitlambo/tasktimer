@@ -310,6 +310,7 @@ export function createDashboardNextBestAction(
   const card = getElement(documentRef, "dashboardNextBestActionCard");
   let requestSequence = 0;
   let abortController: AbortController | null = null;
+  let isDestroyed = false;
   const shownTaskIds = new Set<string>();
 
   function setStatus(
@@ -371,6 +372,13 @@ export function createDashboardNextBestAction(
   function setEmptyMessage(message = EMPTY_NEXT_BEST_ACTION_MESSAGE) {
     const empty = getElement(documentRef, "dashboardNextBestActionEmpty");
     if (empty) empty.textContent = message;
+  }
+
+  function renderRestDay() {
+    abortController?.abort();
+    requestSequence += 1;
+    setEmptyMessage(REST_DAY_NEXT_BEST_ACTION_MESSAGE);
+    setStatus(REST_DAY_NEXT_BEST_ACTION_MESSAGE, "rest");
   }
 
   function lockIfNeeded() {
@@ -467,6 +475,7 @@ export function createDashboardNextBestAction(
     availableMinutes?: number | null,
     mode: "automatic" | "user" = "automatic",
   ) {
+    if (isDestroyed) return;
     if (
       !["dashboard", "executive"].includes(options.getCurrentAppPage()) ||
       !card
@@ -474,9 +483,7 @@ export function createDashboardNextBestAction(
       return;
     if (lockIfNeeded()) return;
     if (options.getTodayIsProductivityDay?.() === false) {
-      abortController?.abort();
-      setEmptyMessage(REST_DAY_NEXT_BEST_ACTION_MESSAGE);
-      setStatus(REST_DAY_NEXT_BEST_ACTION_MESSAGE, "rest");
+      renderRestDay();
       return;
     }
     setEmptyMessage();
@@ -510,6 +517,10 @@ export function createDashboardNextBestAction(
         : await fetchImpl(input, init);
       const payload = await response.json().catch(() => ({}));
       if (sequence !== requestSequence) return;
+      if (options.getTodayIsProductivityDay?.() === false) {
+        renderRestDay();
+        return;
+      }
       if (!response.ok)
         throw new Error(
           asString(asRecord(payload)?.error, 200) ||
@@ -535,6 +546,10 @@ export function createDashboardNextBestAction(
     } catch (error) {
       if (abortController.signal.aborted || sequence !== requestSequence)
         return;
+      if (options.getTodayIsProductivityDay?.() === false) {
+        renderRestDay();
+        return;
+      }
       setStatus(
         error instanceof Error
           ? error.message
@@ -767,6 +782,45 @@ export function createDashboardNextBestAction(
       void refresh(getSelectedMinutes());
   }
 
+  function refreshWhenVisible() {
+    if (["dashboard", "executive"].includes(options.getCurrentAppPage()))
+      void refresh(getSelectedMinutes());
+  }
+
+  function handleTimeSelectChange(event: Event) {
+    const target = event.target as HTMLSelectElement | null;
+    if (target?.id !== "dashboardNextBestActionTimeSelect") return;
+    setSelectedTime(target.value);
+    void refresh(getSelectedMinutes(), "user");
+  }
+
+  function handleTimePillClick(event: Event) {
+    const target = (event.target as HTMLElement | null)?.closest?.(
+      "[data-next-best-action-time]",
+    ) as HTMLElement | null;
+    if (!target) return;
+    setSelectedTime(
+      target.getAttribute("data-next-best-action-time") || "any",
+    );
+    void refresh(getSelectedMinutes(), "user");
+  }
+
+  function handleTaskCompletion(event: Event) {
+    const taskId = asString((event as CustomEvent<{ taskId?: unknown }>).detail?.taskId, 160);
+    if (!taskId || !["dashboard", "executive"].includes(options.getCurrentAppPage())) return;
+    void releaseSuppressionsAfterCompletion(taskId).finally(() => {
+      void refresh(getSelectedMinutes());
+    });
+  }
+
+  function handleRetry() {
+    if (lockIfNeeded()) {
+      options.showUpgradePrompt?.("Next Best Action", "plus");
+      return;
+    }
+    void refresh(getSelectedMinutes(), "user");
+  }
+
   function getSelectedMinutes() {
     const value = (
       getElement(
@@ -810,68 +864,37 @@ export function createDashboardNextBestAction(
         ) as HTMLSelectElement | null
       )?.value || "any",
     );
-    documentRef.addEventListener("change", (event) => {
-      const target = event.target as HTMLSelectElement | null;
-      if (target?.id === "dashboardNextBestActionTimeSelect") {
-        setSelectedTime(target.value);
-        void refresh(getSelectedMinutes(), "user");
-      }
-    });
-    documentRef.addEventListener("click", (event) => {
-      const target = (event.target as HTMLElement | null)?.closest?.(
-        "[data-next-best-action-time]",
-      ) as HTMLElement | null;
-      if (!target) return;
-      setSelectedTime(
-        target.getAttribute("data-next-best-action-time") || "any",
-      );
-      void refresh(getSelectedMinutes(), "user");
-    });
+    documentRef.addEventListener("change", handleTimeSelectChange);
+    documentRef.addEventListener("click", handleTimePillClick);
     card.addEventListener?.("click", handleAction);
     windowRef.addEventListener("tasklaunch:app-page-changed", handlePageChange);
-    windowRef.addEventListener("tasklaunch:schedule-repair-applied", () => {
-      if (["dashboard", "executive"].includes(options.getCurrentAppPage()))
-        void refresh(getSelectedMinutes());
-    });
-    windowRef.addEventListener("tasklaunch:schedule-repair-undone", () => {
-      if (["dashboard", "executive"].includes(options.getCurrentAppPage()))
-        void refresh(getSelectedMinutes());
-    });
-    windowRef.addEventListener("tasklaunch:recovery-applied", () => {
-      if (["dashboard", "executive"].includes(options.getCurrentAppPage()))
-        void refresh(getSelectedMinutes());
-    });
-    windowRef.addEventListener("tasklaunch:recovery-undone", () => {
-      if (["dashboard", "executive"].includes(options.getCurrentAppPage()))
-        void refresh(getSelectedMinutes());
-    });
-    windowRef.addEventListener("tasktimer:optimal-productivity-days-changed", () => {
-      if (["dashboard", "executive"].includes(options.getCurrentAppPage()))
-        void refresh(getSelectedMinutes());
-    });
-    windowRef.addEventListener(TASK_COMPLETION_CHANGED_EVENT, (event) => {
-      const taskId = asString((event as CustomEvent<{ taskId?: unknown }>).detail?.taskId, 160);
-      if (!taskId || !["dashboard", "executive"].includes(options.getCurrentAppPage())) return;
-      void releaseSuppressionsAfterCompletion(taskId).finally(() => {
-        void refresh(getSelectedMinutes());
-      });
-    });
+    windowRef.addEventListener("tasklaunch:schedule-repair-applied", refreshWhenVisible);
+    windowRef.addEventListener("tasklaunch:schedule-repair-undone", refreshWhenVisible);
+    windowRef.addEventListener("tasklaunch:recovery-applied", refreshWhenVisible);
+    windowRef.addEventListener("tasklaunch:recovery-undone", refreshWhenVisible);
+    windowRef.addEventListener("tasktimer:optimal-productivity-days-changed", refreshWhenVisible);
+    windowRef.addEventListener(TASK_COMPLETION_CHANGED_EVENT, handleTaskCompletion);
     const retry = getElement(documentRef, "dashboardNextBestActionRetry");
-    retry?.addEventListener("click", () => {
-      if (lockIfNeeded()) {
-        options.showUpgradePrompt?.("Next Best Action", "plus");
-        return;
-      }
-      void refresh(getSelectedMinutes(), "user");
-    });
+    retry?.addEventListener("click", handleRetry);
     if (["dashboard", "executive"].includes(options.getCurrentAppPage()))
       void refresh(getSelectedMinutes());
   }
 
   function destroy() {
+    isDestroyed = true;
     abortController?.abort();
     requestSequence += 1;
     card?.removeEventListener?.("click", handleAction);
+    documentRef.removeEventListener?.("change", handleTimeSelectChange);
+    documentRef.removeEventListener?.("click", handleTimePillClick);
+    windowRef.removeEventListener?.("tasklaunch:app-page-changed", handlePageChange);
+    windowRef.removeEventListener?.("tasklaunch:schedule-repair-applied", refreshWhenVisible);
+    windowRef.removeEventListener?.("tasklaunch:schedule-repair-undone", refreshWhenVisible);
+    windowRef.removeEventListener?.("tasklaunch:recovery-applied", refreshWhenVisible);
+    windowRef.removeEventListener?.("tasklaunch:recovery-undone", refreshWhenVisible);
+    windowRef.removeEventListener?.("tasktimer:optimal-productivity-days-changed", refreshWhenVisible);
+    windowRef.removeEventListener?.(TASK_COMPLETION_CHANGED_EVENT, handleTaskCompletion);
+    getElement(documentRef, "dashboardNextBestActionRetry")?.removeEventListener?.("click", handleRetry);
   }
 
   return { register, refresh, destroy };
