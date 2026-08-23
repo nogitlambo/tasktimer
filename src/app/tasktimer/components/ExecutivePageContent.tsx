@@ -229,6 +229,35 @@ function ScheduleRepairOverlay() {
   );
 }
 
+function ExecutiveTodayLocalTime() {
+  const [currentLocalTime, setCurrentLocalTime] = useState("");
+
+  useEffect(() => {
+    const updateCurrentLocalTime = () => {
+      setCurrentLocalTime(
+        new Intl.DateTimeFormat(undefined, {
+          hour: "numeric",
+          minute: "2-digit",
+          timeZoneName: "short",
+        }).format(new Date()),
+      );
+    };
+    updateCurrentLocalTime();
+    const timer = window.setInterval(updateCurrentLocalTime, 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return (
+    <span
+      className="executiveTodayLocalTime"
+      id="executiveTodayLocalTime"
+      aria-live="polite"
+    >
+      {currentLocalTime ? `Local time: ${currentLocalTime}` : "Local time"}
+    </span>
+  );
+}
+
 export default function ExecutivePageContent({ active }: Props) {
   const sceneRef = useRef<HTMLDivElement | null>(null);
   const frontRef = useRef<HTMLDivElement | null>(null);
@@ -239,7 +268,6 @@ export default function ExecutivePageContent({ active }: Props) {
     isExecutivePageRefreshRateLimited,
     setIsExecutivePageRefreshRateLimited,
   ] = useState(false);
-  const [currentLocalTime, setCurrentLocalTime] = useState("");
   const [overlayPortalHost, setOverlayPortalHost] =
     useState<HTMLElement | null>(null);
   const [isExecutivePlanLocked, setIsExecutivePlanLocked] = useState(
@@ -267,21 +295,6 @@ export default function ExecutivePageContent({ active }: Props) {
     window.addEventListener(TASKTIMER_PLAN_CHANGED_EVENT, syncPlanLock);
     return () =>
       window.removeEventListener(TASKTIMER_PLAN_CHANGED_EVENT, syncPlanLock);
-  }, []);
-
-  useEffect(() => {
-    const updateCurrentLocalTime = () => {
-      setCurrentLocalTime(
-        new Intl.DateTimeFormat(undefined, {
-          hour: "numeric",
-          minute: "2-digit",
-          timeZoneName: "short",
-        }).format(new Date()),
-      );
-    };
-    updateCurrentLocalTime();
-    const timer = window.setInterval(updateCurrentLocalTime, 30_000);
-    return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -436,15 +449,7 @@ export default function ExecutivePageContent({ active }: Props) {
               <div className="executiveTodayMarker" aria-label="Today">
                 <span>Today</span>
                 <strong id="executiveTodayDate">Current plan</strong>
-                <span
-                  className="executiveTodayLocalTime"
-                  id="executiveTodayLocalTime"
-                  aria-live="polite"
-                >
-                  {currentLocalTime
-                    ? `Local time: ${currentLocalTime}`
-                    : "Local time"}
-                </span>
+                <ExecutiveTodayLocalTime />
                 <button
                   className="btn btn-ghost small executiveTodayRefreshButton"
                   id="executivePageRefreshBtn"

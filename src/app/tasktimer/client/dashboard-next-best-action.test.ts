@@ -713,4 +713,91 @@ describe("dashboard Next Best Action contract", () => {
 
     expect(fetchImpl).not.toHaveBeenCalled();
   });
+
+  it("coalesces repeated automatic page refresh signals while a request is pending", async () => {
+    const windowListeners = new Map<string, (event: Event) => void>();
+    let resolveFetch: ((response: Response) => void) | undefined;
+    const fetchImpl = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveFetch = resolve;
+        }),
+    );
+    const api = createDashboardNextBestAction({
+      documentRef: {
+        getElementById: (id: string) =>
+          id === "dashboardNextBestActionCard"
+            ? {
+                classList: { toggle: vi.fn() },
+                setAttribute: vi.fn(),
+                removeAttribute: vi.fn(),
+                addEventListener: vi.fn(),
+              }
+            : null,
+        querySelectorAll: () => [],
+        addEventListener: vi.fn(),
+      } as unknown as Document,
+      windowRef: {
+        fetch: fetchImpl,
+        addEventListener: (type: string, listener: (event: Event) => void) =>
+          windowListeners.set(type, listener),
+      } as unknown as Window,
+      fetchImpl,
+      getCurrentAppPage: () => "executive",
+      getIdToken: async () => "token",
+    });
+
+    api.register();
+    const pageChanged = windowListeners.get("tasklaunch:app-page-changed");
+    pageChanged?.(new CustomEvent("tasklaunch:app-page-changed", { detail: { page: "executive" } }));
+    pageChanged?.(new CustomEvent("tasklaunch:app-page-changed", { detail: { page: "executive" } }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    resolveFetch?.(new Response(JSON.stringify({ ok: true, recommendation: null }), { status: 200 }));
+  });
+
+  it("keeps an automatic refresh error visible until the user retries", async () => {
+    const windowListeners = new Map<string, (event: Event) => void>();
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ error: "Next Best Action is temporarily unavailable." }), {
+          status: 503,
+        }),
+    );
+    const api = createDashboardNextBestAction({
+      documentRef: {
+        getElementById: (id: string) =>
+          id === "dashboardNextBestActionCard"
+            ? {
+                classList: { toggle: vi.fn() },
+                setAttribute: vi.fn(),
+                removeAttribute: vi.fn(),
+                addEventListener: vi.fn(),
+              }
+            : null,
+        querySelectorAll: () => [],
+        addEventListener: vi.fn(),
+      } as unknown as Document,
+      windowRef: {
+        fetch: fetchImpl,
+        addEventListener: (type: string, listener: (event: Event) => void) =>
+          windowListeners.set(type, listener),
+      } as unknown as Window,
+      fetchImpl,
+      getCurrentAppPage: () => "executive",
+      getIdToken: async () => "token",
+    });
+
+    api.register();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    windowListeners.get("tasklaunch:app-page-changed")?.(
+      new CustomEvent("tasklaunch:app-page-changed", { detail: { page: "executive" } }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    await api.refresh(null, "user");
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
 });

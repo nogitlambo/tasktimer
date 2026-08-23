@@ -1003,9 +1003,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     }
     syncTaskScheduleDaysHelper(els.addTaskOptimalProductivityDaysHelper as HTMLElement | null, days);
     syncTaskScheduleDaysHelper(els.editTaskOptimalProductivityDaysHelper as HTMLElement | null, days);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("tasktimer:optimal-productivity-days-changed"));
-    }
     if (trigger) {
       const expanded = !menu?.hasAttribute("hidden");
       trigger.setAttribute("aria-expanded", expanded ? "true" : "false");
@@ -1031,8 +1028,19 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
   function applyOptimalProductivityDaysPreference(nextDays: unknown) {
     const days = normalizeOptimalProductivityDays(nextDays);
+    const currentDays = normalizeOptimalProductivityDays(
+      ctx.getOptimalProductivityDays(),
+    );
+    const changed =
+      days.length !== currentDays.length ||
+      days.some((day, index) => day !== currentDays[index]);
     ctx.setOptimalProductivityDaysState(days);
     syncOptimalProductivityDaysUi();
+    if (changed && typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("tasktimer:optimal-productivity-days-changed"),
+      );
+    }
   }
 
   function loadOptimalProductivityDaysPreference() {

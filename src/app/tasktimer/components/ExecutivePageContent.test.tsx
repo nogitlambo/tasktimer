@@ -161,6 +161,19 @@ describe("ExecutivePageContent", () => {
     expect(html).toContain(">Upgrade to PLUS</button>");
   });
 
+  it("isolates the local clock from the imperatively rendered Next Best Action card", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/app/tasktimer/components/ExecutivePageContent.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("function ExecutiveTodayLocalTime()");
+    expect(source).toContain("<ExecutiveTodayLocalTime />");
+    expect(source.slice(source.indexOf("export default function ExecutivePageContent"))).not.toContain(
+      "const [currentLocalTime, setCurrentLocalTime]",
+    );
+  });
+
   it("defines an inert, centered FREE-plan gate and reuses the PLUS upsell flow", () => {
     const css = readFileSync(
       resolve(process.cwd(), "src/app/tasktimer/styles/03-dashboard.css"),

@@ -309,6 +309,8 @@ export function createDashboardNextBestAction(
   const fetchImpl = options.fetchImpl ?? windowRef.fetch.bind(windowRef);
   const card = getElement(documentRef, "dashboardNextBestActionCard");
   let requestSequence = 0;
+  let inFlightSequence: number | null = null;
+  let automaticRefreshBlockedByError = false;
   let abortController: AbortController | null = null;
   let isDestroyed = false;
   const shownTaskIds = new Set<string>();
@@ -486,11 +488,22 @@ export function createDashboardNextBestAction(
       renderRestDay();
       return;
     }
+    // Several workspace events can arrive together (for example during a
+    // page transition). They describe the same automatic refresh, so keep the
+    // current request visible instead of repeatedly aborting it and resetting
+    // the card to its loading state.
+    if (
+      mode === "automatic" &&
+      (inFlightSequence != null || automaticRefreshBlockedByError)
+    )
+      return;
+    if (mode === "user") automaticRefreshBlockedByError = false;
     setEmptyMessage();
     shownTaskIds.clear();
     abortController?.abort();
     abortController = new AbortController();
     const sequence = ++requestSequence;
+    inFlightSequence = sequence;
     setStatus("Loading your next best action...", "loading");
     try {
       const idToken = await getIdToken();
@@ -538,11 +551,13 @@ export function createDashboardNextBestAction(
           "That recommendation is out of date. Refresh to choose again.",
           "stale",
         );
-      else
+      else {
+        if (mode === "automatic") automaticRefreshBlockedByError = true;
         setStatus(
           "Could not read the recommendation. Please try again.",
           "error",
         );
+      }
     } catch (error) {
       if (abortController.signal.aborted || sequence !== requestSequence)
         return;
@@ -550,12 +565,15 @@ export function createDashboardNextBestAction(
         renderRestDay();
         return;
       }
+      if (mode === "automatic") automaticRefreshBlockedByError = true;
       setStatus(
         error instanceof Error
           ? error.message
           : "Could not load a next best action.",
         "error",
       );
+    } finally {
+      if (inFlightSequence === sequence) inFlightSequence = null;
     }
   }
 

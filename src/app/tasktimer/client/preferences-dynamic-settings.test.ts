@@ -692,6 +692,22 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
     expect(dayInputs.filter((input) => input.checked).map((input) => input.value)).toEqual(["tue", "thu"]);
   });
 
+  it("emits the productivity-days change event only when the preference changes", () => {
+    const { fakeDocument, preferences } = createHarness();
+    addOptimalProductivityControls(fakeDocument);
+
+    preferences.syncTaskSettingsUi();
+    preferences.syncTaskSettingsUi();
+    expect(window.dispatchEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "tasktimer:optimal-productivity-days-changed" }),
+    );
+
+    preferences.applyOptimalProductivityDaysPreference(["mon", "tue", "wed", "thu", "fri"]);
+    expect(window.dispatchEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "tasktimer:optimal-productivity-days-changed" }),
+    );
+  });
+
   it("syncs haptics intensity into the dropdown control", () => {
     let controls: ReturnType<typeof setupInteractionHapticsIntensityControls> | null = null;
     const { preferences, state } = createHarness({
