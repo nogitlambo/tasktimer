@@ -2269,8 +2269,7 @@ export async function savePreferences(uid: string, prefs: UserPreferencesV1): Pr
       rewards: normalizedRewards,
       schemaVersion: 1,
       updatedAt: serverTimestamp(),
-    },
-    { merge: true }
+    }
   );
   try {
     await saveUserRootPatch(uid, {

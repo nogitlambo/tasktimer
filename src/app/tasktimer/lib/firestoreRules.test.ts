@@ -221,6 +221,10 @@ describe("firestore preference rules", () => {
       expect(block).toContain(`"${field}"`);
       expect(block).toContain(`request.resource.data.${field} is bool`);
     }
+
+    expect(block).toContain('request.resource.data.startupModule in ["dashboard", "tasks", "notes", "executive", "friends", "leaderboard"]');
+    expect(block).toContain('"menuButtonStyle"');
+    expect(block).toContain('request.resource.data.menuButtonStyle == "square"');
   });
 });
 

@@ -212,6 +212,7 @@ service cloud.firestore {
         "defaultTaskTimerFormat",
         "weekStarting",
         "startupModule",
+        "menuButtonStyle",
         "taskView",
         "taskOrderBy",
         "autoFocusOnTaskLaunchEnabled",
@@ -243,7 +244,8 @@ service cloud.firestore {
       && (!("theme" in request.resource.data) || request.resource.data.theme in ["lime"])
       && (!("defaultTaskTimerFormat" in request.resource.data) || request.resource.data.defaultTaskTimerFormat in ["day", "hour", "minute"])
       && (!("weekStarting" in request.resource.data) || request.resource.data.weekStarting in ["sun", "mon", "tue", "wed", "thu", "fri", "sat"])
-      && (!("startupModule" in request.resource.data) || request.resource.data.startupModule in ["dashboard", "tasks", "session-notes", "friends", "leaderboard"])
+      && (!("startupModule" in request.resource.data) || request.resource.data.startupModule in ["dashboard", "tasks", "notes", "executive", "friends", "leaderboard"])
+      && (!("menuButtonStyle" in request.resource.data) || request.resource.data.menuButtonStyle == "square")
       && (!("taskView" in request.resource.data) || request.resource.data.taskView in ["list", "tile"])
       && (!("taskOrderBy" in request.resource.data) || request.resource.data.taskOrderBy in ["custom", "alpha", "schedule", "dateAddedAsc", "dateAddedDesc"])
       && (!("autoFocusOnTaskLaunchEnabled" in request.resource.data) || request.resource.data.autoFocusOnTaskLaunchEnabled is bool)

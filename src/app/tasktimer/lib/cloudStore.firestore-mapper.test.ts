@@ -62,6 +62,11 @@ function findSetDocWrite(path: string): Record<string, unknown> | undefined {
   return calls.find(([ref]) => ref.path === path)?.[1];
 }
 
+function findSetDocOptions(path: string): unknown {
+  const calls = firestoreMocks.setDoc.mock.calls as unknown as Array<[{ path: string }, Record<string, unknown>, unknown?]>;
+  return calls.find(([ref]) => ref.path === path)?.[2];
+}
+
 function task(overrides: Partial<Task> = {}): Task {
   return {
     id: "task-1",
@@ -325,6 +330,7 @@ describe("saveTask Firestore planned start payloads", () => {
         updatedAtMs: 123,
       })
     );
+    expect(findSetDocOptions("users/user-1/preferences/v1")).toBeUndefined();
   });
 });
 
