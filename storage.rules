@@ -26,6 +26,7 @@ service firebase.storage {
       return request.resource != null
       && request.resource.contentType in [
         "audio/webm",
+        "audio/wav",
         "image/jpeg",
         "image/png",
         "image/webp"

@@ -42,7 +42,8 @@ describe("BrainDumpClient", () => {
     expect(source).toContain('type BrainDumpCaptureMode = "typed" | "voice"');
     expect(source).toContain("navigator.mediaDevices.getUserMedia({ audio: true })");
     expect(source).toContain('const BRAIN_DUMP_VOICE_MIME_TYPE = "audio/wav"');
-    expect(source).toContain("function encodeVoiceWav");
+    expect(source).toContain('from "./lib/brainDumpVoiceCapture"');
+    expect(source).toContain("hasDetectableVoiceSignal(chunks)");
     expect(source).toContain("audioContext.createScriptProcessor");
     expect(source).toContain("voicePcmChunksRef.current.push");
     expect(source).toContain("const meterStream = stream.clone()");
@@ -95,6 +96,7 @@ describe("BrainDumpClient", () => {
     expect(source).not.toContain("transcript: payload.transcript");
     expect(source).not.toContain("raw_audio");
     expect(source).not.toContain("audio_bytes");
+    expect(source).toContain("voiceTranscriptionErrorMessage(code)");
   });
 
   it("turns one image and optional instruction into a normal review session without replacing typed drafts", () => {

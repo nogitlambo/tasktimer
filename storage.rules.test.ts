@@ -12,6 +12,7 @@ describe("storage.rules Brain Dump source paths", () => {
     expect(source).toContain("&& request.auth.uid == userId");
     expect(source).toContain("&& request.resource.size <= 10485760");
     expect(source).toContain('"audio/webm"');
+    expect(source).toContain('"audio/wav"');
     expect(source).toContain('"image/jpeg"');
     expect(source).toContain('"image/png"');
     expect(source).toContain('"image/webp"');

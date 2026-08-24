@@ -4,6 +4,7 @@ import type { Task } from "./types";
 import {
   clearTaskMarkedDone,
   getNextLocalMidnightMs,
+  getNextMidnightMsForTimezone,
   isCompletedOnceOffTask,
   isTaskMarkedDone,
   isTaskSnoozedForNextBestAction,
@@ -16,6 +17,13 @@ function task(overrides: Partial<Task> = {}): Task {
 }
 
 describe("manual task completion state", () => {
+  it("finds the next midnight in the user's timezone", () => {
+    const now = Date.parse("2026-08-21T13:30:00.000Z");
+
+    expect(getNextMidnightMsForTimezone("Australia/Sydney", now)).toBe(Date.parse("2026-08-21T14:00:00.000Z"));
+    expect(getNextMidnightMsForTimezone("America/New_York", now)).toBe(Date.parse("2026-08-22T04:00:00.000Z"));
+  });
+
   it("locks recurring tasks only until the next local midnight", () => {
     const now = new Date(2026, 7, 21, 23, 30).getTime();
     const entry = task({ taskType: "recurring" });

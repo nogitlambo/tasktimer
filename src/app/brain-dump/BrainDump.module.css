@@ -532,6 +532,19 @@
   pointer-events: auto;
 }
 
+.timeGoalControl .timeGoalPills {
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.timeGoalControl .timeGoalPills :global(.taskScreenHeaderBtn:first-child) {
+  border-radius: 999px 0 0 999px !important;
+}
+
+.timeGoalControl .timeGoalPills :global(.taskScreenHeaderBtn:last-child) {
+  border-radius: 0 999px 999px 0 !important;
+}
+
 .timeGoalPills :global(.taskScreenHeaderBtn) {
   position: relative;
   z-index: 5;
@@ -570,6 +583,14 @@
   background: #1a1b20 !important;
   color: rgba(245, 248, 244, 0.96) !important;
   opacity: 1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 6px 14px rgba(0, 0, 0, 0.22) !important;
+}
+
+/* Keep the review duration controls aligned with Add/Edit over the global lime active-unit rule. */
+:global(body[data-theme="lime"]) .timeGoalControl .timeGoalPills :global(.taskScreenHeaderBtn.isOn) {
+  border-color: transparent !important;
+  background: #1a1b20 !important;
+  color: rgba(245, 248, 244, 0.96) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 6px 14px rgba(0, 0, 0, 0.22) !important;
 }
 

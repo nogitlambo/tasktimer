@@ -301,12 +301,12 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
     documentRef.addEventListener("change", (event) => {
       if ((event.target as HTMLElement | null)?.id === "dashboardDailyExecutiveBriefTimeSelect") void refresh(true, getSelectedMinutes(), "user");
     });
-    windowRef.addEventListener("tasklaunch:app-page-changed", (event) => { if (["dashboard", "executive"].includes((event as CustomEvent<{ page?: string }>).detail?.page || "")) void refresh(); });
-    windowRef.addEventListener("tasklaunch:schedule-repair-applied", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(true); });
-    windowRef.addEventListener("tasklaunch:schedule-repair-undone", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(true); });
-    windowRef.addEventListener("tasklaunch:recovery-applied", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(true); });
-    windowRef.addEventListener("tasklaunch:recovery-undone", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(true); });
-    if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh();
+    windowRef.addEventListener("tasklaunch:app-page-changed", (event) => { if ((event as CustomEvent<{ page?: string }>).detail?.page === "dashboard") void refresh(); });
+    windowRef.addEventListener("tasklaunch:schedule-repair-applied", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(true); });
+    windowRef.addEventListener("tasklaunch:schedule-repair-undone", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(true); });
+    windowRef.addEventListener("tasklaunch:recovery-applied", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(true); });
+    windowRef.addEventListener("tasklaunch:recovery-undone", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(true); });
+    if (options.getCurrentAppPage() === "dashboard") void refresh();
   }
   function destroy() { abortController?.abort(); requestSequence += 1; }
   return { register, refresh, destroy, parseBriefResponse };

@@ -59,7 +59,12 @@ function dayDistance(fromDate: string, toDate: string) {
   return Number.isFinite(fromMs) && Number.isFinite(toMs) ? Math.round((toMs - fromMs) / 86_400_000) : null;
 }
 
-export function buildScheduleRepairTaskPatch(raw: RawRow, action: ScheduleRepairAction, localDate: string) {
+export function buildScheduleRepairTaskPatch(
+  raw: RawRow,
+  action: ScheduleRepairAction,
+  localDate: string,
+  nextBestActionSnoozedUntilMs?: number | null,
+) {
   const targetDate = dateValue(action.toDate);
   if (action.type === "REDUCE_TODAY_TARGET") {
     const targetMinutes = action.toMinutes == null ? null : nonnegativeMinutes(action.toMinutes);
@@ -81,15 +86,18 @@ export function buildScheduleRepairTaskPatch(raw: RawRow, action: ScheduleRepair
     return { plannedStartDay: day, plannedStartTime: time, plannedStartByDay: { [day]: time }, plannedStartOpenEnded: false };
   }
   if (action.type === "REMOVE_FROM_TODAY") {
-    if (raw.taskType === "once-off") return { onceOffDay: null, onceOffTargetDate: null, plannedStartDay: null, plannedStartTime: null, plannedStartByDay: null };
+    const exclusionPatch = Number.isFinite(Number(nextBestActionSnoozedUntilMs)) && Number(nextBestActionSnoozedUntilMs) > 0
+      ? { nextBestActionSnoozedUntilMs: Math.floor(Number(nextBestActionSnoozedUntilMs)) }
+      : {};
+    if (raw.taskType === "once-off") return { onceOffDay: null, onceOffTargetDate: null, plannedStartDay: null, plannedStartTime: null, plannedStartByDay: null, ...exclusionPatch };
     const day = weekdayToken(localDate);
     const byDay = raw.plannedStartByDay && typeof raw.plannedStartByDay === "object" ? { ...(raw.plannedStartByDay as RawRow) } : {};
     delete byDay[day];
     const remainingDays = Object.keys(byDay).filter((key) => /^sun|mon|tue|wed|thu|fri|sat$/.test(key));
-    if (!remainingDays.length) return { plannedStartDay: null, plannedStartTime: null, plannedStartByDay: null };
+    if (!remainingDays.length) return { plannedStartDay: null, plannedStartTime: null, plannedStartByDay: null, ...exclusionPatch };
     const firstDay = remainingDays.sort()[0]!;
     const firstTime = asString(byDay[firstDay], 8) || null;
-    return { plannedStartDay: remainingDays.length === 1 ? firstDay : null, plannedStartTime: remainingDays.length === 1 ? firstTime : null, plannedStartByDay: byDay };
+    return { plannedStartDay: remainingDays.length === 1 ? firstDay : null, plannedStartTime: remainingDays.length === 1 ? firstTime : null, plannedStartByDay: byDay, ...exclusionPatch };
   }
   return null;
 }
@@ -199,6 +207,7 @@ export interface ScheduleRepairRepository {
     localDate: string;
     actions: Array<Pick<ScheduleRepairAction, "id" | "selected" | "toDate" | "toMinutes">>;
     nowMs: number;
+    nextBestActionSnoozedUntilMs?: number | null;
   }): Promise<{ kind: "applied" | "idempotent" | "stale" | "expired" | "not-found" | "invalid"; proposal?: ScheduleRepairProposal; results?: ScheduleRepairApplyActionResult[] }>;
   undoProposal(input: {
     uid: string;
@@ -259,7 +268,7 @@ export function createFirestoreScheduleRepairRepository(db: Firestore = getFireb
         updatedAt: Timestamp.now(),
       });
     },
-    async applyProposal({ uid, repairId, idempotencyKey, localDate, actions, nowMs }) {
+    async applyProposal({ uid, repairId, idempotencyKey, localDate, actions, nowMs, nextBestActionSnoozedUntilMs }) {
       const safeUid = asString(uid, 120);
       const safeRepairId = asString(repairId, 180);
       const safeIdempotencyKey = asString(idempotencyKey, 180);
@@ -309,7 +318,7 @@ export function createFirestoreScheduleRepairRepository(db: Firestore = getFireb
             continue;
           }
           const nextAction = { ...proposalAction, toDate: requestedAction.toDate === undefined ? proposalAction.toDate : requestedAction.toDate, toMinutes: requestedAction.toMinutes === undefined ? proposalAction.toMinutes : requestedAction.toMinutes };
-          const patch = buildScheduleRepairTaskPatch(raw, nextAction, localDate);
+          const patch = buildScheduleRepairTaskPatch(raw, nextAction, localDate, nextBestActionSnoozedUntilMs);
           if (!patch) {
             results.push({ actionId: proposalAction.id, taskId: proposalAction.taskId, outcome: "REJECTED", reason: "The requested change no longer satisfies the task schedule constraints." });
             continue;

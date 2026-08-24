@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createFirestoreDailyExecutiveBriefRepository } from "./dailyExecutiveBriefRepository";
+import { calculateDailyExecutiveBriefPlan } from "./dailyExecutiveBriefPlanning";
 
 const row = {
   schemaVersion: 1,
@@ -54,6 +55,35 @@ describe("Firestore Daily Executive Brief repository", () => {
     const source = await createFirestoreDailyExecutiveBriefRepository(db as never).loadSourceContext("uid-1", { todayDate: "2026-08-07" });
 
     expect(source.tasks[0]).toMatchObject({ id: "task-1", completed: true });
+  });
+
+  it("excludes a task snoozed for the rest of today from remaining work", async () => {
+    const nowMs = Date.parse("2026-08-07T10:00:00.000Z");
+    const task = {
+      id: "task-1",
+      name: "Deferred by schedule repair",
+      timeGoalMinutes: 90,
+      accumulatedMs: 0,
+      nextBestActionSnoozedUntilMs: Date.parse("2026-08-08T00:00:00.000Z"),
+    };
+    const db = {
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({
+          collection: vi.fn((name: string) => name === "tasks"
+            ? { get: vi.fn().mockResolvedValue({ docs: [{ id: "task-1", data: () => task }] }) }
+            : { doc: vi.fn(() => ({ get: vi.fn().mockResolvedValue({ exists: false }) })) }),
+        })),
+      })),
+    };
+
+    const source = await createFirestoreDailyExecutiveBriefRepository(db as never).loadSourceContext(
+      "uid-1",
+      { todayDate: "2026-08-07", nowMs },
+    );
+    const plan = calculateDailyExecutiveBriefPlan({ todayDate: "2026-08-07", tasks: source.tasks, availability: source.availability });
+
+    expect(source.tasks[0]).toMatchObject({ id: "task-1", active: false });
+    expect(plan.remainingMinutes).toBe(0);
   });
 
   it("dismisses an owned active adjustment idempotently without touching task state", async () => {

@@ -69,10 +69,10 @@ describe("ExecutivePageContent", () => {
     expect(css).toContain(".dashboardNextBestActionTimeGoal{");
     expect(css).toContain(".dashboardNextBestActionTimeGoal[hidden]{");
     expect(css).toContain(
-      'grid-template-columns:minmax(0,3fr) minmax(240px,1fr);grid-template-areas:"nba tools"',
+      'grid-template-columns:minmax(0,3fr) minmax(0,1fr);grid-template-areas:"nba tools"',
     );
     expect(css).toContain(
-      ".executiveToolLinks{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(4,minmax(0,1fr))",
+      ".executiveToolLinks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))",
     );
     expect(css).toContain(
       ".executiveTools{grid-area:tools;display:flex;flex-direction:column;padding:12px;border:0;background:transparent;box-shadow:none}",
@@ -171,6 +171,57 @@ describe("ExecutivePageContent", () => {
     expect(source).toContain("<ExecutiveTodayLocalTime />");
     expect(source.slice(source.indexOf("export default function ExecutivePageContent"))).not.toContain(
       "const [currentLocalTime, setCurrentLocalTime]",
+    );
+  });
+
+  it("resets native Brain Dump openings to the top of the page", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/app/tasktimer/components/ExecutivePageContent.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain('import { Capacitor } from "@capacitor/core"');
+    expect(source).toContain("if (!isBrainDumpOpen || !isNativeOrFileRuntime()) return;");
+    expect(source).toContain("window.scrollTo(0, 0);");
+  });
+
+  it("keeps Recovery Mode focused on dismissing or applying selected changes", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/app/tasktimer/components/ExecutivePageContent.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain('data-recovery="dismiss"');
+    expect(source).toContain('data-recovery="apply"');
+    expect(source).not.toContain("Keep current plan");
+    expect(source).not.toContain("Finish recovery");
+    expect(source).not.toContain('data-recovery="undo"');
+    expect(source).not.toContain('data-recovery="refresh"');
+  });
+
+  it("uses a 75/25 Next Best Action and Executive Tools split with 2 by 2 tiles", () => {
+    const css = readFileSync(
+      resolve(process.cwd(), "src/app/tasktimer/styles/03-dashboard.css"),
+      "utf8",
+    );
+
+    expect(css).toContain(".executiveDecisionFlow{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr)");
+    expect(css).toContain(".executiveToolLinks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))");
+    expect(css).toContain(".executiveToolLinks>.btn{display:grid;grid-template-columns:1fr;align-content:center;align-items:center;justify-items:center;width:100%;min-width:0;aspect-ratio:1");
+  });
+
+  it("pulses only while the Next Best Action is loading", () => {
+    const css = readFileSync(
+      resolve(process.cwd(), "src/app/tasktimer/styles/03-dashboard.css"),
+      "utf8",
+    );
+
+    expect(css).toContain(
+      '.dashboardNextBestActionCard[data-next-best-action-state="loading"] .dashboardNextBestActionStatus{\n  color:rgba(225,231,244,.72);\n  animation:dashboardNextBestActionLoadingPulse 1.35s ease-in-out infinite;',
+    );
+    expect(css).toContain("@keyframes dashboardNextBestActionLoadingPulse");
+    expect(css).toContain(
+      '.dashboardNextBestActionCard[data-next-best-action-state="loading"] .dashboardNextBestActionStatus{\n    animation:none;',
     );
   });
 

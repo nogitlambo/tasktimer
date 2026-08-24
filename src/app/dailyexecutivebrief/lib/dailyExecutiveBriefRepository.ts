@@ -50,8 +50,9 @@ function isCompletedForCurrentPeriod(row: RawRow, todayDate: string, weekStartin
   return normalizedKey === currentKey;
 }
 
-function mapTask(id: string, row: RawRow, todayDate: string, weekStarting: DashboardWeekStart): DailyExecutiveBriefTask {
+function mapTask(id: string, row: RawRow, todayDate: string, weekStarting: DashboardWeekStart, nowMs: number): DailyExecutiveBriefTask {
   const dueDate = asString(row.onceOffTargetDate, 10);
+  const snoozedUntilMs = Math.max(0, Math.floor(Number(row.nextBestActionSnoozedUntilMs) || 0));
   return {
     id: asString(row.id, 160) || id,
     estimatedMinutes: positiveMinutes(row.timeGoalMinutes),
@@ -64,6 +65,7 @@ function mapTask(id: string, row: RawRow, todayDate: string, weekStarting: Dashb
     inProgress: row.running === true,
     requiresClarification: row.requiresClarification === true,
     blocksImportantWork: row.blocksImportantWork === true,
+    active: row.active !== false && row.status !== "inactive" && snoozedUntilMs <= nowMs,
     completed: row.completed === true || row.status === "completed" || isCompletedForCurrentPeriod(row, todayDate, weekStarting),
   };
 }
@@ -99,7 +101,7 @@ function snapshotFromFirestore(row: RawRow): DailyExecutiveBriefSnapshot | null 
 export type DailyExecutiveBriefSourceContext = Pick<DailyExecutiveBriefPlanningInput, "tasks" | "availability"> & { sourceVersion: string };
 
 export interface DailyExecutiveBriefRepository {
-  loadSourceContext(uid: string, context?: { todayDate?: string }): Promise<DailyExecutiveBriefSourceContext>;
+  loadSourceContext(uid: string, context?: { todayDate?: string; nowMs?: number }): Promise<DailyExecutiveBriefSourceContext>;
   loadBrief(uid: string, date: string): Promise<DailyExecutiveBriefSnapshot | null>;
   saveBrief(uid: string, snapshot: DailyExecutiveBriefSnapshot): Promise<void>;
   dismissAdjustment(input: { uid: string; date: string; adjustmentId: string; nowMs: number }): Promise<"dismissed" | "idempotent" | "not-found" | "expired">;
@@ -122,10 +124,11 @@ export function createFirestoreDailyExecutiveBriefRepository(db: Firestore = get
       const rows = taskSnapshot.docs.map((doc) => doc.data() as RawRow);
       const preferences = preferenceSnapshot.exists ? preferenceSnapshot.data() as RawRow : null;
       const todayDate = /^\d{4}-\d{2}-\d{2}$/.test(String(context?.todayDate || "")) ? String(context?.todayDate) : "";
+      const nowMs = Number.isFinite(Number(context?.nowMs)) ? Math.max(0, Math.floor(Number(context?.nowMs))) : Date.now();
       const weekStarting = normalizeDashboardWeekStart(preferences?.weekStarting);
       const focusWindowPresent = !!(asString(preferences?.optimalProductivityStartTime, 8) && asString(preferences?.optimalProductivityEndTime, 8));
       return {
-        tasks: taskSnapshot.docs.map((doc) => mapTask(doc.id, doc.data() as RawRow, todayDate, weekStarting)),
+        tasks: taskSnapshot.docs.map((doc) => mapTask(doc.id, doc.data() as RawRow, todayDate, weekStarting, nowMs)),
         availability: DailyExecutiveBriefAvailabilitySchema.parse({ focusWindowPresent }),
         sourceVersion: buildSourceVersion(rows, preferences),
       };

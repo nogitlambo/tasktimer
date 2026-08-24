@@ -48,7 +48,7 @@
 #app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth{font-size:clamp(15px,1.25vw,20px);line-height:1.15;white-space:normal;overflow-wrap:normal}
 .executiveMetricCard:nth-child(2) i{background:repeating-linear-gradient(90deg,var(--executive-accent) 0 25px,transparent 25px 34px),#3a4357;box-shadow:none}.executiveMetricCard:nth-child(3) i{background:linear-gradient(90deg,var(--executive-accent) 0 55%,#39435b 55%)}
 #app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health]{color:#ffb867}#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="REALISTIC"]{color:var(--executive-plan-health-good)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="SLIGHTLY_OVERLOADED"]{color:var(--executive-plan-health-warning)}#app[aria-label="TaskLaunch App"] #appPageExecutive #executivePlanHealth[data-plan-health="SIGNIFICANTLY_OVERLOADED"]{color:var(--executive-plan-health-danger)}
-.executiveDecisionFlow{display:grid;grid-template-columns:minmax(0,3fr) minmax(240px,1fr);grid-template-areas:"nba tools";align-items:stretch;gap:20px}
+.executiveDecisionFlow{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr);grid-template-areas:"nba tools";align-items:start;gap:20px}
 .executiveCard,.dashboardExecutiveSummary{border:1px solid var(--executive-line);border-radius:16px;background:var(--executive-panel);padding:20px;box-shadow:inset 0 1px rgba(255,255,255,.035),0 14px 34px rgba(0,0,0,.2)}
 .executiveNbaCard.dashboardNextBestActionCard{grid-area:nba;position:relative;min-height:300px;overflow:hidden;border-color:var(--executive-line);background:var(--executive-panel)}
 #app[aria-label="TaskLaunch App"] #appPageExecutive .executiveNbaCard.dashboardNextBestActionCard,
@@ -75,7 +75,7 @@
 .executiveDisclosure{display:grid;gap:6px;color:rgba(225,231,244,.62);font:11px var(--font-readable,inherit)}
 .executiveDisclosure summary{cursor:pointer;color:rgba(225,231,244,.62)}
 .executiveDisclosure .dashboardDailyCapacityExplanation{margin:0}
-.executiveTools{grid-area:tools;display:flex;flex-direction:column;padding:12px;border:0;background:transparent;box-shadow:none}.executiveToolsLabel{margin:0 0 10px}.executiveToolLinks{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(4,minmax(0,1fr));flex:1;gap:8px}.executiveToolLinks>.btn{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;justify-items:start;width:100%;min-width:0;height:auto;padding:12px!important;gap:8px;border-color:#3a3d45!important;text-align:left!important}.executiveToolIcon{box-sizing:content-box;flex:0 0 auto;width:28px;height:28px;padding:0;object-fit:contain;filter:brightness(0) saturate(100%) invert(92%) sepia(94%) saturate(1176%) hue-rotate(22deg) brightness(103%) contrast(105%)}.executiveToolCopy{display:grid;justify-items:start;gap:3px;min-width:0;text-align:left}.executiveToolLabel{padding-bottom:0;color:inherit;font-size:12px;font-weight:500;line-height:1.2}.executiveToolCopy small{color:#aeb6c7;font-family:var(--font-readable);font-size:11px;font-weight:400;letter-spacing:0;line-height:1.3;text-align:left}
+.executiveTools{grid-area:tools;display:flex;flex-direction:column;padding:12px;border:0;background:transparent;box-shadow:none}.executiveToolsLabel{margin:0 0 10px;text-align:center}.executiveToolLinks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:8px}.executiveToolLinks>.btn{display:grid;grid-template-columns:1fr;align-content:center;align-items:center;justify-items:center;width:100%;min-width:0;aspect-ratio:1;padding:12px!important;gap:10px;border-color:#3a3d45!important;text-align:center!important}.executiveToolIcon{box-sizing:content-box;flex:0 0 auto;width:28px;height:28px;padding:0;object-fit:contain;filter:brightness(0) saturate(100%) invert(92%) sepia(94%) saturate(1176%) hue-rotate(22deg) brightness(103%) contrast(105%)}.executiveToolCopy{display:grid;justify-items:center;gap:5px;min-width:0;text-align:center}.executiveToolLabel{padding-bottom:0;color:inherit;font-size:12px;font-weight:500;line-height:1.2}.executiveToolCopy small{color:#aeb6c7;font-family:var(--font-readable);font-size:11px;font-weight:400;letter-spacing:0;line-height:1.3;text-align:center}
 .executiveToolIcon.executiveToolRepairIcon{flex-basis:auto;width:28px;height:28px;filter:none}
 #app[aria-label="TaskLaunch App"] #appPageExecutive .executiveToolLinks>.btn{border-color:#3a3d45!important;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012) 48%,rgba(0,0,0,.08)),#111216!important}
 #app[aria-label="TaskLaunch App"] #appPageExecutive .executiveToolLinks>.btn:hover:not(:disabled),#app[aria-label="TaskLaunch App"] #appPageExecutive .executiveToolLinks>.btn:focus-visible{border-color:var(--accent)!important;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012) 48%,rgba(0,0,0,.08)),#111216!important}
@@ -664,10 +664,23 @@
 
 .dashboardNextBestActionCard[data-next-best-action-state="loading"] .dashboardNextBestActionStatus{
   color:rgba(225,231,244,.72);
+  animation:dashboardNextBestActionLoadingPulse 1.35s ease-in-out infinite;
+}
+
+@keyframes dashboardNextBestActionLoadingPulse{
+  0%,100%{opacity:.5}
+  50%{opacity:1}
+}
+
+@media (prefers-reduced-motion: reduce){
+  .dashboardNextBestActionCard[data-next-best-action-state="loading"] .dashboardNextBestActionStatus{
+    animation:none;
+  }
 }
 
 .dashboardNextBestActionCard[data-next-best-action-state="error"] .dashboardNextBestActionStatus,
-.dashboardNextBestActionCard[data-next-best-action-state="stale"] .dashboardNextBestActionStatus{
+.dashboardNextBestActionCard[data-next-best-action-state="stale"] .dashboardNextBestActionStatus,
+.dashboardNextBestActionCard[data-next-best-action-state="launch-error"] .dashboardNextBestActionStatus{
   color:#ffb4a8;
 }
 

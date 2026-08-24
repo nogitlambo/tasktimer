@@ -6,8 +6,39 @@ class BrainDumpProviderUnavailableError extends Error {
 }
 
 class BrainDumpOpenAiProviderError extends Error {
-  status = 502;
-  code = "brain-dump/provider-failed";
+  readonly status: number;
+  readonly code: string;
+  readonly providerStatus?: number;
+  readonly providerCode?: string;
+  readonly providerType?: string;
+  readonly providerParam?: string;
+  readonly providerRequestId?: string;
+  readonly model?: string;
+
+  constructor(
+    message: string,
+    details: {
+      status?: number;
+      code?: string;
+      providerStatus?: number;
+      providerCode?: string;
+      providerType?: string;
+      providerParam?: string;
+      providerRequestId?: string;
+      model?: string;
+    } = {}
+  ) {
+    super(message);
+    this.name = "BrainDumpOpenAiProviderError";
+    this.status = details.status ?? 502;
+    this.code = details.code ?? "brain-dump/provider-failed";
+    this.providerStatus = details.providerStatus;
+    this.providerCode = details.providerCode;
+    this.providerType = details.providerType;
+    this.providerParam = details.providerParam;
+    this.providerRequestId = details.providerRequestId;
+    this.model = details.model;
+  }
 }
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
@@ -213,23 +244,101 @@ async function requestOpenAiVoiceTranscription(input: { audioBytes: Uint8Array; 
   const language = configuredOpenAiTranscriptionLanguage();
   if (language) form.set("language", language);
 
-  const response = await fetch(OPENAI_TRANSCRIPTIONS_URL, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${apiKey}`,
-    },
-    body: form,
-  });
-  const payload = (await response.json().catch(() => null)) as { text?: unknown } | null;
-  if (!response.ok) {
+  let response: Response;
+  try {
+    response = await fetch(OPENAI_TRANSCRIPTIONS_URL, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+      },
+      body: form,
+    });
+  } catch {
     throw new BrainDumpOpenAiProviderError(
-      "TaskLaunch couldn't transcribe this recording reliably. Your recording has not been turned into tasks."
+      "Voice transcription is temporarily unavailable. Please try again later.",
+      { code: "brain-dump/provider-temporary", status: 502, model }
     );
   }
-  const transcript = asTrimmedString(payload?.text);
+  const payload = (await response.json().catch(() => null)) as {
+    text?: unknown;
+    error?: { code?: unknown; type?: unknown; param?: unknown };
+  } | null;
+  const providerStatus = Number(response.status) || (response.ok ? 200 : 500);
+  const providerRequestId = response.headers?.get?.("x-request-id") || undefined;
+  const providerCode = asTrimmedString(payload?.error?.code) || undefined;
+  const providerType = asTrimmedString(payload?.error?.type) || undefined;
+  const providerParam = asTrimmedString(payload?.error?.param) || undefined;
+  if (!response.ok) {
+    const providerConfigurationFailure = providerStatus === 401
+      || providerStatus === 403
+      || providerCode === "invalid_api_key"
+      || providerCode === "model_not_found"
+      || providerParam === "model";
+    const providerAudioFailure = providerParam === "file"
+      || providerCode === "invalid_audio"
+      || providerCode === "invalid_value";
+    const category = providerConfigurationFailure
+      ? {
+          code: "brain-dump/provider-unavailable",
+          status: 503,
+          message: "Voice transcription is temporarily unavailable. Please try again later.",
+        }
+      : providerStatus === 429
+        ? {
+            code: "brain-dump/provider-rate-limited",
+            status: 503,
+            message: "Voice transcription is temporarily busy. Please wait and try again.",
+          }
+        : providerStatus >= 500
+          ? {
+              code: "brain-dump/provider-temporary",
+              status: 502,
+              message: "Voice transcription is temporarily unavailable. Please try again later.",
+            }
+          : providerAudioFailure || providerStatus === 413 || providerStatus === 415 || providerStatus === 422
+          ? {
+              code: "brain-dump/invalid-audio",
+              status: 422,
+              message: "TaskLaunch could not read this recording as valid audio. Record it again and retry.",
+            }
+          : {
+              code: "brain-dump/provider-failed",
+              status: 502,
+              message: "TaskLaunch couldn't transcribe this recording reliably. Your recording has not been turned into tasks.",
+            };
+    throw new BrainDumpOpenAiProviderError(category.message, {
+      ...category,
+      providerStatus,
+      providerCode,
+      providerType,
+      providerParam,
+      providerRequestId,
+      model,
+    });
+  }
+  if (!payload || !("text" in payload) || typeof payload.text !== "string") {
+    throw new BrainDumpOpenAiProviderError(
+      "Voice transcription is temporarily unavailable. Please try again later.",
+      {
+        code: "brain-dump/provider-malformed-response",
+        status: 502,
+        providerStatus,
+        providerRequestId,
+        model,
+      }
+    );
+  }
+  const transcript = asTrimmedString(payload.text);
   if (!transcript) {
     throw new BrainDumpOpenAiProviderError(
-      "TaskLaunch couldn't transcribe this recording reliably. Your recording has not been turned into tasks."
+      "TaskLaunch could not detect enough speech in this recording. Check playback and record again.",
+      {
+        code: "brain-dump/no-speech",
+        status: 422,
+        providerStatus,
+        providerRequestId,
+        model,
+      }
     );
   }
   return { transcript, model };

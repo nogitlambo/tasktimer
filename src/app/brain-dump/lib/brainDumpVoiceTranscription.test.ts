@@ -181,6 +181,63 @@ describe("Brain Dump voice transcription", () => {
     expect(harness.provider.extractTyped).not.toHaveBeenCalled();
   });
 
+  it("reports the failing stage and preserves the provider failure when recovery persistence also fails", async () => {
+    const harness = createHarness();
+    const stages: string[] = [];
+    vi.mocked(harness.provider.transcribeVoice!).mockRejectedValueOnce(Object.assign(new Error("provider detail"), {
+      code: "brain-dump/provider-temporary",
+      status: 502,
+    }));
+    vi.mocked(harness.store.saveSession)
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error("recovery persistence detail"));
+
+    await expect(
+      transcribeVoiceBrainDump({
+        uid: "uid-1",
+        brainDumpId: "voice-1",
+        storagePath: ownedPath,
+        durationMs: 10_000,
+        provider: harness.provider,
+        store: harness.store,
+        storage: harness.storage,
+        onStage: (stage) => stages.push(stage),
+      })
+    ).rejects.toMatchObject({
+      message: "provider detail",
+      transcriptionStage: "provider-transcription",
+    });
+
+    expect(stages).toContain("storage-read");
+    expect(stages).toContain("audio-validation");
+    expect(stages).toContain("provider-transcription");
+    expect(stages).toContain("recovery-session-save-failed");
+  });
+
+  it("completes transcription and reports deferred cleanup when source deletion fails", async () => {
+    const harness = createHarness();
+    const stages: string[] = [];
+    vi.mocked(harness.storage.deleteObject).mockRejectedValueOnce(new Error("storage deletion failed"));
+
+    const result = await transcribeVoiceBrainDump({
+      uid: "uid-1",
+      brainDumpId: "voice-1",
+      storagePath: ownedPath,
+      durationMs: 10_000,
+      provider: harness.provider,
+      store: harness.store,
+      storage: harness.storage,
+      onStage: (stage) => stages.push(stage),
+    });
+
+    expect(result.transcript).toBe("Call the dentist tomorrow.");
+    expect(stages).toContain("source-cleanup-failed");
+    expect(harness.sessions.get("uid-1:voice-1")?.source.files?.[0]).toMatchObject({
+      cleanupStatus: "delete_failed",
+      cleanupErrorCode: "storage-delete-failed",
+    });
+  });
+
   it("rejects an empty provider transcript and never starts extraction", async () => {
     const harness = createHarness();
     vi.mocked(harness.provider.transcribeVoice!).mockResolvedValueOnce({ transcript: "", model: "gpt-4o-mini-transcribe" });

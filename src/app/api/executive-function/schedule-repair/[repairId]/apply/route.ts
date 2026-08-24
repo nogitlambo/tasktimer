@@ -7,6 +7,7 @@ import { authenticatedApiOptions, withAuthenticatedApiCors } from "@/app/api/sha
 import { createFirestoreScheduleRepairRepository } from "@/app/schedulerepair/lib/scheduleRepairRepository";
 import { applyScheduleRepairProposal } from "@/app/schedulerepair/lib/scheduleRepairService";
 import { localDateForRecommendationTimezone } from "@/app/nextbestaction/lib/nextBestActionRepository";
+import { getNextMidnightMsForTimezone } from "@/app/tasktimer/lib/taskManualCompletion";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { enforceUidRateLimit } from "@/app/api/shared/rateLimit";
 
@@ -40,7 +41,17 @@ export async function POST(req: Request, context: RouteContext) {
       return [{ id, selected: action.selected === true, toDate: action.toDate == null ? null : asString(action.toDate, 10), toMinutes: action.toMinutes == null ? null : Number(action.toMinutes) }];
     }).slice(0, 20);
     if (!repairId || !idempotencyKey || !actions.length) return withAuthenticatedApiCors(req, NextResponse.json({ error: "A repair id, idempotency key, and selected action list are required.", code: "schedule-repair/invalid-apply" }, { status: 400 }));
-    const result = await applyScheduleRepairProposal({ uid, repairId, idempotencyKey, localDate: localDateForRecommendationTimezone(timezone, Date.now()), actions, nowMs: Date.now(), repository: createFirestoreScheduleRepairRepository(db) });
+    const nowMs = Date.now();
+    const result = await applyScheduleRepairProposal({
+      uid,
+      repairId,
+      idempotencyKey,
+      localDate: localDateForRecommendationTimezone(timezone, nowMs),
+      actions,
+      nowMs,
+      nextBestActionSnoozedUntilMs: getNextMidnightMsForTimezone(timezone, nowMs),
+      repository: createFirestoreScheduleRepairRepository(db),
+    });
     if (result.kind === "not-found") return withAuthenticatedApiCors(req, NextResponse.json({ error: "Schedule repair not found.", code: "schedule-repair/not-found" }, { status: 404 }));
     if (result.kind === "expired") return withAuthenticatedApiCors(req, NextResponse.json({ error: "This schedule repair has expired. Refresh it before applying.", code: "schedule-repair/expired", proposal: result.proposal || null, results: result.results || [] }, { status: 409 }));
     if (result.kind === "invalid") return withAuthenticatedApiCors(req, NextResponse.json({ error: "This schedule repair cannot be applied in its current state.", code: "schedule-repair/invalid-apply", proposal: result.proposal || null, results: result.results || [] }, { status: 409 }));

@@ -13,6 +13,7 @@ type Options = {
   getExecutiveFunctionUnavailableMessage?: () => string;
   getIdToken?: () => Promise<string | null>;
   requestCoordinator?: ExecutiveRequestCoordinator;
+  deferExecutiveRefreshToScheduler?: boolean;
 };
 
 function element(documentRef: Document, id: string) {
@@ -165,12 +166,8 @@ export function createExecutiveSurface(options: Options) {
   const handleDocumentKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape") setActiveMetricHelper(null);
   };
-  const handleAppPageChanged = (event: Event) => {
-    if ((event as CustomEvent<{ page?: string }>).detail?.page === "executive")
-      void refresh();
-  };
   const handlePlanChanged = () => {
-    if (options.getCurrentAppPage() === "executive") void refresh();
+    if (options.getCurrentAppPage() === "executive") refresh();
   };
 
   function render(snapshot: Awaited<ReturnType<typeof loadExecutiveData>>) {
@@ -253,10 +250,6 @@ export function createExecutiveSurface(options: Options) {
 
   function register() {
     if (!page) return;
-    windowRef.addEventListener(
-      "tasklaunch:app-page-changed",
-      handleAppPageChanged,
-    );
     windowRef.addEventListener(TASKTIMER_PLAN_CHANGED_EVENT, handlePlanChanged);
     documentRef.addEventListener(
       "pointerdown",
@@ -264,16 +257,16 @@ export function createExecutiveSurface(options: Options) {
       true,
     );
     documentRef.addEventListener("keydown", handleDocumentKeyDown);
-    if (options.getCurrentAppPage() === "executive") void refresh();
+    if (
+      options.getCurrentAppPage() === "executive" &&
+      !options.deferExecutiveRefreshToScheduler
+    )
+      void refresh();
   }
 
   function destroy() {
     sequence += 1;
     setActiveMetricHelper(null);
-    windowRef.removeEventListener(
-      "tasklaunch:app-page-changed",
-      handleAppPageChanged,
-    );
     windowRef.removeEventListener(
       TASKTIMER_PLAN_CHANGED_EVENT,
       handlePlanChanged,

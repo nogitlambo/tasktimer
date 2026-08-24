@@ -1102,12 +1102,20 @@ export async function transcribeVoiceBrainDump(input: {
   store: BrainDumpSessionStore;
   storage: BrainDumpVoiceSourceStorage;
   now?: () => number;
+  onStage?: (stage: string, context?: { mimeType?: string; sizeBytes?: number }) => void;
 }) {
+  let transcriptionStage = "request-validation";
+  const setTranscriptionStage = (stage: string, context?: { mimeType?: string; sizeBytes?: number }) => {
+    transcriptionStage = stage;
+    input.onStage?.(stage, context);
+  };
+  setTranscriptionStage("request-validation");
   const uid = asTrimmedString(input.uid, 120);
   if (!uid) throw new BrainDumpInputError("You must be signed in to continue.");
   const sessionId = normalizeVoiceSessionId(input.brainDumpId);
   const storagePath = normalizeOwnedVoiceStoragePath(uid, sessionId, input.storagePath);
   const durationMs = normalizeVoiceDurationForConfig(input.durationMs);
+  setTranscriptionStage("session-load");
   const existingSession = await input.store.getSession(uid, sessionId);
   if (existingSession) {
     if (existingSession.ownerUid !== uid || existingSession.id !== sessionId || existingSession.mode !== "voice") {
@@ -1128,8 +1136,13 @@ export async function transcribeVoiceBrainDump(input: {
     }
   }
 
+  setTranscriptionStage("storage-read");
   const source = await input.storage.getObject(storagePath);
   if (!source) throw new BrainDumpReviewUpdateError("Brain Dump recording was not found.", "brain-dump/not-found", 404);
+  setTranscriptionStage("audio-validation", {
+    mimeType: asTrimmedString(source.contentType, 80).toLowerCase(),
+    sizeBytes: Math.max(0, Math.floor(Number(source.sizeBytes) || 0), source.bytes.byteLength),
+  });
   const mimeType = normalizeVoiceMimeType(source.contentType);
   const sizeBytes = Math.max(0, Math.floor(Number(source.sizeBytes) || 0), source.bytes.byteLength);
   if (!sizeBytes) throw new BrainDumpInputError("Brain Dump recording is empty or unreadable.");
@@ -1163,12 +1176,14 @@ export async function transcribeVoiceBrainDump(input: {
     },
     review: { selectedCount: 0, items: [] },
   };
+  setTranscriptionStage("transcribing-session-save", { mimeType, sizeBytes });
   await input.store.saveSession(transcribingSession);
 
   try {
     if (!input.provider.transcribeVoice) {
       throw new BrainDumpProviderValidationError("Brain Dump voice transcription is not configured.");
     }
+    setTranscriptionStage("provider-transcription", { mimeType, sizeBytes });
     const providerResponse = await input.provider.transcribeVoice({
       promptId: BRAIN_DUMP_VOICE_TRANSCRIPTION_PROMPT_ID,
       audioBytes: source.bytes,
@@ -1180,7 +1195,11 @@ export async function transcribeVoiceBrainDump(input: {
       throw new BrainDumpProviderValidationError("Brain Dump transcription output did not match the expected schema.");
     }
 
+    setTranscriptionStage("source-cleanup", { mimeType, sizeBytes });
     const cleanedSourceFile = await deleteVoiceSourceFile(input.storage, sourceFile, nowMs);
+    if (cleanedSourceFile.cleanupStatus === "delete_failed") {
+      input.onStage?.("source-cleanup-failed", { mimeType, sizeBytes });
+    }
     const transcriptSession: BrainDumpReviewSession = {
       ...transcribingSession,
       state: "transcript",
@@ -1196,6 +1215,7 @@ export async function transcribeVoiceBrainDump(input: {
         completedAtMs: nowMs,
       },
     };
+    setTranscriptionStage("transcript-session-save", { mimeType, sizeBytes });
     await input.store.saveSession(transcriptSession);
 
     return {
@@ -1207,14 +1227,25 @@ export async function transcribeVoiceBrainDump(input: {
       durationMs,
     };
   } catch (error) {
+    const failureStage = transcriptionStage;
     const cleanedSourceFile = await deleteVoiceSourceFile(input.storage, sourceFile, nowMs);
-    await input.store.saveSession({
-      ...transcribingSession,
-      source: {
-        ...transcribingSession.source,
-        files: [cleanedSourceFile],
-      },
-    });
+    if (cleanedSourceFile.cleanupStatus === "delete_failed") {
+      input.onStage?.("source-cleanup-failed", { mimeType, sizeBytes });
+    }
+    try {
+      await input.store.saveSession({
+        ...transcribingSession,
+        source: {
+          ...transcribingSession.source,
+          files: [cleanedSourceFile],
+        },
+      });
+    } catch {
+      input.onStage?.("recovery-session-save-failed", { mimeType, sizeBytes });
+    }
+    if (typeof error === "object" && error !== null && !("transcriptionStage" in error)) {
+      Object.assign(error, { transcriptionStage: failureStage });
+    }
     throw error;
   }
 }

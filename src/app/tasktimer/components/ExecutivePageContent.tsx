@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
+import { Capacitor } from "@capacitor/core";
 import AppImg from "@/components/AppImg";
 import BrainDumpClient from "@/app/brain-dump/BrainDumpClient";
 import { trackEvent } from "@/lib/firebaseTelemetry";
@@ -229,6 +230,14 @@ function ScheduleRepairOverlay() {
   );
 }
 
+function isNativeOrFileRuntime() {
+  try {
+    return Capacitor.isNativePlatform() || window.location.protocol === "file:";
+  } catch {
+    return window.location.protocol === "file:";
+  }
+}
+
 function ExecutiveTodayLocalTime() {
   const [currentLocalTime, setCurrentLocalTime] = useState("");
 
@@ -361,6 +370,14 @@ export default function ExecutivePageContent({ active }: Props) {
     const frame = window.requestAnimationFrame(() => {
       const target = document.querySelector<HTMLElement>(selector);
       target?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isBrainDumpOpen]);
+
+  useEffect(() => {
+    if (!isBrainDumpOpen || !isNativeOrFileRuntime()) return;
+    const frame = window.requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
     });
     return () => window.cancelAnimationFrame(frame);
   }, [isBrainDumpOpen]);
@@ -1032,23 +1049,9 @@ export default function ExecutivePageContent({ active }: Props) {
                   <button
                     className="btn btn-ghost primitiveSciFiModalAction primitiveSciFiModalSecondaryAction dashboardRecoveryPrimitiveAction dashboardRecoveryPrimitiveSecondaryAction modalPreviewSecondaryAction"
                     type="button"
-                    data-recovery="close"
-                  >
-                    Keep current plan
-                  </button>
-                  <button
-                    className="btn btn-ghost primitiveSciFiModalAction primitiveSciFiModalSecondaryAction dashboardRecoveryPrimitiveAction dashboardRecoveryPrimitiveSecondaryAction modalPreviewSecondaryAction"
-                    type="button"
                     data-recovery="dismiss"
                   >
                     Dismiss
-                  </button>
-                  <button
-                    className="btn btn-ghost primitiveSciFiModalAction primitiveSciFiModalSecondaryAction dashboardRecoveryPrimitiveAction dashboardRecoveryPrimitiveSecondaryAction modalPreviewSecondaryAction"
-                    type="button"
-                    data-recovery="refresh"
-                  >
-                    Refresh
                   </button>
                   <button
                     className="btn btn-accent primitiveSciFiModalAction primitiveSciFiModalPrimaryAction dashboardRecoveryPrimitiveAction dashboardRecoveryPrimitivePrimaryAction modalPreviewPrimaryAction"
@@ -1056,21 +1059,6 @@ export default function ExecutivePageContent({ active }: Props) {
                     data-recovery="apply"
                   >
                     Apply selected changes
-                  </button>
-                  <button
-                    className="btn btn-warn primitiveSciFiModalAction dashboardRecoveryPrimitiveAction"
-                    type="button"
-                    data-recovery="undo"
-                    hidden
-                  >
-                    Undo applied changes
-                  </button>
-                  <button
-                    className="btn btn-ghost primitiveSciFiModalAction primitiveSciFiModalSecondaryAction dashboardRecoveryPrimitiveAction dashboardRecoveryPrimitiveSecondaryAction modalPreviewSecondaryAction"
-                    type="button"
-                    data-recovery="complete"
-                  >
-                    Finish recovery
                   </button>
                 </footer>
                 </div>

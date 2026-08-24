@@ -49,7 +49,15 @@ describe("POST /api/executive-function/recovery", () => {
       eligibility: { eligible: true, offered: true, triggerCodes: ["BACKLOG_THRESHOLD_EXCEEDED"] },
       capacitySnapshot: { remainingRange: { min: 15, max: 30 } },
     });
-    mocks.generateSession.mockResolvedValue({ reused: false, session: { id: "recovery-1", userId: "uid-1", status: "ACTIVE" } });
+    mocks.generateSession.mockResolvedValue({
+      reused: false,
+      session: {
+        id: "recovery-1",
+        userId: "uid-1",
+        status: "ACTIVE",
+        actions: [{ id: "keep:task-1" }],
+      },
+    });
   });
 
   it("generates an owned session from server-loaded data and authoritative eligibility", async () => {
@@ -68,5 +76,17 @@ describe("POST /api/executive-function/recovery", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ ok: true, session: null, empty: true });
     expect(mocks.generateSession).not.toHaveBeenCalled();
+  });
+
+  it("returns an explicit empty response when a manual request has no actionable backlog", async () => {
+    mocks.generateSession.mockResolvedValueOnce({
+      reused: false,
+      session: { id: "recovery-1", userId: "uid-1", status: "ACTIVE", actions: [] },
+    });
+
+    const response = await POST(request({ userRequested: true }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ ok: true, session: null, empty: true });
   });
 });

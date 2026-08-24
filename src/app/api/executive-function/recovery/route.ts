@@ -90,6 +90,17 @@ export async function POST(req: Request) {
       planningRepository: createFirestoreRecoveryPlanningRepository(db),
       scheduleRepairRepository: createFirestoreScheduleRepairRepository(db),
     });
+    if (!result.session.actions.length) {
+      return withAuthenticatedApiCors(
+        req,
+        NextResponse.json({
+          ok: true,
+          empty: true,
+          session: null,
+          eligibility: eligibilityResult.eligibility,
+        }),
+      );
+    }
     return withAuthenticatedApiCors(req, NextResponse.json({ ok: true, reused: result.reused, eligibility: eligibilityResult.eligibility, session: result.session }));
   } catch (error) {
     const status = errorStatus(error);

@@ -53,6 +53,7 @@ describe("DesktopAppRail profile menu", () => {
 
     expect(items.map((item) => item.label)).toEqual(["Account", "Settings", "User Guide"]);
     expect(items.map((item) => item.href)).toEqual(["/account", "/settings", "/user-guide"]);
+    expect(items.find((item) => item.page === "account")?.iconSrc).toBe("/icons/icons_default/account.webp");
   });
 
   it("resolves footer sheet utility links through the shared TaskTimer route helper", () => {

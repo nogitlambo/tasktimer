@@ -120,4 +120,82 @@ describe("Recovery Mode launcher", () => {
     expect(overlay.attributes.get("aria-hidden")).toBe("false");
     expect(modalStatus.textContent).toBe("Checking whether Recovery Mode can help...");
   });
+
+  it("closes immediately when Recovery Mode is dismissed", async () => {
+    class FakeElement {
+      style: Record<string, string> = { display: "none" };
+      attributes = new Map<string, string>();
+      classList = { toggle: vi.fn() };
+      disabled = false;
+      hidden = false;
+      textContent = "";
+
+      setAttribute(name: string, value: string) {
+        this.attributes.set(name, value);
+      }
+
+      removeAttribute(name: string) {
+        this.attributes.delete(name);
+      }
+
+      querySelector() {
+        return null;
+      }
+
+      focus() {}
+    }
+
+    vi.stubGlobal("HTMLElement", FakeElement);
+    const overlay = new FakeElement();
+    const elements = new Map<string, FakeElement>([
+      ["dashboardRecoveryCard", new FakeElement()],
+      ["dashboardRecoveryOverlay", overlay],
+      ["dashboardRecoveryStatus", new FakeElement()],
+      ["dashboardRecoveryModalStatus", new FakeElement()],
+    ]);
+    const listeners = new Map<string, (event: Event) => void>();
+    const openButton = { getAttribute: (name: string) => (name === "data-recovery" ? "open" : null) };
+    const dismissButton = { getAttribute: (name: string) => (name === "data-recovery" ? "dismiss" : null) };
+    const documentRef = {
+      activeElement: null,
+      getElementById: (id: string) => elements.get(id) || null,
+      addEventListener: (type: string, listener: (event: Event) => void) => listeners.set(type, listener),
+      querySelector: () => null,
+    } as unknown as Document;
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ok: true,
+            session: {
+              id: "recovery-1",
+              status: "ACTIVE",
+              actions: [action],
+            },
+          }),
+        ),
+      )
+      .mockImplementationOnce(() => new Promise<Response>(() => {}));
+    const api = createDashboardRecovery({
+      documentRef,
+      windowRef: { fetch: fetchImpl, addEventListener: vi.fn() } as unknown as Window,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      getCurrentAppPage: () => "executive",
+      getTasks: () => [],
+      getIdToken: async () => "token",
+    });
+    api.register();
+
+    listeners.get("click")?.({
+      target: { closest: (selector: string) => (selector === "[data-recovery]" ? openButton : null) },
+    } as unknown as Event);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    listeners.get("click")?.({
+      target: { closest: (selector: string) => (selector === "[data-recovery]" ? dismissButton : null) },
+    } as unknown as Event);
+
+    expect(overlay.style.display).toBe("none");
+    expect(overlay.attributes.get("aria-hidden")).toBe("true");
+  });
 });

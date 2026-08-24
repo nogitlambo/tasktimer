@@ -65,6 +65,27 @@ describe("Next Best Action ranking", () => {
     expect(result.candidates.map((item) => item.taskId)).toEqual(["owned"]);
   });
 
+  it("allows an incompletely stopped task to be recommended again", () => {
+    const result = rankNextBestActionCandidates({
+      userId: "user-1",
+      nowMs: Date.parse("2026-08-07T09:00:00.000Z"),
+      todayDate: "2026-08-07",
+      candidates: [
+        candidate("stopped", {
+          task: task("stopped", {
+            accumulatedMs: 5 * 60 * 1000,
+            hasStarted: true,
+            running: false,
+            startMs: null,
+          }),
+          completed: false,
+        }),
+      ],
+    });
+
+    expect(result.primary?.taskId).toBe("stopped");
+  });
+
   it("uses duration sources in the approved precedence order", () => {
     const result = rankNextBestActionCandidates({
       userId: "user-1",

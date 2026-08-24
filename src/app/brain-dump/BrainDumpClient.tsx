@@ -12,6 +12,8 @@ import { resolveTaskTimerRouteHref } from "@/app/tasktimer/lib/routeHref";
 import AppImg from "@/components/AppImg";
 
 import styles from "./BrainDump.module.css";
+import { encodeVoiceWav, hasDetectableVoiceSignal } from "./lib/brainDumpVoiceCapture";
+import { voiceTranscriptionErrorMessage } from "./lib/brainDumpVoiceErrors";
 
 const BRAIN_DUMP_TEXT_LIMIT = 20_000;
 const BRAIN_DUMP_VOICE_MIME_TYPE = "audio/wav";
@@ -110,42 +112,6 @@ function browserSupportsVoiceRecording() {
   return typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia && typeof AudioContext !== "undefined";
 }
 
-function encodeVoiceWav(chunks: Float32Array[], sourceSampleRate: number) {
-  const sourceLength = chunks.reduce((total, chunk) => total + chunk.length, 0);
-  const source = new Float32Array(sourceLength);
-  let offset = 0;
-  for (const chunk of chunks) {
-    source.set(chunk, offset);
-    offset += chunk.length;
-  }
-  const sampleRate = Math.min(BRAIN_DUMP_VOICE_SAMPLE_RATE, Math.max(1, Math.floor(sourceSampleRate) || BRAIN_DUMP_VOICE_SAMPLE_RATE));
-  const sampleCount = Math.ceil((source.length * sampleRate) / Math.max(1, sourceSampleRate));
-  const bytes = new ArrayBuffer(44 + sampleCount * 2);
-  const view = new DataView(bytes);
-  const writeText = (position: number, value: string) => {
-    for (let index = 0; index < value.length; index += 1) view.setUint8(position + index, value.charCodeAt(index));
-  };
-  writeText(0, "RIFF");
-  view.setUint32(4, 36 + sampleCount * 2, true);
-  writeText(8, "WAVE");
-  writeText(12, "fmt ");
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, 1, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * 2, true);
-  view.setUint16(32, 2, true);
-  view.setUint16(34, 16, true);
-  writeText(36, "data");
-  view.setUint32(40, sampleCount * 2, true);
-  for (let index = 0; index < sampleCount; index += 1) {
-    const sourceIndex = Math.min(source.length - 1, Math.floor((index * sourceSampleRate) / sampleRate));
-    const sample = Math.max(-1, Math.min(1, source[sourceIndex] || 0));
-    view.setInt16(44 + index * 2, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
-  }
-  return new Blob([bytes], { type: BRAIN_DUMP_VOICE_MIME_TYPE });
-}
-
 function readBlobAsBase64(blob: Blob) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -158,8 +124,8 @@ function readBlobAsBase64(blob: Blob) {
   });
 }
 
-function payloadError(message: string, code?: string) {
-  return Object.assign(new Error(message), { code });
+function payloadError(message: string, code?: string, diagnosticId?: string) {
+  return Object.assign(new Error(message), { code, diagnosticId });
 }
 
 function requestErrorCode(error: unknown) {
@@ -726,11 +692,15 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
     setVoiceElapsedMs(durationMs);
     clearVoiceTimer();
     const chunks = voicePcmChunksRef.current;
+    const hasSpeechSignal = hasDetectableVoiceSignal(chunks);
     const blob = encodeVoiceWav(chunks, voicePcmSampleRateRef.current);
     stopVoiceLevelMeter();
     stopVoiceStream();
     setVoicePlaybackDiagnostic(`Recorder output: ${blob.size.toLocaleString()} bytes, WAV PCM at ${BRAIN_DUMP_VOICE_SAMPLE_RATE.toLocaleString()} Hz.`);
-    if (blob.size > BRAIN_DUMP_VOICE_MAX_BYTES) {
+    if (!hasSpeechSignal) {
+      setVoiceState("idle");
+      setVoiceError("No clear speech was detected. Check your microphone and record again.");
+    } else if (blob.size > BRAIN_DUMP_VOICE_MAX_BYTES) {
       setVoiceState("idle");
       setVoiceError("Brain Dump voice recordings must be 10 MB or smaller.");
     } else if (blob.size > 44) {
@@ -899,8 +869,17 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
           durationMs,
         }),
       });
-      const payload = (await response.json()) as { brainDumpId?: string; transcript?: string; model?: string; error?: string; code?: string };
-      if (!response.ok || !payload.transcript) throw payloadError(payload.error || "Brain Dump recording could not be transcribed.", payload.code);
+      const payload = (await response.json()) as {
+        brainDumpId?: string;
+        transcript?: string;
+        model?: string;
+        error?: string;
+        code?: string;
+        diagnosticId?: string;
+      };
+      if (!response.ok || !payload.transcript) {
+        throw payloadError(payload.error || "Brain Dump recording could not be transcribed.", payload.code, payload.diagnosticId);
+      }
       setText(payload.transcript);
       writeStoredDraft(payload.transcript);
       setVoiceBrainDumpId(payload.brainDumpId || brainDumpId);
@@ -927,7 +906,7 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
       const code = requestErrorCode(err);
       const safeMessage = code.startsWith("auth/")
         ? err instanceof Error ? err.message : "Your sign-in session is no longer valid. Please sign in again."
-        : "TaskLaunch couldn't transcribe this recording reliably. Your recording has not been turned into tasks.";
+        : voiceTranscriptionErrorMessage(code);
       setVoiceError(safeMessage);
       setStatus("");
       setRecoverableFailure(true);
@@ -936,6 +915,9 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
         duration_bucket: durationBucket(durationMs),
         mime_type: voiceAudioBlob.type || BRAIN_DUMP_VOICE_MIME_TYPE,
         error_category: code || "unknown",
+        diagnostic_id: typeof (err as { diagnosticId?: unknown })?.diagnosticId === "string"
+          ? String((err as { diagnosticId: string }).diagnosticId)
+          : "unknown",
         latency_ms: Date.now() - startedAtMs,
       });
     }

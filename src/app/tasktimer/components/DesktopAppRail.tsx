@@ -161,7 +161,7 @@ const NAV_ITEMS: NavItem[] = [
     page: "account",
     label: "Account",
     ariaLabel: "Account",
-    iconSrc: "/Settings.svg",
+    iconSrc: "/icons/icons_default/account.webp",
     desktopId: "commandCenterAccountBtn",
     mobileId: "footerAccountBtn",
     href: "/account",

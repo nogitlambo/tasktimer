@@ -143,6 +143,7 @@ import { createDashboardRecovery } from "./client/dashboard-recovery";
 import { createDashboardExecutiveSummary } from "./client/dashboard-executive-summary";
 import { createExecutiveSurface } from "./client/executive-surface";
 import { createExecutiveRequestCoordinator } from "./client/executive-request-coordinator";
+import { createExecutivePanelRefreshScheduler } from "./client/executive-panel-refresh-scheduler";
 import { launchRecommendedTaskById } from "./client/recommended-task-launcher";
 import { dispatchTaskCompletionChangedEvent } from "./client/task-completion-events";
 import { getRichNoteEditorValue, setRichNoteEditorValue } from "./client/rich-session-notes";
@@ -341,6 +342,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let dashboardRecoveryApi: ReturnType<typeof createDashboardRecovery> | null = null;
   let dashboardExecutiveSummaryApi: ReturnType<typeof createDashboardExecutiveSummary> | null = null;
   let executiveSurfaceApi: ReturnType<typeof createExecutiveSurface> | null = null;
+  let executivePanelRefreshScheduler: ReturnType<typeof createExecutivePanelRefreshScheduler> | null = null;
   const executiveRequestCoordinator = createExecutiveRequestCoordinator(window.fetch.bind(window));
 
   const destroy = () => {
@@ -365,6 +367,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     dashboardRecoveryApi?.destroy();
     dashboardExecutiveSummaryApi?.destroy();
     executiveSurfaceApi?.destroy();
+    executivePanelRefreshScheduler?.destroy();
     finishInitialAuthHydration();
     dashboardBusyApi.destroy();
     destroyTaskTimerRuntime({
@@ -874,6 +877,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getExecutiveFunctionUnavailableMessage,
     showUpgradePrompt,
     requestCoordinator: executiveRequestCoordinator,
+    deferExecutiveRefreshToScheduler: true,
   });
   dashboardDailyExecutiveBriefApi = createDashboardDailyExecutiveBrief({
     documentRef: document,
@@ -932,6 +936,28 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getExecutiveFunctionUnavailableMessage,
     getIdToken: () => getFirebaseAuthClient()?.currentUser?.getIdToken() ?? Promise.resolve(null),
     requestCoordinator: executiveRequestCoordinator,
+    deferExecutiveRefreshToScheduler: true,
+  });
+  executivePanelRefreshScheduler = createExecutivePanelRefreshScheduler({
+    getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
+    refreshPanels: () => {
+      if (appRuntimeState.get("currentAppPage") !== "executive") return;
+      void dashboardNextBestActionApi?.refresh();
+      void dashboardDailyExecutiveBriefApi?.refresh();
+      void dashboardDailyCapacityApi?.refresh();
+      void dashboardScheduleRepairApi?.refresh(false);
+      void dashboardRecoveryApi?.refresh();
+      void executiveSurfaceApi?.refresh();
+    },
+  });
+  on(window, "tasklaunch:app-page-changed", () => {
+    executivePanelRefreshScheduler?.handlePageChange();
+  });
+  on(window, "tasklaunch:schedule-repair-applied", () => {
+    executivePanelRefreshScheduler?.refreshAfterPlanChange();
+  });
+  on(window, "tasklaunch:recovery-applied", () => {
+    executivePanelRefreshScheduler?.refreshAfterPlanChange();
   });
   on(window, EXECUTIVE_FUNCTION_PREFERENCE_CHANGED_EVENT, (event) => {
     const detail = (event as CustomEvent<{ enabled?: unknown }>).detail || {};
@@ -947,7 +973,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       void dashboardScheduleRepairApi?.refresh();
       void dashboardRecoveryApi?.refresh();
     }
-    if (appRuntimeState.get("currentAppPage") === "executive") void executiveSurfaceApi?.refresh();
   });
   const {
     dashboardBusyApi,
@@ -2012,6 +2037,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     dashboardRecoveryApi?.register();
     dashboardExecutiveSummaryApi?.register();
     executiveSurfaceApi?.register();
+    executivePanelRefreshScheduler?.syncForCurrentPage();
   }
 
   function hydrateUiStateFromCaches(opts?: { skipDashboardWidgetsRender?: boolean }) {

@@ -299,27 +299,27 @@ export function createDashboardDailyCapacity(options: Options) {
       }
     });
     windowRef.addEventListener("tasklaunch:app-page-changed", (event) => {
-      if (["dashboard", "executive"].includes((event as CustomEvent<{ page?: string }>).detail?.page || "")) void refresh();
+      if ((event as CustomEvent<{ page?: string }>).detail?.page === "dashboard") void refresh();
     });
     windowRef.addEventListener("tasklaunch:capacity-source-changed", () => {
       telemetry("source_changed");
-      void refresh(true);
+      if (options.getCurrentAppPage() === "dashboard") void refresh(true);
     });
     windowRef.addEventListener("tasktimer:settings-optimal-productivity-days-change", () => {
       telemetry("source_changed");
-      void refresh(true);
+      if (options.getCurrentAppPage() === "dashboard") void refresh(true);
     });
     windowRef.addEventListener("tasktimer:settings-optimal-productivity-period-change", () => {
       telemetry("source_changed");
-      void refresh(true);
+      if (options.getCurrentAppPage() === "dashboard") void refresh(true);
     });
-    windowRef.addEventListener("tasklaunch:recovery-applied", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(true); });
-    windowRef.addEventListener("tasklaunch:recovery-undone", () => { if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(true); });
+    windowRef.addEventListener("tasklaunch:recovery-applied", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(true); });
+    windowRef.addEventListener("tasklaunch:recovery-undone", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(true); });
     keydownHandler = (event) => {
       if (event.key === "Escape") setOverlay(false);
     };
     windowRef.addEventListener("keydown", keydownHandler);
-    if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh();
+    if (options.getCurrentAppPage() === "dashboard") void refresh();
   }
 
   function destroy() {

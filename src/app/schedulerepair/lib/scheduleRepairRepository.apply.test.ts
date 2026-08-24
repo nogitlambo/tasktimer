@@ -40,6 +40,57 @@ function buildFakeDb(task: Record<string, unknown>, proposal: Record<string, unk
 }
 
 describe("Schedule Repair repository apply", () => {
+  it("snoozes a task removed from today so downstream planning excludes it", async () => {
+    const task: Record<string, unknown> = {
+      id: "task-1",
+      taskType: "recurring",
+      plannedStartDay: "fri",
+      plannedStartTime: "09:00",
+      plannedStartByDay: { fri: "09:00" },
+      timeGoalMinutes: 60,
+      accumulatedMs: 0,
+      updatedAt: new Date("2026-08-07T00:00:00.000Z"),
+      completed: false,
+      active: true,
+      editable: true,
+    };
+    const taskVersion = mapScheduleRepairFirestoreTask("task-1", task, "uid-1", "2026-08-07").taskVersion;
+    const proposal: Record<string, unknown> = {
+      schemaVersion: 1,
+      id: "repair-1",
+      userId: "uid-1",
+      localDate: "2026-08-07",
+      planHealthBefore: "SIGNIFICANTLY_OVERLOADED",
+      remainingPlannedMinutesBefore: 120,
+      remainingCapacity: { min: 45, max: 60 },
+      estimatedPlannedMinutesAfter: 60,
+      actions: [{ id: "remove:task-1", type: "REMOVE_FROM_TODAY", taskId: "task-1", taskVersion, fromDate: "2026-08-07", toDate: null, fromMinutes: 60, toMinutes: null, reasonCodes: ["TASK_FLEXIBLE"], selected: true, status: "PROPOSED" }],
+      sourceTaskVersionHash: "a".repeat(64),
+      capacitySnapshotId: null,
+      dailyBriefId: null,
+      status: "ACTIVE",
+      createdAt: "2026-08-07T09:00:00.000Z",
+      expiresAt: "2026-08-07T11:00:00.000Z",
+      appliedAt: null,
+    };
+    const db = buildFakeDb(task, proposal);
+    const repository = createFirestoreScheduleRepairRepository(db as never);
+    const snoozedUntilMs = Date.parse("2026-08-08T00:00:00.000Z");
+
+    const result = await repository.applyProposal({
+      uid: "uid-1",
+      repairId: "repair-1",
+      idempotencyKey: "key-1",
+      localDate: "2026-08-07",
+      actions: [{ id: "remove:task-1", selected: true, toDate: null, toMinutes: null }],
+      nowMs: Date.parse("2026-08-07T10:00:00.000Z"),
+      nextBestActionSnoozedUntilMs: snoozedUntilMs,
+    });
+
+    expect(result.kind).toBe("applied");
+    expect(db.state.task.nextBestActionSnoozedUntilMs).toBe(snoozedUntilMs);
+  });
+
   it("applies a fresh once-off move and replays the same idempotency key", async () => {
     const task: Record<string, unknown> = {
       id: "task-1",

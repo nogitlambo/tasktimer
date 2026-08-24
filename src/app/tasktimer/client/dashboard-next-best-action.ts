@@ -299,6 +299,7 @@ type CreateDashboardNextBestActionOptions = {
   getTodayIsProductivityDay?: () => boolean;
   getIdToken?: () => Promise<string | null>;
   startTaskById?: (taskId: string) => TaskLaunchResult;
+  deferExecutiveRefreshToScheduler?: boolean;
 };
 
 export function createDashboardNextBestAction(
@@ -313,6 +314,7 @@ export function createDashboardNextBestAction(
   let automaticRefreshBlockedByError = false;
   let abortController: AbortController | null = null;
   let isDestroyed = false;
+  let launchInFlight = false;
   const shownTaskIds = new Set<string>();
 
   function setStatus(
@@ -325,17 +327,22 @@ export function createDashboardNextBestAction(
       | "stale"
       | "ready"
       | "locked"
+      | "launching"
+      | "launch-error"
       | "started",
   ) {
     const status = getElement(documentRef, "dashboardNextBestActionStatus");
     if (status) {
       status.textContent = message;
-      setHidden(status, state !== "loading");
+      setHidden(status, state !== "loading" && state !== "launch-error");
     }
     card?.setAttribute("data-next-best-action-state", state);
     setHidden(
       getElement(documentRef, "dashboardNextBestActionContent"),
-      state !== "ready" && state !== "started",
+      state !== "ready" &&
+        state !== "launching" &&
+        state !== "launch-error" &&
+        state !== "started",
     );
     setHidden(
       getElement(documentRef, "dashboardNextBestActionEmpty"),
@@ -351,7 +358,10 @@ export function createDashboardNextBestAction(
     ) as HTMLButtonElement | null;
     if (retry) {
       retry.hidden =
-        state !== "error" && state !== "stale" && state !== "locked";
+        state !== "error" &&
+        state !== "stale" &&
+        state !== "locked" &&
+        state !== "launch-error";
       retry.disabled = false;
       retry.textContent =
         state === "locked"
@@ -468,6 +478,34 @@ export function createDashboardNextBestAction(
     });
   }
 
+  function renderRecommendationLaunching() {
+    setStatus("Launching recommended task.", "launching");
+    const startButton = documentRef.querySelector<HTMLButtonElement>(
+      '[data-next-best-action-action="start"]',
+    );
+    if (startButton) setStartNowButtonLabel(startButton, "LAUNCHING\u2026");
+  }
+
+  function restoreRecommendationReady() {
+    setStatus("Recommendation ready", "ready");
+    const startButton = documentRef.querySelector<HTMLButtonElement>(
+      '[data-next-best-action-action="start"]',
+    );
+    if (startButton) setStartNowButtonLabel(startButton, "LAUNCH");
+  }
+
+  function renderRecommendationLaunchError(message: string) {
+    setStatus(message, "launch-error");
+    setHidden(getElement(documentRef, "dashboardNextBestActionError"), true);
+    const startButton = documentRef.querySelector<HTMLButtonElement>(
+      '[data-next-best-action-action="start"]',
+    );
+    if (startButton) {
+      setStartNowButtonLabel(startButton, "LAUNCH");
+      startButton.disabled = false;
+    }
+  }
+
   async function getIdToken() {
     if (options.getIdToken) return options.getIdToken();
     return getFirebaseAuthClient()?.currentUser?.getIdToken() ?? null;
@@ -578,6 +616,7 @@ export function createDashboardNextBestAction(
   }
 
   async function startRecommendation(target: HTMLElement) {
+    if (launchInFlight) return;
     const recommendationId = asString(
       target.getAttribute("data-next-best-action-recommendation-id"),
       160,
@@ -587,7 +626,8 @@ export function createDashboardNextBestAction(
       160,
     );
     if (!recommendationId || !taskId) return;
-    setStatus("Revalidating recommendation...", "loading");
+    launchInFlight = true;
+    renderRecommendationLaunching();
     try {
       const idToken = await getIdToken();
       if (!idToken)
@@ -623,7 +663,7 @@ export function createDashboardNextBestAction(
       }
       const launchResult = options.startTaskById?.(taskId);
       if (launchResult === "requires-confirmation") {
-        setStatus("Confirm the active timer switch to launch this task.", "ready");
+        restoreRecommendationReady();
         return;
       }
       if (launchResult === "blocked" || launchResult === "not-found") {
@@ -632,16 +672,15 @@ export function createDashboardNextBestAction(
       renderRecommendationStarted();
     } catch (error) {
       const code = (error as Error & { code?: string })?.code;
-      setStatus(
+      renderRecommendationLaunchError(
         code === "recommendation/stale" || code === "recommendation/expired"
           ? "This recommendation is out of date. Refresh to choose again."
           : error instanceof Error
             ? error.message
             : "Could not start the recommended task.",
-        code === "recommendation/stale" || code === "recommendation/expired"
-          ? "stale"
-          : "error",
       );
+    } finally {
+      launchInFlight = false;
     }
   }
 
@@ -795,13 +834,19 @@ export function createDashboardNextBestAction(
   }
 
   function handlePageChange(event: Event) {
-    const page = (event as CustomEvent<{ page?: unknown }>).detail?.page;
-    if (page === "dashboard" || page === "executive")
+    const detail = (event as CustomEvent<{ page?: unknown; previousPage?: unknown }>).detail;
+    const page = detail?.page;
+    const previousPage = detail?.previousPage;
+    // Cloud hydration reapplies the current page to refresh its DOM state. It
+    // is not navigation, so it must not replace an already-rendered card with
+    // another loading request.
+    if (page === previousPage) return;
+    if (page === "dashboard" || (page === "executive" && !options.deferExecutiveRefreshToScheduler))
       void refresh(getSelectedMinutes());
   }
 
-  function refreshWhenVisible() {
-    if (["dashboard", "executive"].includes(options.getCurrentAppPage()))
+  function refreshWhenDashboardVisible() {
+    if (options.getCurrentAppPage() === "dashboard" || (!options.deferExecutiveRefreshToScheduler && options.getCurrentAppPage() === "executive"))
       void refresh(getSelectedMinutes());
   }
 
@@ -886,15 +931,15 @@ export function createDashboardNextBestAction(
     documentRef.addEventListener("click", handleTimePillClick);
     card.addEventListener?.("click", handleAction);
     windowRef.addEventListener("tasklaunch:app-page-changed", handlePageChange);
-    windowRef.addEventListener("tasklaunch:schedule-repair-applied", refreshWhenVisible);
-    windowRef.addEventListener("tasklaunch:schedule-repair-undone", refreshWhenVisible);
-    windowRef.addEventListener("tasklaunch:recovery-applied", refreshWhenVisible);
-    windowRef.addEventListener("tasklaunch:recovery-undone", refreshWhenVisible);
-    windowRef.addEventListener("tasktimer:optimal-productivity-days-changed", refreshWhenVisible);
+    windowRef.addEventListener("tasklaunch:schedule-repair-applied", refreshWhenDashboardVisible);
+    windowRef.addEventListener("tasklaunch:schedule-repair-undone", refreshWhenDashboardVisible);
+    windowRef.addEventListener("tasklaunch:recovery-applied", refreshWhenDashboardVisible);
+    windowRef.addEventListener("tasklaunch:recovery-undone", refreshWhenDashboardVisible);
+    windowRef.addEventListener("tasktimer:optimal-productivity-days-changed", refreshWhenDashboardVisible);
     windowRef.addEventListener(TASK_COMPLETION_CHANGED_EVENT, handleTaskCompletion);
     const retry = getElement(documentRef, "dashboardNextBestActionRetry");
     retry?.addEventListener("click", handleRetry);
-    if (["dashboard", "executive"].includes(options.getCurrentAppPage()))
+    if (options.getCurrentAppPage() === "dashboard" || (!options.deferExecutiveRefreshToScheduler && options.getCurrentAppPage() === "executive"))
       void refresh(getSelectedMinutes());
   }
 
@@ -906,11 +951,11 @@ export function createDashboardNextBestAction(
     documentRef.removeEventListener?.("change", handleTimeSelectChange);
     documentRef.removeEventListener?.("click", handleTimePillClick);
     windowRef.removeEventListener?.("tasklaunch:app-page-changed", handlePageChange);
-    windowRef.removeEventListener?.("tasklaunch:schedule-repair-applied", refreshWhenVisible);
-    windowRef.removeEventListener?.("tasklaunch:schedule-repair-undone", refreshWhenVisible);
-    windowRef.removeEventListener?.("tasklaunch:recovery-applied", refreshWhenVisible);
-    windowRef.removeEventListener?.("tasklaunch:recovery-undone", refreshWhenVisible);
-    windowRef.removeEventListener?.("tasktimer:optimal-productivity-days-changed", refreshWhenVisible);
+    windowRef.removeEventListener?.("tasklaunch:schedule-repair-applied", refreshWhenDashboardVisible);
+    windowRef.removeEventListener?.("tasklaunch:schedule-repair-undone", refreshWhenDashboardVisible);
+    windowRef.removeEventListener?.("tasklaunch:recovery-applied", refreshWhenDashboardVisible);
+    windowRef.removeEventListener?.("tasklaunch:recovery-undone", refreshWhenDashboardVisible);
+    windowRef.removeEventListener?.("tasktimer:optimal-productivity-days-changed", refreshWhenDashboardVisible);
     windowRef.removeEventListener?.(TASK_COMPLETION_CHANGED_EVENT, handleTaskCompletion);
     getElement(documentRef, "dashboardNextBestActionRetry")?.removeEventListener?.("click", handleRetry);
   }

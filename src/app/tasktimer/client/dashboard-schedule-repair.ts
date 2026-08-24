@@ -368,7 +368,7 @@ export function createDashboardScheduleRepair(options: Options) {
         setState("ready", completionMessage ? `${completionMessage} A new schedule repair is ready for review.` : "A schedule repair is ready for review.");
         if (isOverlayOpen()) {
           renderActions();
-          setModalStatus("Current repair suggestions are ready for review.", "success");
+          setModalStatus("", "success");
           documentRef.querySelector<HTMLElement>("#dashboardScheduleRepairActionList input")?.focus({ preventScroll: true });
         }
         void trackScheduleRepair(forceRefresh ? "refreshed" : "viewed", { actionCount: proposal.actions.length, planHealth: proposal.planHealthBefore });
@@ -533,12 +533,12 @@ export function createDashboardScheduleRepair(options: Options) {
       const target = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-schedule-repair-field]");
       if (target) updateDraft(target);
     });
-    windowRef.addEventListener("tasklaunch:app-page-changed", (event) => { if (["dashboard", "executive"].includes((event as CustomEvent<{ page?: string }>).detail?.page || "")) void refresh(false); });
+    windowRef.addEventListener("tasklaunch:app-page-changed", (event) => { if ((event as CustomEvent<{ page?: string }>).detail?.page === "dashboard") void refresh(false); });
     keydownHandler = (event) => { if (event.key === "Escape") setOverlay(false); };
     windowRef.addEventListener("keydown", keydownHandler);
     windowRef.addEventListener("tasklaunch:recovery-applied", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(true); });
     windowRef.addEventListener("tasklaunch:recovery-undone", () => { if (options.getCurrentAppPage() === "dashboard") void refresh(true); });
-    if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh(false);
+    if (options.getCurrentAppPage() === "dashboard") void refresh(false);
   }
 
   function destroy() {

@@ -12,6 +12,51 @@ export function getNextLocalMidnightMs(nowMs = Date.now()): number {
   return nextMidnight.getTime();
 }
 
+export function getNextMidnightMsForTimezone(timezone: string, nowMs = Date.now()): number {
+  let safeTimezone = String(timezone || "UTC").trim() || "UTC";
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: safeTimezone }).format(nowMs);
+  } catch {
+    safeTimezone = "UTC";
+  }
+  const dateFormatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: safeTimezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const currentParts = Object.fromEntries(dateFormatter.formatToParts(nowMs).map((part) => [part.type, part.value]));
+  const currentDateMs = Date.UTC(Number(currentParts.year), Number(currentParts.month) - 1, Number(currentParts.day));
+  const nextDate = new Date(currentDateMs + 86_400_000);
+  const targetLocalMs = Date.UTC(nextDate.getUTCFullYear(), nextDate.getUTCMonth(), nextDate.getUTCDate());
+  const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: safeTimezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
+  let candidateMs = targetLocalMs;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const parts = Object.fromEntries(dateTimeFormatter.formatToParts(candidateMs).map((part) => [part.type, part.value]));
+    const representedLocalMs = Date.UTC(
+      Number(parts.year),
+      Number(parts.month) - 1,
+      Number(parts.day),
+      Number(parts.hour),
+      Number(parts.minute),
+      Number(parts.second),
+    );
+    const differenceMs = representedLocalMs - targetLocalMs;
+    if (differenceMs === 0) break;
+    candidateMs -= differenceMs;
+  }
+  return candidateMs;
+}
+
 export function isTaskMarkedDone(task: Task | null | undefined, nowMs = Date.now()): boolean {
   if (!normalizePositiveMs(task?.markedDoneAtMs)) return false;
   if (task?.taskType === "once-off") return true;

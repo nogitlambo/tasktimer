@@ -12,6 +12,106 @@ import {
 import { TASK_COMPLETION_CHANGED_EVENT } from "./task-completion-events";
 import { EXECUTIVE_FUNCTION_DISABLED_MESSAGE } from "../lib/executiveFunctionAvailability";
 
+function createLaunchStateHarness(options: {
+  fetchImpl: typeof fetch;
+  startTaskById?: (taskId: string) => "started" | "already-running" | "requires-confirmation" | "blocked" | "not-found";
+}) {
+  const cardAttrs = new Map<string, string>();
+  const cardListeners = new Map<string, (event: Event) => void>();
+  const elements = new Map<string, {
+    textContent: string;
+    hidden: boolean;
+    disabled: boolean;
+    value: string;
+    dataset: Record<string, string>;
+    setAttribute: (key: string, value: string) => void;
+    addEventListener: () => void;
+  }>();
+  const getElement = (id: string) => {
+    if (!elements.has(id)) {
+      const element = {
+        textContent: "",
+        hidden: false,
+        disabled: false,
+        value: "any",
+        dataset: {} as Record<string, string>,
+        setAttribute(key: string, value: string) {
+          if (key === "aria-hidden") element.dataset.ariaHidden = value;
+        },
+        addEventListener: vi.fn(),
+      };
+      elements.set(id, element);
+    }
+    return elements.get(id)!;
+  };
+  const actionButton = (
+    action: "start" | "alternative" | "dismiss",
+    label: string,
+  ) => {
+    const attrs = new Map<string, string>([
+      ["data-next-best-action-action", action],
+      ["data-next-best-action-task-id", "task-1"],
+      ["data-next-best-action-recommendation-id", "recommendation-1"],
+    ]);
+    const labelElement = action === "start" ? { textContent: label } : null;
+    return {
+      textContent: label,
+      labelElement,
+      hidden: false,
+      disabled: false,
+      getAttribute: (key: string) => attrs.get(key) ?? null,
+      setAttribute: (key: string, value: string) => attrs.set(key, value),
+      querySelector: (selector: string) =>
+        selector === ".dashboardStartNowButtonLabel" ? labelElement : null,
+    };
+  };
+  const startButton = actionButton("start", "LAUNCH");
+  const alternativeButton = actionButton("alternative", "Alternative");
+  const dismissButton = actionButton("dismiss", "Not now");
+  const actionButtons = [startButton, alternativeButton, dismissButton];
+  const card = {
+    classList: { toggle: vi.fn() },
+    setAttribute: (key: string, value: string) => cardAttrs.set(key, value),
+    removeAttribute: (key: string) => cardAttrs.delete(key),
+    addEventListener: (type: string, listener: (event: Event) => void) =>
+      cardListeners.set(type, listener),
+  };
+  const documentRef = {
+    getElementById: (id: string) =>
+      id === "dashboardNextBestActionCard" ? card : getElement(id),
+    querySelector: (selector: string) =>
+      selector === '[data-next-best-action-action="start"]' ? startButton : null,
+    querySelectorAll: (selector: string) =>
+      selector === "[data-next-best-action-action]" ? actionButtons : [],
+    addEventListener: vi.fn(),
+  } as unknown as Document;
+  const api = createDashboardNextBestAction({
+    documentRef,
+    windowRef: {
+      fetch: options.fetchImpl,
+      addEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    } as unknown as Window,
+    fetchImpl: options.fetchImpl,
+    getCurrentAppPage: () => "other",
+    getIdToken: async () => "token",
+    startTaskById: options.startTaskById,
+  });
+  api.register();
+
+  return {
+    actionButtons,
+    cardAttrs,
+    elements,
+    startButton,
+    clickStart() {
+      cardListeners.get("click")?.({
+        target: { closest: () => startButton },
+      } as unknown as Event);
+    },
+  };
+}
+
 describe("dashboard Next Best Action contract", () => {
   it("accepts a safe recommendation response and formats its duration", () => {
     const result = parseNextBestActionDashboardResponse(
@@ -89,6 +189,111 @@ describe("dashboard Next Best Action contract", () => {
 
   it("keeps available-time choices bounded and deterministic", () => {
     expect(getNextBestActionTimeOptions()).toEqual([10, 20, 30, 60, null]);
+  });
+
+  it("shows Launching immediately, prevents duplicate starts, and finishes In Progress", async () => {
+    let resolveResponse: ((response: Response) => void) | undefined;
+    const fetchImpl = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveResponse = resolve;
+        }),
+    ) as unknown as typeof fetch;
+    const startTaskById = vi.fn(() => "started" as const);
+    const harness = createLaunchStateHarness({ fetchImpl, startTaskById });
+
+    harness.clickStart();
+    harness.clickStart();
+
+    expect(harness.cardAttrs.get("data-next-best-action-state")).toBe("launching");
+    expect(harness.startButton.labelElement?.textContent).toBe("LAUNCHING\u2026");
+    expect(harness.actionButtons.every((button) => button.disabled)).toBe(true);
+    expect(harness.elements.get("dashboardNextBestActionContent")?.hidden).toBe(false);
+    expect(harness.elements.get("dashboardNextBestActionStatus")).toMatchObject({
+      textContent: "Launching recommended task.",
+      hidden: true,
+    });
+    expect(harness.elements.get("dashboardNextBestActionStatus")?.textContent).not.toContain("Revalidating");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+
+    resolveResponse?.(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(startTaskById).toHaveBeenCalledTimes(1);
+    expect(startTaskById).toHaveBeenCalledWith("task-1");
+    expect(harness.cardAttrs.get("data-next-best-action-state")).toBe("started");
+    expect(harness.startButton.labelElement?.textContent).toBe("In Progress");
+    expect(harness.startButton.disabled).toBe(true);
+    expect(harness.actionButtons[1].hidden).toBe(true);
+    expect(harness.actionButtons[2].hidden).toBe(true);
+  });
+
+  it("restores Launch and the recommendation after a stale launch response", async () => {
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            error: "The recommendation is stale.",
+            code: "recommendation/stale",
+          }),
+          { status: 409 },
+        ),
+    ) as unknown as typeof fetch;
+    const harness = createLaunchStateHarness({ fetchImpl });
+
+    harness.clickStart();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(harness.cardAttrs.get("data-next-best-action-state")).toBe("launch-error");
+    expect(harness.startButton.labelElement?.textContent).toBe("LAUNCH");
+    expect(harness.startButton.disabled).toBe(false);
+    expect(harness.elements.get("dashboardNextBestActionContent")?.hidden).toBe(false);
+    expect(harness.elements.get("dashboardNextBestActionStatus")).toMatchObject({
+      textContent: "This recommendation is out of date. Refresh to choose again.",
+      hidden: false,
+    });
+    expect(harness.elements.get("dashboardNextBestActionRetry")?.hidden).toBe(false);
+  });
+
+  it.each(["blocked", "not-found"] as const)(
+    "restores Launch when the local task launch is %s",
+    async (launchResult) => {
+      const fetchImpl = vi.fn(
+        async () => new Response(JSON.stringify({ ok: true }), { status: 200 }),
+      ) as unknown as typeof fetch;
+      const harness = createLaunchStateHarness({
+        fetchImpl,
+        startTaskById: () => launchResult,
+      });
+
+      harness.clickStart();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(harness.cardAttrs.get("data-next-best-action-state")).toBe("launch-error");
+      expect(harness.startButton.labelElement?.textContent).toBe("LAUNCH");
+      expect(harness.startButton.disabled).toBe(false);
+      expect(harness.elements.get("dashboardNextBestActionStatus")?.textContent).toBe(
+        "This task is no longer available to start. Refresh to choose again.",
+      );
+    },
+  );
+
+  it("restores Launch while an active-timer switch confirmation is unresolved", async () => {
+    const fetchImpl = vi.fn(
+      async () => new Response(JSON.stringify({ ok: true }), { status: 200 }),
+    ) as unknown as typeof fetch;
+    const harness = createLaunchStateHarness({
+      fetchImpl,
+      startTaskById: () => "requires-confirmation",
+    });
+
+    harness.clickStart();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(harness.cardAttrs.get("data-next-best-action-state")).toBe("ready");
+    expect(harness.startButton.labelElement?.textContent).toBe("LAUNCH");
+    expect(harness.actionButtons.every((button) => !button.disabled)).toBe(true);
   });
 
   it("refreshes with the selected available-time pill", async () => {
@@ -755,6 +960,50 @@ describe("dashboard Next Best Action contract", () => {
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     resolveFetch?.(new Response(JSON.stringify({ ok: true, recommendation: null }), { status: 200 }));
+  });
+
+  it("does not reload a ready card when hydration reapplies the current page", async () => {
+    const windowListeners = new Map<string, (event: Event) => void>();
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ ok: true, recommendation: null }), {
+          status: 200,
+        }),
+    );
+    const api = createDashboardNextBestAction({
+      documentRef: {
+        getElementById: (id: string) =>
+          id === "dashboardNextBestActionCard"
+            ? {
+                classList: { toggle: vi.fn() },
+                setAttribute: vi.fn(),
+                removeAttribute: vi.fn(),
+                addEventListener: vi.fn(),
+              }
+            : null,
+        querySelectorAll: () => [],
+        addEventListener: vi.fn(),
+      } as unknown as Document,
+      windowRef: {
+        fetch: fetchImpl,
+        addEventListener: (type: string, listener: (event: Event) => void) =>
+          windowListeners.set(type, listener),
+      } as unknown as Window,
+      fetchImpl,
+      getCurrentAppPage: () => "executive",
+      getIdToken: async () => "token",
+    });
+
+    api.register();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    windowListeners.get("tasklaunch:app-page-changed")?.(
+      new CustomEvent("tasklaunch:app-page-changed", {
+        detail: { page: "executive", previousPage: "executive" },
+      }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
   it("keeps an automatic refresh error visible until the user retries", async () => {

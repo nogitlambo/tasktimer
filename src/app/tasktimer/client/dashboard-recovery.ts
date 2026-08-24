@@ -254,8 +254,6 @@ export function createDashboardRecovery(options: Options) {
     const flexible = session.actions.filter((action) => action.classification === "FLEXIBLE" || action.classification === "STALE" || action.classification === "UNCLEAR" || action.type === "DEFER_TO_LATER_DAY" || action.type === "MARK_FOR_LATER_REVIEW");
     renderActionList("dashboardRecoveryAttentionList", attention);
     renderActionList("dashboardRecoveryFlexibleList", flexible);
-    const undo = documentRef.querySelector<HTMLButtonElement>('[data-recovery="undo"]');
-    if (undo) undo.hidden = !session.reversibleUntil || Date.parse(session.reversibleUntil) <= Date.now();
   }
 
   function setOverlay(open: boolean) {
@@ -266,7 +264,7 @@ export function createDashboardRecovery(options: Options) {
     if (open) {
       previouslyFocusedElement = documentRef.activeElement instanceof HTMLElement ? documentRef.activeElement : null;
       render();
-      documentRef.querySelector<HTMLElement>('#dashboardRecoveryOverlay [data-recovery="close"]')?.focus({ preventScroll: true });
+      documentRef.querySelector<HTMLElement>('#dashboardRecoveryOverlay [data-recovery="dismiss"]')?.focus({ preventScroll: true });
     } else {
       previouslyFocusedElement?.focus({ preventScroll: true });
       previouslyFocusedElement = null;
@@ -322,20 +320,21 @@ export function createDashboardRecovery(options: Options) {
       options.showUpgradePrompt?.("Recovery Mode", "plus");
       return;
     }
-    if (!session) return;
+    const dismissedSession = session;
+    abortController?.abort();
+    setOverlay(false);
+    session = null;
+    setState("empty", "Recovery Mode dismissed for now.");
+    telemetry("dismissed");
+    if (!dismissedSession) return;
     try {
       const idToken = await getIdToken();
       if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-      const response = await fetchImpl(getApiUrl(`/api/executive-function/recovery/${encodeURIComponent(session.id)}/dismiss`), { method: "POST", headers: { "Content-Type": "application/json", "x-firebase-auth": idToken }, body: "{}" });
+      const response = await fetchImpl(getApiUrl(`/api/executive-function/recovery/${encodeURIComponent(dismissedSession.id)}/dismiss`), { method: "POST", headers: { "Content-Type": "application/json", "x-firebase-auth": idToken }, body: "{}" });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(asString((payload as Record<string, unknown>).error, 240) || "Could not dismiss Recovery Mode.");
-      setOverlay(false);
-      session = null;
-      setState("empty", "Recovery Mode dismissed for now.");
-      telemetry("dismissed");
     } catch (error) {
-      const status = element(documentRef, "dashboardRecoveryModalStatus");
-      if (status) status.textContent = error instanceof Error ? error.message : "Could not dismiss Recovery Mode.";
+      telemetry("failed", { errorCategory: error instanceof Error ? error.message : "dismiss_failed" });
     }
   }
 
@@ -383,64 +382,12 @@ export function createDashboardRecovery(options: Options) {
     }
   }
 
-  async function undo() {
-    if (lockIfNeeded()) {
-      options.showUpgradePrompt?.("Recovery Mode", "plus");
-      return;
-    }
-    if (!session) return;
-    const button = documentRef.querySelector<HTMLButtonElement>('[data-recovery="undo"]');
-    if (button) button.disabled = true;
-    try {
-      const idToken = await getIdToken();
-      if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-      const idempotencyKey = typeof windowRef.crypto?.randomUUID === "function" ? windowRef.crypto.randomUUID() : `recovery-undo-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      const response = await fetchImpl(getApiUrl(`/api/executive-function/recovery/${encodeURIComponent(session.id)}/undo`), { method: "POST", headers: { "Content-Type": "application/json", "x-firebase-auth": idToken }, body: JSON.stringify({ idempotencyKey }) });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(asString((payload as Record<string, unknown>).error, 240) || "The Recovery Mode changes could not be undone.");
-      const parsed = parseRecoveryResponse(payload);
-      if (parsed.kind !== "session") throw new Error("The Recovery Mode undo response was invalid.");
-      session = parsed.session;
-      render();
-      const status = element(documentRef, "dashboardRecoveryModalStatus");
-      if (status) status.textContent = "Applied Recovery Mode changes were undone. Later edits were left untouched.";
-      windowRef.dispatchEvent(new CustomEvent("tasklaunch:recovery-undone", { detail: { recoveryId: session.id, results: (payload as Record<string, unknown>).results || [] } }));
-    } catch (error) {
-      const status = element(documentRef, "dashboardRecoveryModalStatus");
-      if (status) status.textContent = error instanceof Error ? error.message : "The Recovery Mode changes could not be undone.";
-      telemetry("failed", { errorCategory: error instanceof Error ? error.message : "undo_failed" });
-      if (button) button.disabled = false;
-    }
-  }
-
-  async function complete() {
-    if (lockIfNeeded()) {
-      options.showUpgradePrompt?.("Recovery Mode", "plus");
-      return;
-    }
-    if (!session) return;
-    try {
-      const idToken = await getIdToken();
-      if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-      const response = await fetchImpl(getApiUrl(`/api/executive-function/recovery/${encodeURIComponent(session.id)}/complete`), { method: "POST", headers: { "Content-Type": "application/json", "x-firebase-auth": idToken }, body: "{}" });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(asString((payload as Record<string, unknown>).error, 240) || "Could not finish Recovery Mode.");
-      setOverlay(false);
-      session = null;
-      setState("empty", "Recovery complete. Your current plan has not been changed.");
-      telemetry("completed");
-    } catch (error) {
-      const status = element(documentRef, "dashboardRecoveryModalStatus");
-      if (status) status.textContent = error instanceof Error ? error.message : "Could not finish Recovery Mode.";
-    }
-  }
-
   function register() {
     documentRef.addEventListener("click", (event) => {
       const target = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-recovery]");
       const actionTarget = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-recovery-action]");
       const action = target?.getAttribute("data-recovery") || actionTarget?.getAttribute("data-recovery-action");
-      if (action && action !== "close" && lockIfNeeded()) {
+      if (action && lockIfNeeded()) {
         options.showUpgradePrompt?.("Recovery Mode", "plus");
         return;
       }
@@ -451,11 +398,8 @@ export function createDashboardRecovery(options: Options) {
           void refresh(true, true);
         }
       }
-      if (action === "refresh") void refresh(true, false);
-      if (action === "close") void dismiss();
       if (action === "dismiss") void dismiss();
       if (action === "apply") void apply();
-      if (action === "undo") void undo();
       if (action === "clarify") {
         const taskId = asString(actionTarget?.getAttribute("data-recovery-task-id"), 160);
         if (taskId) {
@@ -463,7 +407,6 @@ export function createDashboardRecovery(options: Options) {
           telemetry("clarification_opened");
         }
       }
-      if (action === "complete") void complete();
       if (action === "start") {
         const taskId = asString(actionTarget?.getAttribute("data-recovery-task-id"), 160);
         setOverlay(false);
@@ -480,11 +423,11 @@ export function createDashboardRecovery(options: Options) {
       if (action) action.selected = target.checked;
     });
     windowRef.addEventListener("tasklaunch:app-page-changed", (event) => {
-      if (["dashboard", "executive"].includes((event as CustomEvent<{ page?: string }>).detail?.page || "")) void refresh();
+      if ((event as CustomEvent<{ page?: string }>).detail?.page === "dashboard") void refresh();
     });
     keydownHandler = (event) => { if (event.key === "Escape") setOverlay(false); };
     windowRef.addEventListener("keydown", keydownHandler);
-    if (["dashboard", "executive"].includes(options.getCurrentAppPage())) void refresh();
+    if (options.getCurrentAppPage() === "dashboard") void refresh();
   }
 
   function destroy() {
