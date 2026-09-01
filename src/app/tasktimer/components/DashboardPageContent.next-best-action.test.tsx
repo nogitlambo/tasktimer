@@ -21,31 +21,8 @@ describe("Dashboard Next Best Action card", () => {
     expect(html).toContain('id="dashboardNextBestActionDailyProgress"');
     expect(html).toContain('aria-label="Next best action"');
     expect(html).not.toContain("Move the plan forward");
-    expect(html).toContain('id="dashboardNextBestActionTimeSelect"');
-    expect(html).toContain('class="dashboardNextBestActionTimePills"');
-    expect(html).toContain(
-      'aria-labelledby="dashboardNextBestActionTimeLabel"',
-    );
-    expect(html).toContain(
-      'data-next-best-action-time="10" aria-pressed="false"',
-    );
-    expect(html).toContain(
-      'data-next-best-action-time="20" aria-pressed="false"',
-    );
-    expect(html).toContain(
-      'data-next-best-action-time="30" aria-pressed="false"',
-    );
-    expect(html).toContain(
-      'data-next-best-action-time="60" aria-pressed="false"',
-    );
-    expect(html).toContain(
-      'data-next-best-action-time="any" aria-pressed="true"',
-    );
-    expect(html).toContain('<option value="10">10m</option>');
-    expect(html).toContain('<option value="20">20m</option>');
-    expect(html).toContain('<option value="30">30m</option>');
-    expect(html).toContain('<option value="60">60m</option>');
-    expect(html).toContain('<option value="any" selected="">Any</option>');
+    expect(html).not.toContain("Available time");
+    expect(html).not.toContain("data-next-best-action-time");
     expect(html).toContain('data-next-best-action="start"');
     expect(html).toContain('data-next-best-action="alternative"');
     expect(html).toContain('data-next-best-action="dismiss"');

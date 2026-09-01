@@ -34,6 +34,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(TaskLaunchAppUpdatePlugin.class);
         registerPlugin(TaskLaunchTimerNotificationPlugin.class);
         registerPlugin(TaskLaunchFocusDndPlugin.class);
+        registerPlugin(TaskLaunchMicrophonePermissionPlugin.class);
         super.onCreate(savedInstanceState);
         deliverPushIntentToWeb(getIntent());
     }

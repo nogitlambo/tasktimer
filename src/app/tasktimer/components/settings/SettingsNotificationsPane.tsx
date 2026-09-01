@@ -74,7 +74,7 @@ export function SettingsSoundsPane({ active, exiting = false }: { active: boolea
         <section className="settingsInlineSection">
           <div className="checkpointAlertsGroup">
             <div className="settingsInlineSectionHead">
-              <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/sounds.webp" alt="" aria-hidden="true" />
+              <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/in-app-sounds.webp" alt="" aria-hidden="true" />
               <div className="settingsInlineSectionTitle">In-app Sounds</div>
             </div>
             <div className="toggleRow" id="taskInteractionClickSoundToggleRow">
@@ -148,6 +148,22 @@ export function SettingsSoundsPane({ active, exiting = false }: { active: boolea
                 <span className="settingsPreferenceControlHelp">Vibrate twice when an active task reaches a checkpoint.</span>
               </div>
               <button className="switch on" id="taskCheckpointVibrationToggle" type="button" role="switch" aria-checked="true" />
+            </div>
+            <div className="settingsInlineSectionHead">
+              <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/sounds.webp" alt="" aria-hidden="true" />
+              <div className="settingsInlineSectionTitle">Voice Input</div>
+            </div>
+            <div className="settingsPermissionRow isHidden" id="taskMicrophonePermissionRow">
+              <div className="settingsPreferenceControlCopy">
+                <span className="settingsPreferenceControlLabel">Microphone Access</span>
+                <span className="settingsPreferenceControlHelp" id="taskMicrophonePermissionStatus" aria-live="polite">
+                  Microphone access is required for voice transcription.
+                </span>
+              </div>
+              <button className="switch" id="taskMicrophonePermissionToggle" type="button" role="switch" aria-checked="false" />
+              <button className="btn btn-ghost small isHidden" id="taskMicrophonePermissionBtn" type="button">
+                Open Android Settings
+              </button>
             </div>
           </div>
         </section>

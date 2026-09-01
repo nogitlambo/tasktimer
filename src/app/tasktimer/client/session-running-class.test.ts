@@ -8,7 +8,6 @@ import type { TaskTimerSharedTaskApi } from "./task-shared";
 import {
   TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT,
   TASKTIMER_REPLAY_TIME_GOAL_COMPLETE_XP_EVENT,
-  TASKTIMER_TIME_GOAL_COMPLETE_XP_CLAIM_DELIVERED_EVENT,
   type TimeGoalCompleteXpReplayRequest,
 } from "./xp-award-events";
 import { clearXpAwardButtonLabelOverride, setXpAwardButtonLabelOverride } from "./xp-award-button-label-override";
@@ -1102,7 +1101,7 @@ describe("task timer session tick", () => {
     }
   });
 
-  it("requests modal XP delivery on Claim and blocks duplicate Claim while delivery is pending", async () => {
+  it("requests the top-bar XP count on Claim and resolves without waiting for delivery", async () => {
     const harness = createCompletionHarness({
       timeGoalModalTaskId: "task-1",
     });
@@ -1110,44 +1109,23 @@ describe("task timer session tick", () => {
     try {
       harness.session.registerSessionEvents();
       harness.timeGoalCompleteOverlay.dataset.awardedXp = "12";
-      harness.windowStub.dispatchEvent.mockImplementation((event: Event) => {
-        if (event.type === TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT) {
-          event.preventDefault();
-          return false;
-        }
-        return true;
-      });
+      await harness.triggerTimeGoalCompleteClose();
 
-      const claimPromise = harness.triggerTimeGoalCompleteClose();
-      await Promise.resolve();
-
-      expect(harness.timeGoalCompleteCloseBtn.disabled).toBe(true);
-      expect(harness.windowStub.dispatchEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT,
-        })
-      );
       const claimEvent = harness.windowStub.dispatchEvent.mock.calls.find(
         ([event]) => (event as Event).type === TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT
       )?.[0] as CustomEvent | undefined;
       expect(claimEvent?.detail).toMatchObject({
         overlayId: "timeGoalCompleteOverlay",
         awardedXp: 12,
-        sourceElementKey: "timeGoalCompleteXpValue",
       });
-
-      await harness.triggerTimeGoalCompleteClose();
-      expect(harness.resetTaskStateImmediate).not.toHaveBeenCalled();
-
-      const deliveredHandler = harness.windowStub.addEventListener.mock.calls.find(
-        ([eventName]) => eventName === TASKTIMER_TIME_GOAL_COMPLETE_XP_CLAIM_DELIVERED_EVENT
-      )?.[1] as (() => void) | undefined;
-      deliveredHandler?.();
-      await claimPromise;
 
       expect(harness.timeGoalCompleteCloseBtn.disabled).toBe(false);
       expect(harness.resetTaskStateImmediate).toHaveBeenCalledTimes(1);
       expect(harness.closeOverlay).toHaveBeenCalledWith(harness.timeGoalCompleteOverlay);
+      expect(harness.windowStub.addEventListener).not.toHaveBeenCalledWith(
+        "tasktimer:timeGoalCompleteXpClaimDelivered",
+        expect.any(Function)
+      );
     } finally {
       harness.restoreWindow();
     }

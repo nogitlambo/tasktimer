@@ -35,6 +35,8 @@ describe("Landing", () => {
     expect(html).not.toContain('href="/landingsoon"');
     expect(html).not.toContain("Landing Soon");
     expect(html).not.toContain("Continue without account");
+    expect(html.match(/src="\/logo\/tasklaunch-logo-main\.png"/g)).toHaveLength(2);
+    expect(html).not.toContain("/logo/logo_main.png");
   });
 
   it("does not keep previous landing image or rocket still references", () => {

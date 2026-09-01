@@ -521,17 +521,21 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterNav{
     display: grid !important;
-    position: fixed !important;
-    left: var(--mobile-footer-offset) !important;
-    right: var(--mobile-footer-offset) !important;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
     top: auto !important;
-    bottom: 0 !important;
-    width: auto !important;
+    bottom: auto !important;
+    width: calc(100% - 28px) !important;
     grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     gap: 6px !important;
+    flex: 0 0 var(--mobile-footer-collapsed-height);
+    min-height: var(--mobile-footer-collapsed-height);
+    margin: 0 14px;
     padding: 8px 0 calc(8px + env(safe-area-inset-bottom)) !important;
     border: none !important;
     box-shadow: 0 -10px 24px rgba(0,0,0,.34) !important;
+    touch-action: none;
     z-index: 12 !important;
   }
 
@@ -560,32 +564,34 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
   }
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterSheetPanel{
-    --mobile-footer-collapsed-height: 88px;
+    --mobile-footer-collapsed-height: var(
+      --mobile-footer-reserved-space,
+      calc(88px + env(safe-area-inset-bottom))
+    );
     position: fixed;
     right: 0;
-    bottom: var(--mobile-footer-collapsed-height);
+    bottom: auto;
     left: 0;
+    top: calc(100dvh - var(--mobile-footer-collapsed-height));
     display: flex;
     flex-direction: column;
     width: 100%;
-    height: calc(50dvh - var(--mobile-footer-collapsed-height));
+    height: auto;
     min-height: 0;
-    padding: 26px 14px 18px;
+    padding: 0;
     overflow: hidden;
     pointer-events: auto;
-    background:
-      linear-gradient(180deg, rgba(52,56,64,.28), rgba(36,39,46,.16) 22%, rgba(13,15,19,0) 44%),
-      #0d0f13;
+    background: #0d0f13;
     border: 1px solid rgba(236,236,236,.06);
     border-bottom: 0;
     border-radius: 18px 18px 0 0;
     box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(236,236,236,.06);
-    transform: translateY(calc(100% + var(--mobile-footer-sheet-drag-y, 0px)));
+    transform: translateY(var(--mobile-footer-sheet-drag-y, 0px));
     transition: transform .28s cubic-bezier(.22,1,.36,1);
   }
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterSheet.isOpen .appFooterSheetPanel{
-    transform: translateY(var(--mobile-footer-sheet-drag-y, 0px));
+    transform: translateY(calc(-100% + var(--mobile-footer-collapsed-height) + var(--mobile-footer-sheet-drag-y, 0px)));
   }
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterSheet.isDragging .appFooterSheetPanel{
@@ -593,13 +599,15 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
   }
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterSheetUtilities{
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(74px, 1fr));
-    gap: 12px;
-    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: calc(100% - 28px);
     min-height: 0;
-    flex: 1 1 auto;
+    flex: 0 0 auto;
+    margin: 12px auto 18px;
     visibility: hidden;
   }
 
@@ -607,15 +615,27 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
     visibility: visible;
   }
 
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterSheetUtilityList{
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 0;
+  }
+
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterSheetUtility{
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 9px;
+    gap: 10px;
+    width: 100%;
+    min-height: 48px;
     min-width: 0;
-    border: 1px solid rgba(168,174,184,.48);
-    border-radius: 12px;
+    border: 1px solid transparent;
+    border-radius: 12px !important;
     background: rgba(18,20,24,.96);
     color: rgba(245,248,244,.96);
     font-family: var(--font-orbitron);
@@ -627,9 +647,13 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
     text-transform: uppercase;
   }
 
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterSheetSignOut{
+    flex: 0 0 auto;
+  }
+
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterSheetUtility:hover,
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterSheetUtility:focus-visible{
-    border-color: rgba(108,114,124,.94);
+    border-color: transparent;
     background: linear-gradient(180deg, rgba(201,255,36,.08), rgba(255,255,255,.025)), rgba(18,20,24,.96);
   }
 
@@ -642,7 +666,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterSheetHandle{
     position: absolute;
-    top: -12px;
+    top: 0;
     left: 50%;
     z-index: 3;
     width: 56px;
@@ -813,12 +837,12 @@ body:not(.isFocusModeOpen) #app:is([aria-label="TaskLaunch App"], [aria-label="T
     visibility: visible !important;
     opacity: 1 !important;
     pointer-events: auto !important;
-    position: fixed !important;
-    left: var(--mobile-footer-offset, 10px) !important;
-    right: var(--mobile-footer-offset, 10px) !important;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
     top: auto !important;
-    bottom: 0 !important;
-    width: auto !important;
+    bottom: auto !important;
+    width: calc(100% - 28px) !important;
     z-index: 80 !important;
   }
 }
@@ -1379,13 +1403,11 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailBrandLogo,
   #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailBrandLogo,
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailBrandLogo{
-    width: 116px;
+    width: min(156px, 100%);
     height: auto;
-    aspect-ratio: 3 / 1;
     flex: 0 0 auto;
     object-fit: contain !important;
-    transform: scale(1.25);
-    transform-origin: left center;
+    object-position: left center;
   }
 
   #app[aria-label="TaskLaunch App"] .appPages,

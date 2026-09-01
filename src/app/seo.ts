@@ -9,7 +9,7 @@ export const seoConfig = {
     "TaskLaunch is a neurodivergent-friendly productivity app for ADHD, executive dysfunction, flexible task management, timers, and sustainable momentum.",
   shortDescription:
     "Flexible task management for neurodivergent minds, ADHD workflows, executive dysfunction, and sustainable momentum.",
-  logoPath: "/logo/lime-icon.webp",
+  organizationWordmarkPath: "/logo/tasklaunch-logo-main.png",
   appIconPath: "/logo/tasklaunch-icon-512.webp",
   ogImagePath: "/opengraph-image.png",
   twitterImagePath: "/twitter-image.png",
@@ -88,7 +88,7 @@ export function organizationJsonLd() {
     "@id": `${seoConfig.siteUrl}/#organization`,
     name: seoConfig.appName,
     url: seoConfig.siteUrl,
-    logo: absoluteUrl(seoConfig.logoPath),
+    logo: absoluteUrl(seoConfig.organizationWordmarkPath),
     email: seoConfig.supportEmail,
   };
 }

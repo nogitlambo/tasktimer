@@ -4,9 +4,7 @@ export const TASKTIMER_PENDING_XP_AWARD_EVENT = "tasktimer:pendingXpAward";
 export const TASKTIMER_OVERLAY_CLOSED_EVENT = "tasktimer:overlayClosed";
 export const TASKTIMER_REPLAY_TIME_GOAL_COMPLETE_XP_EVENT = "tasktimer:replayTimeGoalCompleteXp";
 export const TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT = "tasktimer:claimTimeGoalCompleteXp";
-export const TASKTIMER_TIME_GOAL_COMPLETE_XP_CLAIM_DELIVERED_EVENT = "tasktimer:timeGoalCompleteXpClaimDelivered";
 export const TASKTIMER_CLAIM_DAILY_REWARD_XP_EVENT = "tasktimer:claimDailyRewardXp";
-export const TASKTIMER_DAILY_REWARD_XP_CLAIM_DELIVERED_EVENT = "tasktimer:dailyRewardXpClaimDelivered";
 
 type EventTargetLike = Pick<Window, "dispatchEvent">;
 
@@ -23,15 +21,11 @@ export type TimeGoalCompleteXpReplayRequest = {
 export type TimeGoalCompleteXpClaimRequest = {
   overlayId: string;
   awardedXp: number;
-  sourceElementKey: string;
-  sourceRect: XpAwardRectSnapshot | null;
 };
 
 export type DailyRewardXpClaimRequest = {
   overlayId: string;
   awardedXp: number;
-  sourceElementKey: string;
-  sourceRect: XpAwardRectSnapshot | null;
 };
 
 export function captureXpAwardRectSnapshot(element: Element | null | undefined): XpAwardRectSnapshot | null {
@@ -64,25 +58,21 @@ export function dispatchTimeGoalCompleteXpReplayEvent(
 export function dispatchTimeGoalCompleteXpClaimEvent(
   target: EventTargetLike | null | undefined,
   claim: TimeGoalCompleteXpClaimRequest
-): boolean {
-  if (!target || typeof CustomEvent === "undefined") return false;
-  const event = new CustomEvent<TimeGoalCompleteXpClaimRequest>(TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT, {
-    cancelable: true,
+): void {
+  if (!target || typeof CustomEvent === "undefined") return;
+  target.dispatchEvent(new CustomEvent<TimeGoalCompleteXpClaimRequest>(TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT, {
     detail: claim,
-  });
-  return target.dispatchEvent(event);
+  }));
 }
 
 export function dispatchDailyRewardXpClaimEvent(
   target: EventTargetLike | null | undefined,
   claim: DailyRewardXpClaimRequest
-): boolean {
-  if (!target || typeof CustomEvent === "undefined") return false;
-  const event = new CustomEvent<DailyRewardXpClaimRequest>(TASKTIMER_CLAIM_DAILY_REWARD_XP_EVENT, {
-    cancelable: true,
+): void {
+  if (!target || typeof CustomEvent === "undefined") return;
+  target.dispatchEvent(new CustomEvent<DailyRewardXpClaimRequest>(TASKTIMER_CLAIM_DAILY_REWARD_XP_EVENT, {
     detail: claim,
-  });
-  return target.dispatchEvent(event);
+  }));
 }
 
 export function dispatchOverlayClosedEvent(target: EventTargetLike | null | undefined, overlayIdRaw: string): void {

@@ -29,4 +29,12 @@ describe("FeedbackScreen", () => {
     expect(html).toContain('placeholder="User ID unavailable"');
     expect(html).not.toContain('id="feedbackEmailInput" type="email" placeholder="Account email unavailable" autoComplete="email" value="" disabled');
   });
+
+  it("renders the canonical wordmark without a duplicate text lockup", () => {
+    const html = renderToStaticMarkup(createElement(FeedbackScreen));
+
+    expect(html).toContain('src="/logo/tasklaunch-logo-main.png"');
+    expect(html).toContain('alt="TaskLaunch"');
+    expect(html).not.toContain("appBrandLandingReplicaText");
+  });
 });

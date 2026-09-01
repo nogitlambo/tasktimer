@@ -15,12 +15,6 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                 <div className="dashboardShellContent dashboardShellFace dashboardShellFaceFront" id="dashboardShellContent">
                   <div className="dashboardGrid dashboardIntegratedPanel">
                   <section className="dashboardCard dashboardActivityOverviewCard" data-dashboard-id="activity-overview" data-dashboard-label="Activity Overview" aria-label="Activity overview">
-                    <div className="dashboardPanelLabelRow dashboardActivityOverviewTitleRow">
-                      <div className="dashboardCardTitle dashboardPanelTitle">
-                        <span className="dashboardPanelTitleDot dashboardPanelTitleDotTime" aria-hidden="true" />
-                        <span>Time Tracked</span>
-                      </div>
-                    </div>
                     <section className="dashboardCard dashboardExecutiveSummary" id="dashboardExecutiveSummary" aria-label="Executive summary" data-executive-summary-state="loading">
                       <div className="dashboardExecutiveSummaryStatusRow">
                         <span className="dashboardExecutiveSummaryStatusLabel">Workload Assessment</span>

@@ -96,29 +96,18 @@
 #app .appBrandLandingReplica{
   display: inline-flex !important;
   align-items: center !important;
-  gap: 10px !important;
-  color: var(--landing-text, rgba(245,248,244,.96)) !important;
-  font-size: .82rem !important;
-  letter-spacing: .16em !important;
-  line-height: normal !important;
+  min-width: 0 !important;
   text-decoration: none !important;
-  text-transform: uppercase !important;
-}
-
-#app .appBrandLandingReplicaText{
-  color: inherit !important;
-  font: inherit !important;
-  letter-spacing: inherit !important;
-  line-height: inherit !important;
-  text-transform: inherit !important;
 }
 
 #app .appBrandLandingReplicaIcon{
   display: block !important;
-  width: 22px !important;
-  height: 22px !important;
-  flex: 0 0 22px !important;
+  width: clamp(140px, 24vw, 190px) !important;
+  max-width: 100% !important;
+  height: auto !important;
+  flex: 0 1 auto !important;
   object-fit: contain !important;
+  object-position: left center !important;
 }
 
 .taskLaunchBrainDumpEntry{
@@ -1525,8 +1514,7 @@ body[data-tasktimer-native-runtime="true"] #app[aria-label="TaskLaunch App"] .ta
     min-width: 0;
   }
 
-#app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .appBrandLandingReplicaIcon,
-  #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .appBrandLandingReplicaText{
+#app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .appBrandLandingReplicaIcon{
     display:none !important;
   }
 

@@ -33,7 +33,6 @@ export type NextBestActionDashboardResponse =
   | { kind: "stale" }
   | { kind: "invalid" };
 
-const TIME_OPTIONS = [10, 20, 30, 60, null] as const;
 const PLUS_REQUIRED_MESSAGE =
   "Upgrade to PLUS to use executive function features.";
 const EMPTY_NEXT_BEST_ACTION_MESSAGE = "No eligible task is ready right now.";
@@ -62,10 +61,6 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
-}
-
-export function getNextBestActionTimeOptions() {
-  return [...TIME_OPTIONS];
 }
 
 export function parseNextBestActionDashboardResponse(
@@ -511,10 +506,7 @@ export function createDashboardNextBestAction(
     return getFirebaseAuthClient()?.currentUser?.getIdToken() ?? null;
   }
 
-  async function refresh(
-    availableMinutes?: number | null,
-    mode: "automatic" | "user" = "automatic",
-  ) {
+  async function refresh(mode: "automatic" | "user" = "automatic") {
     if (isDestroyed) return;
     if (
       !["dashboard", "executive"].includes(options.getCurrentAppPage()) ||
@@ -552,7 +544,6 @@ export function createDashboardNextBestAction(
       const body: Record<string, unknown> = {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
-      if (availableMinutes != null) body.availableMinutes = availableMinutes;
       const input = getApiUrl("/api/recommendations/next-best-action");
       const init = {
         method: "POST",
@@ -709,7 +700,6 @@ export function createDashboardNextBestAction(
           },
           body: JSON.stringify({
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            availableMinutes: getSelectedMinutes(),
             excludeTaskIds: Array.from(shownTaskIds),
           }),
         },
@@ -842,37 +832,19 @@ export function createDashboardNextBestAction(
     // another loading request.
     if (page === previousPage) return;
     if (page === "dashboard" || (page === "executive" && !options.deferExecutiveRefreshToScheduler))
-      void refresh(getSelectedMinutes());
+      void refresh();
   }
 
   function refreshWhenDashboardVisible() {
     if (options.getCurrentAppPage() === "dashboard" || (!options.deferExecutiveRefreshToScheduler && options.getCurrentAppPage() === "executive"))
-      void refresh(getSelectedMinutes());
-  }
-
-  function handleTimeSelectChange(event: Event) {
-    const target = event.target as HTMLSelectElement | null;
-    if (target?.id !== "dashboardNextBestActionTimeSelect") return;
-    setSelectedTime(target.value);
-    void refresh(getSelectedMinutes(), "user");
-  }
-
-  function handleTimePillClick(event: Event) {
-    const target = (event.target as HTMLElement | null)?.closest?.(
-      "[data-next-best-action-time]",
-    ) as HTMLElement | null;
-    if (!target) return;
-    setSelectedTime(
-      target.getAttribute("data-next-best-action-time") || "any",
-    );
-    void refresh(getSelectedMinutes(), "user");
+      void refresh();
   }
 
   function handleTaskCompletion(event: Event) {
     const taskId = asString((event as CustomEvent<{ taskId?: unknown }>).detail?.taskId, 160);
     if (!taskId || !["dashboard", "executive"].includes(options.getCurrentAppPage())) return;
     void releaseSuppressionsAfterCompletion(taskId).finally(() => {
-      void refresh(getSelectedMinutes());
+      void refresh();
     });
   }
 
@@ -881,54 +853,11 @@ export function createDashboardNextBestAction(
       options.showUpgradePrompt?.("Next Best Action", "plus");
       return;
     }
-    void refresh(getSelectedMinutes(), "user");
-  }
-
-  function getSelectedMinutes() {
-    const value = (
-      getElement(
-        documentRef,
-        "dashboardNextBestActionTimeSelect",
-      ) as HTMLSelectElement | null
-    )?.value;
-    return value && value !== "any" ? Number(value) : null;
-  }
-
-  function setSelectedTime(value: string) {
-    const normalized = TIME_OPTIONS.some(
-      (option) => String(option ?? "any") === value,
-    )
-      ? value
-      : "any";
-    const select = getElement(
-      documentRef,
-      "dashboardNextBestActionTimeSelect",
-    ) as HTMLSelectElement | null;
-    if (select) select.value = normalized;
-    documentRef
-      .querySelectorAll<HTMLButtonElement>("[data-next-best-action-time]")
-      .forEach((button) => {
-        button.setAttribute(
-          "aria-pressed",
-          button.getAttribute("data-next-best-action-time") === normalized
-            ? "true"
-            : "false",
-        );
-      });
+    void refresh("user");
   }
 
   function register() {
     if (!card) return;
-    setSelectedTime(
-      (
-        getElement(
-          documentRef,
-          "dashboardNextBestActionTimeSelect",
-        ) as HTMLSelectElement | null
-      )?.value || "any",
-    );
-    documentRef.addEventListener("change", handleTimeSelectChange);
-    documentRef.addEventListener("click", handleTimePillClick);
     card.addEventListener?.("click", handleAction);
     windowRef.addEventListener("tasklaunch:app-page-changed", handlePageChange);
     windowRef.addEventListener("tasklaunch:schedule-repair-applied", refreshWhenDashboardVisible);
@@ -940,7 +869,7 @@ export function createDashboardNextBestAction(
     const retry = getElement(documentRef, "dashboardNextBestActionRetry");
     retry?.addEventListener("click", handleRetry);
     if (options.getCurrentAppPage() === "dashboard" || (!options.deferExecutiveRefreshToScheduler && options.getCurrentAppPage() === "executive"))
-      void refresh(getSelectedMinutes());
+      void refresh();
   }
 
   function destroy() {
@@ -948,8 +877,6 @@ export function createDashboardNextBestAction(
     abortController?.abort();
     requestSequence += 1;
     card?.removeEventListener?.("click", handleAction);
-    documentRef.removeEventListener?.("change", handleTimeSelectChange);
-    documentRef.removeEventListener?.("click", handleTimePillClick);
     windowRef.removeEventListener?.("tasklaunch:app-page-changed", handlePageChange);
     windowRef.removeEventListener?.("tasklaunch:schedule-repair-applied", refreshWhenDashboardVisible);
     windowRef.removeEventListener?.("tasklaunch:schedule-repair-undone", refreshWhenDashboardVisible);

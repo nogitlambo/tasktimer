@@ -684,49 +684,6 @@
   color:#ffb4a8;
 }
 
-.dashboardNextBestActionTimeLabel{
-  display:block;
-  margin-top:8px;
-  color:rgba(225,231,244,.7);
-  font:11px var(--font-readable);
-  line-height:1.2;
-}
-
-.dashboardNextBestActionTimePills{
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-  margin-top:7px;
-}
-
-.dashboardNextBestActionTimePill{
-  min-height:30px;
-  min-width:44px;
-  padding:0 10px;
-  border:1px solid rgba(154,168,199,.28);
-  border-radius:999px;
-  background:rgba(26,27,32,.74);
-  color:rgba(237,242,255,.76);
-  font:11px var(--font-orbitron), var(--font-readable), sans-serif;
-  letter-spacing:0;
-  line-height:1;
-  cursor:pointer;
-  transition:border-color .16s ease, color .16s ease, background .16s ease;
-}
-
-.dashboardNextBestActionTimePill:hover,
-.dashboardNextBestActionTimePill:focus-visible{
-  border-color:rgba(166,255,0,.62);
-  color:#f4ffd6;
-  outline:none;
-}
-
-.dashboardNextBestActionTimePill[aria-pressed="true"]{
-  border-color:#c9ff24;
-  background:#c9ff24;
-  color:#000;
-}
-
 .dashboardNextBestActionStatus,
 .dashboardNextBestActionEmpty,
 .dashboardNextBestActionError{
@@ -852,20 +809,6 @@
 @media (max-width:640px){
   .dashboardNextBestActionCard{
     min-height:210px;
-  }
-
-  .dashboardNextBestActionTimeLabel{
-    width:100%;
-  }
-
-  .dashboardNextBestActionTimePills{
-    display:grid;
-    grid-template-columns:repeat(5, minmax(0, 1fr));
-  }
-
-  .dashboardNextBestActionTimePill{
-    min-width:0;
-    padding:0 6px;
   }
 
   .dashboardNextBestActionActions .btn{
@@ -9501,8 +9444,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   white-space:nowrap !important;
 }
 
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefTimeLabel,
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimeLabel{
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyExecutiveBriefTimeLabel{
   color:var(--dashboard-reference-dim) !important;
   font-family:var(--font-readable) !important;
   font-size:11px !important;
@@ -9517,48 +9459,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   color:var(--dashboard-reference-text) !important;
   font-family:var(--font-readable) !important;
   font-size:12px !important;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimePills{
-  gap:6px !important;
-  margin-top:7px !important;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimePill{
-  min-height:30px !important;
-  border:1px solid var(--dashboard-reference-border) !important;
-  border-radius:999px !important;
-  background:rgba(8,12,18,.72) !important;
-  color:var(--dashboard-reference-text) !important;
-  font-family:var(--font-orbitron), var(--font-readable), sans-serif !important;
-  font-size:11px !important;
-  letter-spacing:0 !important;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimePill:hover,
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimePill:focus-visible{
-  border-color:var(--dashboard-reference-green) !important;
-  color:var(--dashboard-reference-green) !important;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimePill[aria-pressed="true"]{
-  border-color:#c9ff24 !important;
-  background:#c9ff24 !important;
-  color:#000 !important;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageExecutive .dashboardNextBestActionTimePill,
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimePill{
-  border-radius:999px !important;
-  appearance:none;
-  overflow:hidden;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageExecutive .dashboardNextBestActionTimePill[aria-pressed="true"],
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNextBestActionTimePill[aria-pressed="true"]{
-  border-color:#c9ff24 !important;
-  background:#c9ff24 !important;
-  color:#000 !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardDailyCapacityStatus,
@@ -10015,16 +9915,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   gap:0 !important;
   min-height:445px !important;
   padding:26px 28px !important;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityOverviewTitleRow{
-  grid-column:1 / -1 !important;
-  margin:0 0 22px !important;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardPanelTitleDotTime{
-  background:var(--dashboard-reference-cyan) !important;
-  box-shadow:0 0 6px rgba(79,199,255,.95) !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardPanelTitleDotMomentum{

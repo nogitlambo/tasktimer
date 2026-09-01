@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   loadSuppressedTaskIds: vi.fn(),
   saveRecommendation: vi.fn(),
   rank: vi.fn(),
+  getDailyCapacity: vi.fn(),
   enforceUidRateLimit: vi.fn(),
 }));
 
@@ -31,6 +32,12 @@ vi.mock("@/app/nextbestaction/lib/nextBestActionRanking", async () => ({
   ...(await vi.importActual<typeof import("@/app/nextbestaction/lib/nextBestActionRanking")>("@/app/nextbestaction/lib/nextBestActionRanking")),
   rankNextBestActionCandidates: mocks.rank,
 }));
+vi.mock("@/app/adaptivecapacity/lib/dailyCapacityRepository", () => ({
+  createFirestoreDailyCapacityRepository: vi.fn(() => ({})),
+}));
+vi.mock("@/app/adaptivecapacity/lib/dailyCapacityService", () => ({
+  getDailyCapacity: mocks.getDailyCapacity,
+}));
 
 import { POST } from "./route";
 
@@ -45,7 +52,12 @@ function request(body: Record<string, unknown>) {
 }
 
 describe("POST /api/recommendations/next-best-action/[recommendationId]/alternative", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.getDailyCapacity.mockResolvedValue({
+      snapshot: { remainingRange: { min: 25, max: 40 } },
+    });
+  });
   it("excludes previously shown tasks and persists the next alternative index", async () => {
     mocks.verifyFirebaseRequestUser.mockResolvedValue({ uid: "uid-1" });
     mocks.getFirebaseAdminDb.mockReturnValue({});
@@ -59,7 +71,10 @@ describe("POST /api/recommendations/next-best-action/[recommendationId]/alternat
     const response = await POST(request({ excludeTaskIds: ["task-1", "task-3"] }), { params: Promise.resolve({ recommendationId: "nba-1" }) });
 
     expect(response.status).toBe(200);
-    expect(mocks.rank).toHaveBeenCalledWith(expect.objectContaining({ excludedTaskIds: ["task-1", "task-3", "task-4"] }));
+    expect(mocks.rank).toHaveBeenCalledWith(expect.objectContaining({
+      excludedTaskIds: ["task-1", "task-3", "task-4"],
+      remainingCapacityRange: { min: 25, max: 40 },
+    }));
     expect(mocks.saveRecommendation).toHaveBeenCalledWith("uid-1", expect.objectContaining({ taskId: "task-2", payload: expect.objectContaining({ alternativeIndex: 1 }) }));
   });
 

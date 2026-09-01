@@ -25,6 +25,7 @@ type TestTarget = {
   setAttribute?: (name: string, value: string) => void;
   removeAttribute?: (name: string) => void;
   querySelector?: (selector: string) => TestTarget | null;
+  querySelectorAll?: (selector: string) => TestTarget[];
   closest?: (selector: string) => TestTarget | null;
   contains?: (target: unknown) => boolean;
   click?: () => void;
@@ -153,6 +154,7 @@ function createHarness(overrides: { tasks?: Task[]; deferTimers?: boolean } = {}
     hasEntitlement: () => true,
     isTaskSharedByOwner: () => false,
     getDynamicColorsEnabled: () => false,
+    getFullColorTaskCardsEnabled: () => false,
     getModeColor: () => "#00ffff",
     fillBackgroundForPct: () => "",
     escapeHtmlUI: (value: unknown) => String(value ?? ""),
@@ -318,8 +320,10 @@ function createHarness(overrides: { tasks?: Task[]; deferTimers?: boolean } = {}
       return taskEl;
     },
     dispatchTaskListEvent: (type: string, event: TestEvent) => handlers.get(taskList)?.get(type)?.(event),
+    dispatchDocumentEvent: (type: string, event: TestEvent) => handlers.get(document)?.get(type)?.(event),
     taskList,
     handlers,
+    api,
     ctx,
     getTasks: () => tasks,
     checkpointFiredKeysByTaskId,
@@ -567,6 +571,52 @@ describe("createTaskTimerTasks", () => {
       expect(holdMenu.hidden).toBe(false);
       expect(classList.contains("isTaskPrimaryActionPressed")).toBe(true);
       expect(button.setAttribute).toHaveBeenLastCalledWith("aria-expanded", "true");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps the hold menu open when the task list rerenders", () => {
+    vi.useFakeTimers();
+    try {
+      const harness = createHarness({ deferTimers: true });
+      const current = createPrimaryActionTarget();
+      const replacement = createPrimaryActionTarget();
+      const replacementTask = replacement.button.closest?.(".task") as TestTarget;
+      replacementTask.querySelector = (selector: string) => {
+        if (selector === ".taskPrimaryHoldMenu") return replacement.holdMenu as unknown as TestTarget;
+        if (selector === ".taskPrimaryAction") return replacement.button;
+        return null;
+      };
+      harness.taskList.querySelectorAll = (selector: string) => selector === ".task" ? [replacementTask] : [];
+
+      harness.dispatchTaskListEvent("pointerdown", { target: current.button });
+      vi.advanceTimersByTime(600);
+      expect(current.holdMenu.hidden).toBe(false);
+
+      harness.api.renderTasksPage();
+
+      expect(replacement.holdMenu.hidden).toBe(false);
+      expect(replacement.button.setAttribute).toHaveBeenCalledWith("aria-expanded", "true");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("closes the hold menu when the user presses outside it", () => {
+    vi.useFakeTimers();
+    try {
+      const harness = createHarness({ deferTimers: true });
+      const { button, holdMenu } = createPrimaryActionTarget();
+
+      harness.dispatchTaskListEvent("pointerdown", { target: button });
+      vi.advanceTimersByTime(600);
+      expect(holdMenu.hidden).toBe(false);
+
+      harness.dispatchDocumentEvent("pointerdown", { target: {} });
+
+      expect(holdMenu.hidden).toBe(true);
+      expect(button.setAttribute).toHaveBeenLastCalledWith("aria-expanded", "false");
     } finally {
       vi.useRealTimers();
     }

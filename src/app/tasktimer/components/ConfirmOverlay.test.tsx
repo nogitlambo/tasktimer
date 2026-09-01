@@ -33,6 +33,10 @@ describe("ConfirmOverlay", () => {
       css.match(/#confirmOverlay \.modal:is\(\.modalConfirmation, \.modalConfirmationDestructive\) \.confirmBtns\{[\s\S]*?\n\}/)?.[0] || "";
     const confirmationButtonRule =
       css.match(/#confirmOverlay \.modal:is\(\.modalConfirmation, \.modalConfirmationDestructive\) \.confirmBtns \.btn\{[\s\S]*?\n\}/)?.[0] || "";
+    const resetTaskConfirmHoverRule =
+      css.match(
+        /#confirmOverlay\.isResetTaskConfirm #confirmOkBtn:hover:not\(:disabled\),\n#confirmOverlay\.isResetTaskConfirm #confirmOkBtn:focus-visible:not\(:disabled\)\{[\s\S]*?\n\}/
+      )?.[0] || "";
 
     expect(confirmationModalRule).toContain("width: min(420px, 100%) !important;");
     expect(confirmationModalRule).toContain("border: 1px solid rgba(86, 90, 98, .86) !important;");
@@ -47,6 +51,7 @@ describe("ConfirmOverlay", () => {
     expect(confirmationButtonRule).toContain("border-radius: 8px !important;");
     expect(confirmationButtonRule).toContain("height: 48px !important;");
     expect(confirmationButtonRule).toContain("max-height: 48px !important;");
+    expect(resetTaskConfirmHoverRule).toContain("color: #000 !important;");
     expect(css).toContain(':is(#confirmOverlay, #signOutConfirmOverlay) .modal .confirmBtns .btn[hidden]');
     expect(css).not.toContain(":is(#confirmOverlay, #signOutConfirmOverlay) .modal .confirmBtns .btn-accent{");
     expect(css).not.toContain(":is(#confirmOverlay, #signOutConfirmOverlay) .modal .confirmBtns .btn-warn{");

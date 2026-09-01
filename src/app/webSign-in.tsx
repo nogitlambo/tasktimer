@@ -97,7 +97,7 @@ export default function WebSignIn(props: WebSignInProps) {
           <section className="webSignInLaunchPanel" role="status" aria-live="polite" aria-atomic="true">
             <h2 className="sr-only">Launching TaskLaunch</h2>
             <AppImg
-              src="/logo/logo_main.png"
+              src="/logo/tasklaunch-logo-main.png"
               alt=""
               className="webSignInLaunchLogo"
             />
@@ -123,7 +123,7 @@ export default function WebSignIn(props: WebSignInProps) {
               <div className="relative z-10 flex flex-col items-center gap-3">
                 <div className="launchWordBrand webSignInWordBrand" aria-label="TaskLaunch">
                   <AppImg
-                    src="/logo/logo_main.png"
+                    src="/logo/tasklaunch-logo-main.png"
                     alt="TaskLaunch"
                     className="webSignInLogo"
                   />

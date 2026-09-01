@@ -69,6 +69,14 @@ afterEach(() => {
 });
 
 describe("TaskTimerAppFrame mobile navigation", () => {
+  it("renders the canonical wordmark without a duplicate text lockup", () => {
+    const html = renderTaskTimerAppFrameMarkup();
+
+    expect(html).toContain('src="/logo/tasklaunch-logo-main.png"');
+    expect(html).toContain('alt="TaskLaunch"');
+    expect(html).not.toContain("appBrandLandingReplicaText");
+  });
+
   it("does not render the removed hamburger menu", () => {
     const html = renderTaskTimerAppFrameMarkup();
 
@@ -144,23 +152,22 @@ describe("TaskTimerAppFrame XP header animation", () => {
     expect(html).not.toContain("appShellHeaderXpPromotionLabel");
   });
 
-  it("renders XP award unit payloads through the shared payload layer", () => {
+  it("renders direct XP awards through the shared payload layer", () => {
     const html = renderTaskTimerAppFrameMarkup({
       xpAwardFx: {
         visible: true,
         payloads: [
           {
-            id: "unit-test-0",
-            text: "*",
+            id: "direct-test-0",
+            text: "+12 XP",
             style: { left: "120px", top: "80px" },
-            className: "xpAwardFxPayloadUnit xpAwardFxPayloadStar",
           },
         ],
       },
     });
 
-    expect(html).toContain('class="xpAwardFxPayload xpAwardFxPayloadUnit xpAwardFxPayloadStar"');
-    expect(html).toContain("*");
+    expect(html).toContain('class="xpAwardFxPayload"');
+    expect(html).toContain("+12 XP");
     expect(html).not.toContain("xpAwardFxShard");
   });
 });
@@ -210,12 +217,11 @@ describe("TaskTimerAppFrame XP award CSS contracts", () => {
     expect(spotlightRule).not.toContain("backdrop-filter");
   });
 
-  it("defines the XP award unit payload animation contract", () => {
-    const unitRule = overlaysCss.match(/\.xpAwardFxPayloadUnit\s*\{([\s\S]*?)\}/)?.[1] ?? "";
-
-    expect(unitRule).toContain("animation: xpAwardPayloadUnit 760ms");
-    expect(overlaysCss).toContain(".xpAwardFxPayloadStar");
-    expect(overlaysCss).toContain("@keyframes xpAwardPayloadUnit");
+  it("keeps direct XP payload styling without modal unit payload CSS", () => {
+    expect(overlaysCss).toContain(".xpAwardFxPayload{");
+    expect(overlaysCss).toContain("animation: xpAwardPayloadLaunch 1600ms");
+    expect(overlaysCss).not.toContain(".xpAwardFxPayloadUnit");
+    expect(overlaysCss).not.toContain("@keyframes xpAwardPayloadUnit");
     expect(overlaysCss).not.toContain(".xpAwardFxShard");
     expect(overlaysCss).not.toContain("xpAwardPayloadSmash");
   });

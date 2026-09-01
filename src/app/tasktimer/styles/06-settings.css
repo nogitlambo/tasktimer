@@ -7084,16 +7084,19 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   padding: 10px 0;
 }
 
-#taskCheckpointAlarmPermissionRow .settingsPreferenceControlCopy {
+#taskCheckpointAlarmPermissionRow .settingsPreferenceControlCopy,
+#taskMicrophonePermissionRow .settingsPreferenceControlCopy {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-#taskCheckpointAlarmPermissionRow .switch {
+#taskCheckpointAlarmPermissionRow .switch,
+#taskMicrophonePermissionRow .switch {
   flex: 0 0 auto;
 }
 
-#taskCheckpointAlarmPermissionRow #taskCheckpointAlarmPermissionBtn {
+#taskCheckpointAlarmPermissionRow #taskCheckpointAlarmPermissionBtn,
+#taskMicrophonePermissionRow #taskMicrophonePermissionBtn {
   flex: 0 0 auto;
 }
 

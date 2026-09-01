@@ -11,6 +11,8 @@ import { buildNextBestActionExplanation } from "@/app/nextbestaction/lib/nextBes
 import { resolveNextBestActionExplanation } from "@/app/nextbestaction/lib/nextBestActionExplanationProvider";
 import { rankNextBestActionCandidates } from "@/app/nextbestaction/lib/nextBestActionRanking";
 import { createFirestoreNextBestActionRepository, createRecommendationForRanking, localDateForRecommendationTimezone } from "@/app/nextbestaction/lib/nextBestActionRepository";
+import { createFirestoreDailyCapacityRepository } from "@/app/adaptivecapacity/lib/dailyCapacityRepository";
+import { getDailyCapacity } from "@/app/adaptivecapacity/lib/dailyCapacityService";
 
 type RouteContext = { params: Promise<{ recommendationId?: string }> };
 
@@ -82,7 +84,21 @@ export async function POST(req: Request, context: RouteContext) {
       repository.loadSuppressedTaskIds({ uid, nowMs }),
     ]);
     const excludedTaskIds = Array.from(new Set([...normalizeExcludedTaskIds(body.excludeTaskIds), previous.taskId, ...suppressedTaskIds]));
-    const ranked = rankNextBestActionCandidates({ userId: uid, nowMs, todayDate: localDateForRecommendationTimezone(timezone, nowMs), availableMinutes, excludedTaskIds, candidates });
+    let remainingCapacityRange: { min: number; max: number } | null = null;
+    try {
+      const capacity = await getDailyCapacity({
+        uid,
+        localDate: localDateForRecommendationTimezone(timezone, nowMs),
+        timezone,
+        nowMs,
+        availableMinutesCeiling: availableMinutes,
+        repository: createFirestoreDailyCapacityRepository(db),
+      });
+      remainingCapacityRange = capacity.snapshot.remainingRange;
+    } catch {
+      remainingCapacityRange = null;
+    }
+    const ranked = rankNextBestActionCandidates({ userId: uid, nowMs, todayDate: localDateForRecommendationTimezone(timezone, nowMs), availableMinutes, remainingCapacityRange, excludedTaskIds, candidates });
     if (!ranked.primary) return withAuthenticatedApiCors(req, NextResponse.json({ ok: true, recommendation: null, empty: true, alternativeIndex: nextIndex }));
     const deterministicExplanation = buildNextBestActionExplanation(ranked.primary.reasonCodes, { availableMinutes, productivityWindow: ranked.primary.productivityWindow });
     const explanation = await resolveNextBestActionExplanation({ reasonCodes: ranked.primary.reasonCodes, confidence: ranked.primary.confidence, availableMinutes, productivityWindow: ranked.primary.productivityWindow }, deterministicExplanation);

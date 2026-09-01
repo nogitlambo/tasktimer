@@ -62,7 +62,7 @@ export default function UnsubscribeClient() {
       <div className="landingV2Shell">
         <header className="landingV2Header isVisible">
           <Link href="/" className="landingV2FooterBrand displayFont" aria-label="TaskLaunch home">
-            <AppImg src="/logo/tasklaunch-logo.webp" alt="" className="landingHeaderLogo" />
+            <AppImg src="/logo/tasklaunch-logo-main.png" alt="" className="landingHeaderLogo" />
           </Link>
         </header>
 

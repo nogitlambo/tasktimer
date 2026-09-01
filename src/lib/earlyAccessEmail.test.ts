@@ -57,8 +57,11 @@ describe("sendEarlyAccessConfirmationEmail", () => {
     expect(payload.html).toContain("Thank you for registering your interest in TaskLaunch.");
     expect(payload.html).toContain("TaskLaunch is built for neurodivergent productivity patterns");
     expect(payload.html).toContain("progress without guilt-driven systems.");
-    expect(payload.html).toContain('src="https://tasklaunch.app/logo/tasklaunch-logo.webp"');
+    expect(payload.html).toContain('src="https://tasklaunch.app/logo/tasklaunch-logo-main.png"');
     expect(payload.html).toContain('alt="TaskLaunch"');
+    expect(payload.html).toContain('width="220"');
+    expect(payload.html).toContain("height:auto");
+    expect(payload.html).not.toContain('height="56"');
     expect(payload.html).toContain('href="https://tasklaunch.app/about"');
     expect(payload.html).toContain(">About TaskLaunch</a>");
     expect(payload.html).toContain('href="https://tasklaunch.test/unsubscribe?');

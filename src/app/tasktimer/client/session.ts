@@ -47,7 +47,6 @@ import {
   dispatchPendingXpAwardEvent,
   dispatchTimeGoalCompleteXpClaimEvent,
   TASKTIMER_OVERLAY_CLOSED_EVENT,
-  TASKTIMER_TIME_GOAL_COMPLETE_XP_CLAIM_DELIVERED_EVENT,
   TASKTIMER_REPLAY_TIME_GOAL_COMPLETE_XP_EVENT,
   type TimeGoalCompleteXpReplayRequest,
 } from "./xp-award-events";
@@ -1300,15 +1299,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     delete overlay.dataset.replayAwardedXp;
   }
 
-  function setTimeGoalCompleteClaimDeliveryActive(active: boolean) {
-    const overlay = els.timeGoalCompleteOverlay as HTMLElement | null;
-    overlay?.classList?.toggle("isClaimDeliveryActive", active);
-  }
-
   function resetTimeGoalCompleteReplayPresentation() {
     stopTimeGoalCompleteConfetti();
     stopTimeGoalXpCountAudio();
-    setTimeGoalCompleteClaimDeliveryActive(false);
     clearTimeGoalCompleteReplayState();
     clearTimeGoalCompleteXpRevealTimer();
     if (timeGoalCompleteAudioEndedListener && timeGoalCompleteAudio) {
@@ -1446,7 +1439,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ) {
       const overlay = els.timeGoalCompleteOverlay as HTMLElement | null;
       if (overlay) {
-        overlay.classList?.remove("isClaimDeliveryActive");
         delete overlay.dataset.taskId;
         delete overlay.dataset.awardedXp;
         delete overlay.dataset.acknowledgement;
@@ -1935,31 +1927,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
   }
 
-  async function requestTimeGoalCompleteXpClaimDelivery(awardedXpRaw: unknown) {
+  function requestTimeGoalCompleteXpClaim(awardedXpRaw: unknown) {
     const awardedXp = Math.max(0, Math.floor(Number(awardedXpRaw) || 0));
     if (awardedXp <= 0 || typeof window === "undefined") return;
-    const sourceElement =
-      (els.timeGoalCompleteXpValue as HTMLElement | null) ||
-      (els.timeGoalCompleteText as HTMLElement | null);
-    await new Promise<void>((resolve) => {
-      const handledByApp = !dispatchTimeGoalCompleteXpClaimEvent(window, {
-        overlayId: "timeGoalCompleteOverlay",
-        awardedXp,
-        sourceElementKey: "timeGoalCompleteXpValue",
-        sourceRect: captureXpAwardRectSnapshot(sourceElement),
-      });
-      if (!handledByApp) {
-        resolve();
-        return;
-      }
-      let fallbackTimer: number | null = null;
-      const handleDelivered = () => {
-        if (fallbackTimer != null) window.clearTimeout(fallbackTimer);
-        window.removeEventListener(TASKTIMER_TIME_GOAL_COMPLETE_XP_CLAIM_DELIVERED_EVENT, handleDelivered);
-        resolve();
-      };
-      fallbackTimer = window.setTimeout(handleDelivered, 3400);
-      window.addEventListener(TASKTIMER_TIME_GOAL_COMPLETE_XP_CLAIM_DELIVERED_EVENT, handleDelivered);
+    dispatchTimeGoalCompleteXpClaimEvent(window, {
+      overlayId: "timeGoalCompleteOverlay",
+      awardedXp,
     });
   }
 
@@ -3164,10 +3137,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         const button = els.timeGoalCompleteCloseBtn as HTMLButtonElement | null;
         if (button?.disabled) return;
         if (button) button.disabled = true;
-        setTimeGoalCompleteClaimDeliveryActive(true);
         try {
           const awardedXp = Math.max(0, Math.floor(Number((els.timeGoalCompleteOverlay as HTMLElement | null)?.dataset.awardedXp || 0) || 0));
-          await requestTimeGoalCompleteXpClaimDelivery(awardedXp);
+          requestTimeGoalCompleteXpClaim(awardedXp);
           stopTimeGoalCompleteConfetti();
           stopTimeGoalXpCountAudio();
           clearTimeGoalCompleteReplayState();
@@ -3175,7 +3147,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
           ctx.setTimeGoalModalFrozenElapsedMs(0);
           ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
         } finally {
-          setTimeGoalCompleteClaimDeliveryActive(false);
           if (button) button.disabled = false;
         }
         return;
@@ -3184,11 +3155,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       if (button?.disabled) return;
       if (button) button.disabled = true;
       const claimedTaskId = String((els.timeGoalCompleteOverlay as HTMLElement | null)?.dataset.taskId || ctx.getTimeGoalModalTaskId() || "").trim();
-      setTimeGoalCompleteClaimDeliveryActive(true);
       holdClaimedTaskPrimaryActionReset(claimedTaskId);
       try {
         const awardedXp = Math.max(0, Math.floor(Number((els.timeGoalCompleteOverlay as HTMLElement | null)?.dataset.awardedXp || 0) || 0));
-        await requestTimeGoalCompleteXpClaimDelivery(awardedXp);
+        requestTimeGoalCompleteXpClaim(awardedXp);
         const task = getActiveTimeGoalModalTask();
         if (!task && awardedXp <= 0) {
           stopTimeGoalCompleteConfetti();
@@ -3208,7 +3178,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
           }
         }
       } finally {
-        setTimeGoalCompleteClaimDeliveryActive(false);
         releaseClaimedTaskPrimaryActionReset(claimedTaskId);
         if (button) button.disabled = false;
       }

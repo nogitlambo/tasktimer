@@ -1538,10 +1538,10 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               <div className="onboardingIntroTextOverlay">
                 <AppImg
                   className="onboardingIntroLogo"
-                  src="/logo/logo_main.png"
+                  src="/logo/tasklaunch-logo-main.png"
                   alt="TaskLaunch"
-                  width={2731}
-                  height={430}
+                  width={3509}
+                  height={353}
                 />
                 <h2 className="onboardingIntroTitle" id="onboardingIntroTitle">
                   Your daily productivity engine

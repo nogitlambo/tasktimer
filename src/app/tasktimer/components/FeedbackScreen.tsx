@@ -268,10 +268,9 @@ export default function FeedbackScreen() {
         <div className="brand landingV2FooterBrand appBrandLandingReplica displayFont">
           <AppImg
             className="landingV2HeaderBrandIcon appBrandLandingReplicaIcon"
-            src="/logo/tasklaunch-logo.webp"
-            alt=""
+            src="/logo/tasklaunch-logo-main.png"
+            alt="TaskLaunch"
           />
-          <span className="appBrandLandingReplicaText">TaskLaunch</span>
         </div>
       </div>
       <div className="desktopAppShell">

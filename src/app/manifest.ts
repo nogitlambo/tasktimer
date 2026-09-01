@@ -23,20 +23,8 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: "any",
       },
       {
-        src: "/logo/lime-icon-192.webp",
-        sizes: "192x192",
-        type: "image/webp",
-        purpose: "any",
-      },
-      {
         src: "/logo/tasklaunch-icon-512.png",
         sizes: "512x512",
-        type: "image/png",
-        purpose: "any",
-      },
-      {
-        src: "/logo/lime-icon-192.png",
-        sizes: "192x192",
         type: "image/png",
         purpose: "any",
       },

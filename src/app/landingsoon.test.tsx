@@ -22,6 +22,8 @@ describe("LandingSoon", () => {
     expect(html).not.toContain("Core capabilities");
     expect(html).not.toContain("Interface preview");
     expect(html).toContain('href="/about"');
+    expect(html).toContain('src="/logo/tasklaunch-logo-main.png"');
+    expect(html).not.toContain("/logo/tasklaunch-logo.webp");
   });
 
   it("keeps the email field visible in the narrow mobile form layout", () => {

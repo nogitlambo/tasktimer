@@ -38,6 +38,12 @@ import {
   requestNativeFocusDndAccess,
   setFocusDndEnabled,
 } from "../lib/nativeFocusDnd";
+import {
+  getNativeMicrophonePermissionStatus,
+  isNativeMicrophonePermissionAvailable,
+  openNativeMicrophonePermissionSettings,
+  requestNativeMicrophonePermission,
+} from "../lib/nativeMicrophonePermission";
 
 type PreferenceEventDeps = {
   handleAppBackNavigation: () => boolean;
@@ -83,6 +89,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   let focusDndSyncSeq = 0;
   let focusDndAccessRequestSeq = 0;
   let checkpointAlarmPermissionSyncSeq = 0;
+  let microphonePermissionSyncSeq = 0;
   const preferenceService = createTaskTimerPreferencesService({
     storageKeys: ctx.storageKeys,
     preferencesPersistence: ctx.preferencesPersistence,
@@ -421,6 +428,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     }
     els.taskCheckpointSoundModeField?.classList.toggle("isHidden", !ctx.getCheckpointAlertSoundEnabled());
     void syncCheckpointAlarmPermissionUi();
+    void syncMicrophonePermissionUi();
     if (els.taskWeekStartingSelect) {
       els.taskWeekStartingSelect.value = weekStarting;
     }
@@ -1043,6 +1051,48 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     }
   }
 
+  async function syncMicrophonePermissionUi() {
+    const sequence = ++microphonePermissionSyncSeq;
+    const nativeAndroid = isNativeMicrophonePermissionAvailable();
+    els.taskMicrophonePermissionRow?.classList.remove("isHidden");
+    els.taskMicrophonePermissionRow?.classList.toggle("isDisabled", !nativeAndroid);
+    if (els.taskMicrophonePermissionToggle) {
+      (els.taskMicrophonePermissionToggle as HTMLButtonElement).disabled = !nativeAndroid;
+      els.taskMicrophonePermissionToggle.setAttribute("aria-disabled", nativeAndroid ? "false" : "true");
+    }
+    if (!nativeAndroid) {
+      ctx.toggleSwitchElement(els.taskMicrophonePermissionToggle as HTMLElement | null, false);
+      if (els.taskMicrophonePermissionStatus) {
+        els.taskMicrophonePermissionStatus.textContent = "Available in the Android app for Brain Dump voice transcription.";
+      }
+      els.taskMicrophonePermissionBtn?.classList.add("isHidden");
+      return;
+    }
+    const status = await getNativeMicrophonePermissionStatus().catch(() => null);
+    if (sequence !== microphonePermissionSyncSeq || !status) return;
+    ctx.toggleSwitchElement(els.taskMicrophonePermissionToggle as HTMLElement | null, status.granted);
+    if (els.taskMicrophonePermissionStatus) {
+      els.taskMicrophonePermissionStatus.textContent = status.granted
+        ? "Microphone access is allowed for voice transcription."
+        : "Allow microphone access to record and transcribe Brain Dumps.";
+    }
+    els.taskMicrophonePermissionBtn?.classList.toggle("isHidden", status.granted || status.state === "prompt");
+  }
+
+  async function toggleMicrophonePermission() {
+    if (!isNativeMicrophonePermissionAvailable()) return;
+    const status = await getNativeMicrophonePermissionStatus().catch(() => null);
+    if (status?.granted) {
+      await openNativeMicrophonePermissionSettings().catch(() => {});
+    } else {
+      const requested = await requestNativeMicrophonePermission().catch(() => null);
+      if (requested && !requested.granted && requested.state === "denied") {
+        els.taskMicrophonePermissionBtn?.classList.remove("isHidden");
+      }
+    }
+    await syncMicrophonePermissionUi();
+  }
+
   function loadOptimalProductivityDaysPreference() {
     applyOptimalProductivityDaysPreference(preferenceService.loadOptimalProductivityDays());
   }
@@ -1395,6 +1445,15 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         applyBackgroundCheckpointAlertsPreference(!(ctx.getCheckpointAlertSoundEnabled() || ctx.getCheckpointAlertVibrationEnabled()));
       },
     });
+    bindToggleRow({
+      on: ctx.on,
+      control: els.taskMicrophonePermissionToggle,
+      row: els.taskMicrophonePermissionRow,
+      ignoreSelector: "#taskMicrophonePermissionToggle, #taskMicrophonePermissionBtn",
+      handleToggle: () => {
+        void toggleMicrophonePermission();
+      },
+    });
     ctx.on(els.taskCheckpointSoundModeSelect, "change", () => {
       saveCheckpointAlertBehaviourSettings();
       persistPreferencesToCloud();
@@ -1402,6 +1461,12 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(els.taskCheckpointAlarmPermissionBtn, "click", () => {
       void openNativeCheckpointAlarmPermissionSettings().then(syncCheckpointAlarmPermissionUi).catch(() => {});
+    });
+    ctx.on(els.taskMicrophonePermissionBtn, "click", () => {
+      void openNativeMicrophonePermissionSettings().then(syncMicrophonePermissionUi).catch(() => {});
+    });
+    ctx.on(window, "focus", () => {
+      void syncMicrophonePermissionUi();
     });
     ctx.on(els.taskInteractionHapticsIntensitySelect, "change", () => {
       if (!isInteractionHapticsRuntimeAvailable() || !ctx.getInteractionHapticsEnabled()) {

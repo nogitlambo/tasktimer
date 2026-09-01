@@ -59,7 +59,7 @@ describe("task card view model", () => {
 
     expect(rendered.className).toBe("task");
     expect(rendered.html).toContain('data-action="start"');
-    expect(rendered.html).toContain('data-action="reset"');
+    expect(rendered.html).toContain('data-hold-action="reset"');
     expect(rendered.html).toContain('data-action="edit"');
     expect(rendered.html).toContain('data-action="history"');
     expect(rendered.html).toContain('data-action="manualEntry"');
@@ -103,14 +103,13 @@ describe("task card view model", () => {
     expectTaskMenuLabel(rendered.html, "Optimiise");
     expectTaskMenuLabel(rendered.html, "Add Entry");
     expectTaskMenuLabel(rendered.html, "Share");
-    expectTaskMenuLabel(rendered.html, "Reset");
+    expect(rendered.html).not.toContain('<button class="taskMenuItem" data-action="reset"');
     expectTaskMenuLabel(rendered.html, "Export");
     expectTaskMenuLabel(rendered.html, "Delete");
     expect(rendered.html).toContain('src="/icons/icons_default/settings.webp"');
     expect(rendered.html).toContain('src="/icons/icons_default/optimise.webp"');
     expect(rendered.html).toContain('src="/icons/icons_default/notes.webp"');
     expect(rendered.html).toContain('src="/icons/icons_default/share.webp"');
-    expect(rendered.html).toContain('src="/icons/icons_default/history.webp"');
     expect(rendered.html).toContain('src="/icons/icons_default/export.webp"');
     expect(rendered.html).toContain('src="/icons/icons_default/trash.webp"');
     expect(rendered.html).not.toContain('<span class="taskMenuTileLabel">Archive</span>');
@@ -157,19 +156,6 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('src="/icons/icons_default/archive.webp"');
   });
 
-  it("disables reset until the task has logged time", () => {
-    const rendered = renderCard();
-
-    expect(rendered.html).toContain('data-action="reset" title="No time to reset" aria-label="No time to reset" type="button" disabled');
-  });
-
-  it("enables reset after the task has logged time", () => {
-    const rendered = renderCard({ elapsedMs: 60_000 });
-
-    expect(rendered.html).toContain('data-action="reset" title="Reset" aria-label="Reset" ');
-    expect(rendered.html).not.toContain('data-action="reset" title="Reset" aria-label="Reset" disabled');
-  });
-
   it("renders a reset-neutral task with Launch as the primary action", () => {
     const rendered = renderCard({
       task: baseTask({
@@ -192,7 +178,7 @@ describe("task card view model", () => {
     expect(rendered.html).not.toContain("taskPrimaryActionSecondary");
     expect(rendered.html).not.toContain('title="Resume"');
     expect(rendered.html).not.toContain("Done until tomorrow");
-    expect(rendered.html).toContain('data-action="reset" title="No time to reset" aria-label="No time to reset" type="button" disabled');
+    expect(rendered.html).not.toContain('<button class="taskMenuItem" data-action="reset"');
   });
 
   it("renders a stopped task with elapsed time as a Resume primary action", () => {
@@ -208,7 +194,7 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('<span class="taskPrimaryActionPrimary">Resume</span>');
     expect(rendered.html).not.toContain("taskPrimaryActionSecondary");
     expect(rendered.html).not.toContain('data-action="stop"');
-    expect(rendered.html).toContain('data-action="reset" title="Reset" aria-label="Reset"');
+    expect(rendered.html).not.toContain('<button class="taskMenuItem" data-action="reset"');
   });
 
   it("automatically renders a visible checkpoint rewind action for eligible Resume buttons", () => {
@@ -345,7 +331,7 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('data-action="muteCheckpointAlert"');
     expect(rendered.html).toContain("historyInlineMotion isOpeningSpace");
     expect(rendered.html).toContain('data-action="unshareTask"');
-    expect(rendered.html).toContain('data-action="reset" title="Stop task to reset" aria-label="Stop task to reset" type="button" disabled');
+    expect(rendered.html).not.toContain('<button class="taskMenuItem" data-action="reset"');
     expect(rendered.html).not.toContain('data-action="archive"');
     expect(rendered.html).toContain('data-history-action="pin"');
     expect(rendered.html).toContain('data-action="history" title="Hide history chart"');
@@ -499,6 +485,13 @@ describe("task card view model", () => {
     expect(css).toContain("overflow-wrap:anywhere;");
     expect(css).toContain("place-items:center;");
     expect(css).not.toContain(".taskBackActions .taskMenuLabel");
+  });
+
+  it("keeps press-and-hold menu options rounded despite the global button reset", () => {
+    const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
+
+    expect(css).toContain(".taskPrimaryHoldMenuItem{");
+    expect(css).toContain("border-radius:8px !important;");
   });
 
   it("keeps mobile task cards within the active Tasks viewport", () => {
@@ -685,6 +678,42 @@ describe("task card view model", () => {
     expect(pressedFaceRule).toContain("transform: translateY(3px) scale(.975);");
     expect(css).not.toMatch(/\.taskPrimaryAction\.isTaskPrimaryActionPressed:not\(:disabled\) \.taskPrimaryActionRing\{/);
     expect(css).not.toMatch(/\.taskPrimaryAction[\s\S]*?\{\n(?:[\s\S]*?\n)?\s*transition: none !important;\n\s*transform: none !important;/);
+  });
+
+  it("uses an enlarged thin-ring primary action only in the Tasks view", () => {
+    const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
+    const tasksGeometryRule =
+      css.match(
+        /\/\* Tasks-only primary action geometry: larger face with a thin state ring\. \*\/[\s\S]*?\.taskCheckpointRewindGroup > \.btn\.taskPrimaryAction\{[\s\S]*?\n\}/
+      )?.[0] ?? "";
+    const tasksRingRule =
+      css.match(
+        /body\[data-app-page="tasks"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions \.btn\.taskPrimaryAction \.taskPrimaryActionRing\{[\s\S]*?\n\}/
+      )?.[0] ?? "";
+    const tasksPressedFaceRule =
+      css.match(
+        /body\[data-app-page="tasks"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions \.btn\.taskPrimaryAction:active:not\(:disabled\) \.taskPrimaryActionFace,[\s\S]*?isTaskPrimaryActionPressed:not\(:disabled\) \.taskPrimaryActionFace\{[\s\S]*?\n\}/
+      )?.[0] ?? "";
+
+    expect(tasksGeometryRule).toContain("--task-primary-action-size: 108px;");
+    expect(css).toContain('.actions .btn.taskPrimaryAction .taskPrimaryActionFace{\n  inset:3px;');
+    expect(tasksRingRule).toContain("linear-gradient(");
+    expect(tasksRingRule).toContain("0 0 10px var(--task-primary-ring-soft)");
+    expect(tasksRingRule).not.toContain("radial-gradient");
+    expect(tasksRingRule).not.toContain("inset 0 -12px 18px");
+    expect(tasksPressedFaceRule).toContain("transform:none;");
+    expect(css).toMatch(
+      /@media \(max-width: 420px\)\{[\s\S]*?body\[data-app-page="tasks"\][\s\S]*?--task-primary-action-size: 90px;/
+    );
+    expect(css).toMatch(
+      /body\[data-app-page="schedule"\][\s\S]*?\.btn\.taskPrimaryAction\{[\s\S]*?--task-primary-action-size: 96px;/
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 420px\)\{[\s\S]*?body\[data-app-page="schedule"\][\s\S]*?--task-primary-action-size: 82px;/
+    );
+    expect(css).not.toContain("isXpAwardImpact");
+    expect(css).not.toContain("taskPrimaryActionXpImpact");
+    expect(css).toContain("isXpAwardReceiving");
   });
 
   it("renders completed time-goal tasks with a primary reset action while preserving edit hooks", () => {

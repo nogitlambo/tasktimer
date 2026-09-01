@@ -30,4 +30,16 @@ describe("SettingsNotificationsPane", () => {
     expect(preferencesSource).toContain("control: els.taskCheckpointAlarmPermissionToggle");
     expect(preferencesSource).toContain('ignoreSelector: "#taskCheckpointAlarmPermissionToggle, #taskCheckpointAlarmPermissionBtn"');
   });
+
+  it("renders and binds native microphone permission controls", () => {
+    expect(source).toContain('id="taskMicrophonePermissionRow"');
+    expect(source).toContain("Microphone Access");
+    expect(source).toContain('id="taskMicrophonePermissionStatus"');
+    expect(source).toContain('id="taskMicrophonePermissionToggle"');
+    expect(source).toContain('id="taskMicrophonePermissionBtn"');
+    expect(preferencesSource).toContain("getNativeMicrophonePermissionStatus");
+    expect(preferencesSource).toContain("requestNativeMicrophonePermission");
+    expect(preferencesSource).toContain("openNativeMicrophonePermissionSettings");
+    expect(preferencesSource).toContain("control: els.taskMicrophonePermissionToggle");
+  });
 });

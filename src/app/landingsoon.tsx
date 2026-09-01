@@ -295,7 +295,7 @@ export default function LandingSoon(props: LandingProps) {
       <div className="landingV2Shell">
         <header className={`landingV2Header landingV2HeaderFooter landingSoonV2Header ${showHeader ? "isVisible" : ""}`}>
           <Link href="/" className="landingV2FooterBrand displayFont" aria-label="TaskLaunch home">
-            <AppImg src="/logo/tasklaunch-logo.webp" alt="" className="landingHeaderLogo" />
+            <AppImg src="/logo/tasklaunch-logo-main.png" alt="" className="landingHeaderLogo" />
           </Link>
           <Link href="/about" className="landingSoonV2AboutLink displayFont">
             About

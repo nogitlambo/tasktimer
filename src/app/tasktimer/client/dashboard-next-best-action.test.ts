@@ -6,7 +6,6 @@ import {
   formatNextBestActionDailyProgressPill,
   formatNextBestActionExplanation,
   formatNextBestActionTimeGoalPill,
-  getNextBestActionTimeOptions,
   parseNextBestActionDashboardResponse,
 } from "./dashboard-next-best-action";
 import { TASK_COMPLETION_CHANGED_EVENT } from "./task-completion-events";
@@ -187,10 +186,6 @@ describe("dashboard Next Best Action contract", () => {
     ).toEqual({ kind: "stale" });
   });
 
-  it("keeps available-time choices bounded and deterministic", () => {
-    expect(getNextBestActionTimeOptions()).toEqual([10, 20, 30, 60, null]);
-  });
-
   it("shows Launching immediately, prevents duplicate starts, and finishes In Progress", async () => {
     let resolveResponse: ((response: Response) => void) | undefined;
     const fetchImpl = vi.fn(
@@ -294,77 +289,6 @@ describe("dashboard Next Best Action contract", () => {
     expect(harness.cardAttrs.get("data-next-best-action-state")).toBe("ready");
     expect(harness.startButton.labelElement?.textContent).toBe("LAUNCH");
     expect(harness.actionButtons.every((button) => !button.disabled)).toBe(true);
-  });
-
-  it("refreshes with the selected available-time pill", async () => {
-    const clickListeners: Array<(event: Event) => void> = [];
-    const select = { value: "any" };
-    const card = {
-      classList: { toggle: vi.fn() },
-      setAttribute: vi.fn(),
-      removeAttribute: vi.fn(),
-    };
-    const pill = (value: string) => {
-      const attrs = new Map<string, string>([
-        ["data-next-best-action-time", value],
-        ["aria-pressed", value === "any" ? "true" : "false"],
-      ]);
-      return {
-        getAttribute: (key: string) => attrs.get(key) ?? null,
-        setAttribute: (key: string, next: string) => attrs.set(key, next),
-        attrs,
-      };
-    };
-    const pills = [pill("10"), pill("20"), pill("30"), pill("60"), pill("any")];
-    const documentRef = {
-      getElementById: (id: string) =>
-        id === "dashboardNextBestActionCard"
-          ? card
-          : id === "dashboardNextBestActionTimeSelect"
-            ? select
-            : null,
-      querySelectorAll: (selector: string) =>
-        selector === "[data-next-best-action-time]" ? pills : [],
-      addEventListener: (type: string, listener: (event: Event) => void) => {
-        if (type === "click") clickListeners.push(listener);
-      },
-    } as unknown as Document;
-    const fetchImpl = vi.fn(
-      async () =>
-        new Response(JSON.stringify({ ok: true, recommendation: null }), {
-          status: 200,
-        }),
-    ) as unknown as typeof fetch & {
-      mock: { calls: Array<Parameters<typeof fetch>> };
-    };
-    const api = createDashboardNextBestAction({
-      documentRef,
-      windowRef: {
-        fetch: fetchImpl,
-        addEventListener: vi.fn(),
-      } as unknown as Window,
-      fetchImpl,
-      getCurrentAppPage: () => "executive",
-      getIdToken: async () => "token",
-    });
-
-    api.register();
-    clickListeners.forEach((listener) =>
-      listener({
-        target: {
-          closest: (selector: string) =>
-            selector === "[data-next-best-action-time]" ? pills[2] : null,
-        },
-      } as unknown as Event),
-    );
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    expect(select.value).toBe("30");
-    expect(pills[2].attrs.get("aria-pressed")).toBe("true");
-    expect(pills[4].attrs.get("aria-pressed")).toBe("false");
-    expect(
-      JSON.parse(String(fetchImpl.mock.calls.at(-1)?.[1]?.body)),
-    ).toMatchObject({ availableMinutes: 30 });
   });
 
   it("renders a locked state without fetching when executive function is unavailable", async () => {
@@ -1046,7 +970,7 @@ describe("dashboard Next Best Action contract", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
-    await api.refresh(null, "user");
+    await api.refresh("user");
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 });

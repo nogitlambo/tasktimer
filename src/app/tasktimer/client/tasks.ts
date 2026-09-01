@@ -52,6 +52,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   let taskPrimaryActionReleaseTimer: number | null = null;
   let openTaskPrimaryHoldMenuEl: HTMLElement | null = null;
   let openTaskPrimaryHoldButtonEl: HTMLButtonElement | null = null;
+  let openTaskPrimaryHoldTaskId: string | null = null;
   let suppressNextTaskPrimaryClick = false;
   const taskManualEntry = createTaskManualEntryInteraction({
     elements: {
@@ -174,6 +175,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
 
   function renderTasksPage() {
     taskListRenderer.renderTasksPage();
+    restoreTaskPrimaryHoldMenuAfterRender();
   }
 
   const taskTimerLifecycleCommands = createTaskTimerLifecycleCommands({
@@ -475,7 +477,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   function closeTaskPrimaryHoldMenu({ restoreFocus = false } = {}) {
     const menu = openTaskPrimaryHoldMenuEl;
     const button = openTaskPrimaryHoldButtonEl;
-    if (!menu && !button) return;
+    if (!menu && !button && !openTaskPrimaryHoldTaskId) return;
     if (menu) {
       menu.hidden = true;
       menu.closest?.(".task")?.classList.remove("isTaskPrimaryHoldMenuOpen");
@@ -489,7 +491,28 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     taskPrimaryActionReleaseTimer = null;
     openTaskPrimaryHoldMenuEl = null;
     openTaskPrimaryHoldButtonEl = null;
+    openTaskPrimaryHoldTaskId = null;
     if (restoreFocus) button?.focus?.();
+  }
+
+  function restoreTaskPrimaryHoldMenuAfterRender() {
+    const taskId = openTaskPrimaryHoldTaskId;
+    const taskList = els.taskList as HTMLElement | null;
+    if (!taskId || !taskList) return;
+    const taskEl = Array.from(taskList.querySelectorAll<HTMLElement>(".task"))
+      .find((candidate) => String(candidate.dataset.taskId || "").trim() === taskId) || null;
+    const menu = taskEl?.querySelector<HTMLElement>(".taskPrimaryHoldMenu") || null;
+    const button = taskEl?.querySelector<HTMLButtonElement>(".taskPrimaryAction") || null;
+    if (!taskEl || !menu || !button) {
+      closeTaskPrimaryHoldMenu();
+      return;
+    }
+    openTaskPrimaryHoldMenuEl = menu;
+    openTaskPrimaryHoldButtonEl = button;
+    menu.hidden = false;
+    taskEl.classList.add("isTaskPrimaryHoldMenuOpen");
+    button.classList.add(TASK_PRIMARY_ACTION_PRESS_CLASS);
+    button.setAttribute("aria-expanded", "true");
   }
 
   function openTaskPrimaryHoldMenu(target: HTMLButtonElement) {
@@ -499,6 +522,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     closeTaskPrimaryHoldMenu();
     openTaskPrimaryHoldMenuEl = menu;
     openTaskPrimaryHoldButtonEl = target;
+    openTaskPrimaryHoldTaskId = getTaskIdFromTaskElement(taskEl);
     suppressNextTaskPrimaryClick = true;
     menu.hidden = false;
     taskEl.classList.add("isTaskPrimaryHoldMenuOpen");

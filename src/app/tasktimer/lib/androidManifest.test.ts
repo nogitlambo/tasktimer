@@ -3,12 +3,18 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const manifestPath = resolve(process.cwd(), "android/app/src/main/AndroidManifest.xml");
+const mainActivityPath = resolve(process.cwd(), "android/app/src/main/java/com/tasklaunch/app/MainActivity.java");
 
 function readManifest() {
   return readFileSync(manifestPath, "utf8");
 }
 
 describe("Android push notification manifest", () => {
+  it("declares microphone access for native Brain Dump voice capture", () => {
+    expect(readManifest()).toContain('android.permission.RECORD_AUDIO');
+    expect(readFileSync(mainActivityPath, "utf8")).toContain("registerPlugin(TaskLaunchMicrophonePermissionPlugin.class)");
+  });
+
   it("declares the Android 13+ notification permission required for native push display", () => {
     expect(readManifest()).toContain('android.permission.POST_NOTIFICATIONS');
   });

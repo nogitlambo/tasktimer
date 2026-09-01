@@ -26,6 +26,8 @@ describe("DashboardPageContent momentum dial markers", () => {
   it("renders one compact Executive Summary and removes permanent executive cards", () => {
     const html = renderDashboardMarkup();
 
+    expect(html).not.toContain(">Time Tracked<");
+    expect(html).not.toContain("dashboardActivityOverviewTitleRow");
     expect(html).toContain('id="dashboardExecutiveSummary"');
     expect(html).toContain('aria-label="Executive summary"');
     expect(html).toContain('class="dashboardExecutiveSummaryStatusRow"');

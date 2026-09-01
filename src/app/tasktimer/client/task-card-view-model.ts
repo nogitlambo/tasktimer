@@ -564,11 +564,6 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
         }
       </div>`
     : "";
-  const resetLabel = task.running
-    ? "Stop task to reset"
-    : hasResettableTime
-      ? "Reset"
-      : "No time to reset";
   const shareAction = isSharedByOwner ? "unshareTask" : "shareTask";
   const shareLabel = canUseSocialFeatures ? (isSharedByOwner ? "Unshare" : "Share") : "Share (Pro)";
   const shareDisabled = canUseSocialFeatures && !isSharedByOwner && !hasFriends;
@@ -638,7 +633,6 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
                 ${clarificationActionHtml}
                 <button class="taskMenuItem" data-action="manualEntry" title="${manualEntryTitle}" type="button" ${canUseAdvancedHistory ? "" : 'data-plan-locked="advancedHistory"'}>${renderTaskBackActionTile(manualEntryLabel, escapeHtml, "/icons/icons_default/notes.webp")}</button>
                 <button class="taskMenuItem" data-action="${shareAction}" title="${shareTitle}" type="button" ${shareDisabled ? "disabled" : ""} ${canUseSocialFeatures ? "" : 'data-plan-locked="socialFeatures"'}>${renderTaskBackActionTile(shareLabel, escapeHtml, "/icons/icons_default/share.webp")}</button>
-                <button class="taskMenuItem" data-action="reset" title="${resetLabel}" aria-label="${resetLabel}" type="button" ${task.running || !hasResettableTime ? "disabled" : ""}>${renderTaskBackActionTile("Reset", escapeHtml, "/icons/icons_default/history.webp")}</button>
                 <button class="taskMenuItem" data-action="exportTask" title="Export" type="button">${renderTaskBackActionTile("Export", escapeHtml, "/icons/icons_default/export.webp")}</button>
                 <button class="taskMenuItem taskMenuItemDelete" data-action="${destructiveAction}" title="${destructiveTitle}" aria-label="${destructiveTitle}" type="button" ${destructiveDisabled ? "disabled" : ""}>${renderTaskBackActionTile(destructiveLabel, escapeHtml, destructiveIconSrc)}</button>
               </div>

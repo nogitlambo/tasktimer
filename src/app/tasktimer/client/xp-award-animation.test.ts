@@ -4,9 +4,6 @@ import {
   createXpAwardAnimationState,
   enqueuePendingXpAward,
   enqueuePendingXpAwardFromOverlayState,
-  getDisplayedXpAfterParticleArrival,
-  getDisplayedXpForModalCountdown,
-  getTaskButtonXpAwardCountdownDurationMs,
   getXpAwardCountRange,
   getXpAwardCountStartedAfterEffectCleanup,
   getXpAwardCountStartDelayMs,
@@ -14,7 +11,6 @@ import {
   type PendingXpAward,
   XP_AWARD_COUNT_DURATION_MS,
   XP_AWARD_FX_DURATION_MS,
-  XP_AWARD_UNIT_FX_DURATION_MS,
 } from "./xp-award-animation";
 
 function award(overrides: Partial<PendingXpAward> = {}): PendingXpAward {
@@ -187,47 +183,4 @@ describe("xp award animation state", () => {
     expect(queued.pending?.sourceElementKey).toBe("timeGoalCompleteXpValue");
   });
 
-  it("matches the task completion modal count timing for button countdowns", () => {
-    expect(getTaskButtonXpAwardCountdownDurationMs(10)).toBe(500);
-    expect(getTaskButtonXpAwardCountdownDurationMs(25)).toBe(1500);
-    expect(getTaskButtonXpAwardCountdownDurationMs(50)).toBe(2000);
-    expect(getTaskButtonXpAwardCountdownDurationMs(51)).toBe(2500);
-  });
-
-  it("uses a slightly slower star flight duration for unit delivery", () => {
-    expect(XP_AWARD_UNIT_FX_DURATION_MS).toBe(760);
-  });
-
-  it("advances displayed xp by arrived unit particles without exceeding the target", () => {
-    expect(getDisplayedXpAfterParticleArrival({ startXp: 10, endXp: 22, arrivedParticles: 0 })).toBe(10);
-    expect(getDisplayedXpAfterParticleArrival({ startXp: 10, endXp: 22, arrivedParticles: 5 })).toBe(15);
-    expect(getDisplayedXpAfterParticleArrival({ startXp: 10, endXp: 22, arrivedParticles: 99 })).toBe(22);
-  });
-
-  it("keeps the header XP count-up in sync with the modal XP countdown", () => {
-    expect(
-      getDisplayedXpForModalCountdown({
-        startXp: 10,
-        endXp: 22,
-        targetCountdownXp: 12,
-        remainingXp: 12,
-      })
-    ).toBe(10);
-    expect(
-      getDisplayedXpForModalCountdown({
-        startXp: 10,
-        endXp: 22,
-        targetCountdownXp: 12,
-        remainingXp: 7,
-      })
-    ).toBe(15);
-    expect(
-      getDisplayedXpForModalCountdown({
-        startXp: 10,
-        endXp: 22,
-        targetCountdownXp: 12,
-        remainingXp: 0,
-      })
-    ).toBe(22);
-  });
 });

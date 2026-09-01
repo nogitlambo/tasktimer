@@ -4,7 +4,7 @@ import nodemailer from "nodemailer";
 const DEFAULT_FROM = "TaskLaunch <support@tasklaunch.app>";
 const EMAIL_SUBJECT = "Early Access List";
 const EARLY_ACCESS_ABOUT_URL = "https://tasklaunch.app/about";
-const EARLY_ACCESS_LOGO_URL = "https://tasklaunch.app/logo/tasklaunch-logo.webp";
+const EARLY_ACCESS_LOGO_URL = "https://tasklaunch.app/logo/tasklaunch-logo-main.png";
 
 function asString(value: unknown, maxLength = 0) {
   const normalized = typeof value === "string" ? value.trim() : "";
@@ -99,7 +99,7 @@ function buildEmailBody(input: { email: string; unsubscribeUrl: string }) {
 <html>
   <body style="margin:0;padding:24px;background:#0d0f13;color:#f7fafc;font-family:Arial,sans-serif;">
     <div style="max-width:560px;margin:0 auto;border:1px solid rgba(255,255,255,0.16);border-radius:12px;padding:24px;background:#151923;">
-      <img src="${logoUrl}" alt="TaskLaunch" width="56" height="56" style="display:block;width:56px;height:56px;margin:0 0 16px;" />
+      <img src="${logoUrl}" alt="TaskLaunch" width="220" style="display:block;width:220px;max-width:100%;height:auto;margin:0 0 16px;" />
       <h1 style="margin:0 0 16px;font-size:22px;line-height:1.25;">You're on the TaskLaunch early access list.</h1>
       <p style="margin:0 0 16px;line-height:1.55;">Thank you for registering your interest in TaskLaunch.</p>
       <p style="margin:0 0 16px;line-height:1.55;">TaskLaunch is built for neurodivergent productivity patterns: flexible momentum, gentle recovery after inconsistency, and progress without guilt-driven systems.</p>

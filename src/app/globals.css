@@ -99,7 +99,7 @@ body.landingRoute {
   flex: 1 0 auto;
   align-self: stretch;
   margin: 0 auto;
-  max-width: 1920px;
+  max-width: none;
   isolation: isolate;
   --web-sign-in-bg-image: none;
   --web-sign-in-bg-position: right top;
@@ -898,13 +898,11 @@ canvas {
 
 .landingV2 .landingHeaderLogo {
   display: block;
-  width: clamp(150px, 17vw, 214px);
-  height: clamp(30px, 7vw, 44px);
-  flex: 0 0 clamp(150px, 17vw, 214px);
+  width: clamp(170px, 20vw, 260px);
+  height: auto;
+  flex: 0 1 clamp(170px, 20vw, 260px);
   object-fit: contain;
   object-position: left center;
-  transform: scale(1.5);
-  transform-origin: left center;
 }
 
 .landingV2 .landingV2Brand {
@@ -1591,14 +1589,11 @@ body[data-theme="lime"] .landingV2 .landingV2PrimaryBtn.btn-accent,
 
 .landingV2 .landingFooterLogo {
   display: block;
-  width: clamp(150px, 17vw, 214px);
-  height: clamp(30px, 7vw, 44px);
-  margin-right: 63px;
-  flex: 0 0 clamp(150px, 17vw, 214px);
+  width: clamp(170px, 20vw, 260px);
+  height: auto;
+  flex: 0 1 clamp(170px, 20vw, 260px);
   object-fit: contain;
   object-position: left center;
-  transform: scale(1.5);
-  transform-origin: left center;
 }
 
 .landingV2 .landingV2FooterLinks {
@@ -2248,9 +2243,9 @@ body[data-theme="lime"] .landingV2 .landingV2PrimaryBtn.btn-accent,
 
   .landingV2 .landingHeaderLogo,
   .landingV2 .landingFooterLogo {
-    width: clamp(128px, 42vw, 166px);
-    height: clamp(28px, 7.2vw, 34px);
-    flex-basis: clamp(128px, 42vw, 166px);
+    width: clamp(150px, 46vw, 200px);
+    height: auto;
+    flex-basis: clamp(150px, 46vw, 200px);
   }
 
   .landingV2 .landingV2HeaderActions {
