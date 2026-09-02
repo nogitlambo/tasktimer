@@ -1,11 +1,15 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "com.tasklaunch.app",
       "sha256_cert_fingerprints": [
-        "A0:CD:38:56:2E:10:3D:F5:33:F5:BC:6D:9B:75:90:63:39:26:A7:69:A1:57:88:07:A5:80:29:03:54:6B:85:7D"
+        "A0:CD:38:56:2E:10:3D:F5:33:F5:BC:6D:9B:75:90:63:39:26:A7:69:A1:57:88:07:A5:80:29:03:54:6B:85:7D",
+        "FB:65:D2:3B:AE:4B:11:E0:19:28:75:99:83:F7:5F:FA:90:2A:B3:AF:33:96:BB:0B:49:73:FE:44:CC:E3:B3:70"
       ]
     }
   }
