@@ -51,6 +51,7 @@ export type Task = {
   markedDoneAtMs?: number | null;
   markedDoneUntilMs?: number | null;
   nextBestActionSnoozedUntilMs?: number | null;
+  plannedStartDate?: string | null;
   plannedStartDay?: TaskPlannedStartDay | null;
   plannedStartTime?: string | null;
   plannedStartByDay?: TaskPlannedStartByDay | null;

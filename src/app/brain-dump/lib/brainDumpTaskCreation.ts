@@ -1,6 +1,7 @@
 import type { Task } from "@/app/tasktimer/lib/types";
 import { createTaskTimerSharedTask } from "@/app/tasktimer/client/task-shared";
 import type { DeletedTaskMeta } from "@/app/tasktimer/lib/types";
+import { formatLocalDate, getScheduleDayForLocalDate } from "@/app/tasktimer/lib/schedule-placement";
 
 import type {
   BrainDumpCreationBatchResult,
@@ -100,7 +101,9 @@ function buildTaskFromReviewItem(input: {
   if (taskType === "once-off" && dateCanAffectTask(input.item.date)) {
     task.taskType = "once-off";
     task.onceOffTargetDate = input.item.date.resolvedDate;
-    task.onceOffDay = null;
+    task.plannedStartDate = input.item.date.resolvedDate;
+    task.onceOffDay = getScheduleDayForLocalDate(task.plannedStartDate);
+    task.plannedStartDay = task.onceOffDay;
   } else if (taskType === "recurring") {
     task.onceOffTargetDate = null;
     task.onceOffDay = null;
@@ -118,6 +121,7 @@ function buildTaskFromReviewItem(input: {
     task.timeGoalUnit = timeGoalUnit;
     task.timeGoalPeriod = timeGoalPeriod;
     task.timeGoalMinutes = durationMinutes;
+    task.plannedStartDate = task.plannedStartDate || formatLocalDate(new Date(input.createdAtMs));
   }
   return task;
 }

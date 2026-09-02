@@ -84,6 +84,7 @@ describe("DesktopAppRail profile menu", () => {
     expect(source).toMatch(/<div className="appFooterNav"[\s\S]*?onPointerDown=\{handleMobileFooterNavPointerDown\}[\s\S]*?>\s*<button\s+className="appFooterSheetHandle"/);
     expect(css).toMatch(/\.appFooterNav\s*\{[^}]*touch-action:\s*none;/);
     expect(css).toMatch(/\.appFooterSheetUtilities\s*\{[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*width:\s*calc\(100% - 28px\);/);
+    expect(css).toMatch(/\.appFooterSheetUtilities\s*\{[^}]*margin:\s*12px auto calc\(18px \+ env\(safe-area-inset-bottom\)\);/);
     expect(source).toContain('className="appFooterSheetUtility appFooterSheetSignOut"');
     expect(css).toMatch(/\.appFooterSheetUtility\s*\{[^}]*width:\s*100%;[^}]*border-radius:\s*12px\s*!important;/);
     expect(css).toMatch(/\.appFooterSheetUtilityList\s*\{[^}]*flex:\s*0 0 auto;/);

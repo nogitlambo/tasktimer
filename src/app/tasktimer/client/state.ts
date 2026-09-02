@@ -133,6 +133,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     addTaskWizardStep: 1,
     addTaskType: "recurring",
     addTaskOnceOffDay: "mon",
+    addTaskPlannedStartDate: "",
     addTaskPlannedStartTime: "09:00",
     addTaskDurationValue: 5,
     addTaskDurationUnit: "minute",

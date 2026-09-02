@@ -426,6 +426,8 @@ type CreateAddTaskOptionsArgs = {
     | "setAddTaskTypeState"
     | "getAddTaskOnceOffDay"
     | "setAddTaskOnceOffDayState"
+    | "getAddTaskPlannedStartDate"
+    | "setAddTaskPlannedStartDateState"
     | "getAddTaskPlannedStartTime"
     | "setAddTaskPlannedStartTimeState"
     | "getAddTaskDurationValue"

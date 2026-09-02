@@ -27,12 +27,16 @@ import {
   isTaskTimeGoalCompletedToday,
 } from "./timeGoalCompletion";
 import {
+  getCurrentLocalDate,
+  getScheduleDayForLocalDate,
   getTaskPlannedStartByDay,
+  hasMeaningfulTaskSchedule,
   normalizeLocalDateValue,
   normalizeScheduleStoredTime,
   normalizeTaskPlannedStartByDay,
   SCHEDULE_DAY_ORDER,
   syncLegacyPlannedStartFields,
+  syncOnceOffPlannedStartFields,
   type ScheduleDay,
 } from "./schedule-placement";
 import { normalizeDashboardWeekStart, startOfCurrentWeekMs, type DashboardWeekStart } from "./historyChart";
@@ -1300,6 +1304,15 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
     row.plannedStartTime == null ? null : (typeof row.plannedStartTime === "string" ? row.plannedStartTime : String(row.plannedStartTime));
   row.plannedStartByDay = normalizeTaskPlannedStartByDay(row.plannedStartByDay);
   row.plannedStartOpenEnded = !!row.plannedStartOpenEnded;
+  row.plannedStartDate =
+    normalizeLocalDateValue(row.plannedStartDate) ||
+    (row.taskType === "once-off" ? row.onceOffTargetDate : null) ||
+    (hasMeaningfulTaskSchedule(row as Task) ? getCurrentLocalDate() : null);
+  if (row.taskType === "once-off" && row.plannedStartDate) {
+    row.onceOffTargetDate = row.plannedStartDate;
+    row.onceOffDay = getScheduleDayForLocalDate(row.plannedStartDate) || row.onceOffDay;
+    row.plannedStartDay = row.onceOffDay;
+  }
   row.plannedStartPushRemindersEnabled = row.plannedStartPushRemindersEnabled !== false;
   row.sharedSourceOwnerUid = row.sharedSourceOwnerUid == null ? null : String(row.sharedSourceOwnerUid).trim() || null;
   row.sharedSourceTaskId = row.sharedSourceTaskId == null ? null : String(row.sharedSourceTaskId).trim() || null;
@@ -1310,11 +1323,17 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
       : Math.max(0, Math.floor(Number(row.sharedSourceImportedAtMs)));
 
   syncLegacyPlannedStartFields(row as Task);
+  syncOnceOffPlannedStartFields(row as Task);
   return row as Task;
 }
 
 function mapTaskToFirestore(task: Task): Record<string, unknown> {
   const plannedStartPushDueAtMs = computePlannedStartPushDueAtMs(task);
+  const plannedStartDate =
+    normalizeLocalDateValue(task.plannedStartDate) ||
+    (task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null) ||
+    (hasMeaningfulTaskSchedule(task) ? getCurrentLocalDate() : null);
+  const plannedStartDateDay = getScheduleDayForLocalDate(plannedStartDate);
 
   // Firestore rules for users/{uid}/tasks/{taskId} are strict (`hasOnly(...)`), so
   // only persist explicitly allowed keys to prevent permission-denied on legacy/extra fields.
@@ -1379,9 +1398,11 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
         ? task.resumePendingSinceDayKey
         : null,
     taskType: task.taskType === "once-off" ? "once-off" : "recurring",
-    onceOffDay: task.taskType === "once-off" ? normalizePlannedStartDay(task.onceOffDay) : null,
-    onceOffTargetDate: task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,
-    plannedStartDay: normalizePlannedStartDay(task.plannedStartDay),
+    onceOffDay: task.taskType === "once-off" ? plannedStartDateDay || normalizePlannedStartDay(task.onceOffDay) : null,
+    onceOffTargetDate: task.taskType === "once-off" ? plannedStartDate : null,
+    plannedStartDate,
+    plannedStartDay:
+      task.taskType === "once-off" ? plannedStartDateDay || normalizePlannedStartDay(task.plannedStartDay) : normalizePlannedStartDay(task.plannedStartDay),
     plannedStartTime: getPersistedPlannedStartTime(task),
     plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
     plannedStartOpenEnded: !!task.plannedStartOpenEnded,

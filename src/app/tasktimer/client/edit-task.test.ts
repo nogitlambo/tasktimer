@@ -18,6 +18,16 @@ vi.mock("../lib/pushNotifications", () => ({
 }));
 
 function task(overrides: Partial<Task>): Task {
+  const dateByDay: Record<string, string> = {
+    mon: "2026-09-07",
+    tue: "2026-09-08",
+    wed: "2026-09-09",
+    thu: "2026-09-10",
+    fri: "2026-09-11",
+    sat: "2026-09-12",
+    sun: "2026-09-13",
+  };
+  const scheduleDay = String(overrides.onceOffDay || overrides.plannedStartDay || "mon");
   return {
     id: "task-1",
     name: "Task",
@@ -34,6 +44,7 @@ function task(overrides: Partial<Task>): Task {
     timeGoalUnit: "hour",
     timeGoalPeriod: "day",
     timeGoalMinutes: 60,
+    plannedStartDate: overrides.onceOffTargetDate || dateByDay[scheduleDay] || "2026-09-07",
     plannedStartOpenEnded: false,
     ...overrides,
   };
@@ -130,6 +141,10 @@ function createEditHarness(overrides: {
   const editPlannedStartMinuteSelect = plannedStartSelectors ? selectStub(plannedStartSelectors.minute) : selectStub("");
   const editPlannedStartMeridiemSelect = plannedStartSelectors ? selectStub(plannedStartSelectors.meridiem) : selectStub("");
   const editPlannedStartTimeInput = timeInputStub(String(sourceTask.plannedStartTime || ""));
+  const editPlannedStartDateInput = {
+    value: String(sourceTask.plannedStartDate || sourceTask.onceOffTargetDate || "2026-09-02"),
+    classList: { add: vi.fn(), remove: vi.fn(), toggle: vi.fn() },
+  } as unknown as HTMLInputElement;
   const editPlannedStartInput = { value: "" } as HTMLInputElement;
   const editTaskScheduleSummary = {
     classList: { toggle: vi.fn() },
@@ -174,6 +189,7 @@ function createEditHarness(overrides: {
       } as unknown as HTMLInputElement,
       editTaskOnceOffDaySelect: null,
       editPlannedStartTimeInput,
+      editPlannedStartDateInput,
       editPlannedStartHourSelect,
       editPlannedStartMinuteSelect,
       editPlannedStartMeridiemSelect,
@@ -273,6 +289,7 @@ function createEditHarness(overrides: {
     editOverlay,
     editTaskScheduleSummary,
     editTaskScheduleSummaryText,
+    editPlannedStartDateInput,
     editPlannedStartPushReminders,
     editPlannedStartPushRemindersRow,
     editTaskSplitAcrossProductivityDaysRow,
@@ -300,6 +317,26 @@ function expectEditConflictSavedAndClosed(harness: ReturnType<typeof createEditH
 }
 
 describe("edit task schedule summary", () => {
+  it("loads existing dates and defaults legacy scheduled tasks to today", () => {
+    const existing = createEditHarness({
+      sourceTask: task({ plannedStartDate: "2024-01-15", plannedStartTime: "09:00", plannedStartByDay: { mon: "09:00" } }),
+    });
+    existing.api.openEdit(0);
+    expect(existing.editPlannedStartDateInput.value).toBe("2024-01-15");
+
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 2, 23, 30));
+    try {
+      const legacy = createEditHarness({
+        sourceTask: task({ plannedStartDate: null, plannedStartTime: "09:00", plannedStartByDay: { mon: "09:00" } }),
+      });
+      legacy.api.openEdit(0);
+      expect(legacy.editPlannedStartDateInput.value).toBe("2026-09-02");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("closes Edit Task immediately when Cancel is clicked on an unchanged draft", () => {
     const harness = createEditHarness();
 
@@ -367,8 +404,8 @@ describe("edit task schedule summary", () => {
     expect(harness.getEditIndex()).toBeNull();
   });
 
-  it("greys out Edit Task Remind Me when current-runtime push is off", async () => {
-    const harness = createEditHarness();
+  it("greys out Edit Task Remind Me when mobile push is off even if web push is on", async () => {
+    const harness = createEditHarness({ webPushAlertsEnabled: true });
 
     harness.api.registerEditTaskEvents();
     harness.api.openEdit(0);
@@ -381,9 +418,42 @@ describe("edit task schedule summary", () => {
     await changeHandler?.();
 
     expect(toggle.disabled).toBe(true);
+    expect(toggle.checked).toBe(true);
     expect(toggle.setAttribute).toHaveBeenCalledWith("aria-disabled", "true");
     expect(harness.editPlannedStartPushRemindersRow.classList.toggle).toHaveBeenCalledWith("isDisabled", true);
+    expect(toggle.title).toBe("Enable mobile push alerts in Settings to use reminders.");
     expect(harness.ctx.persistPushAlertsPreference).not.toHaveBeenCalled();
+  });
+
+  it("allows desktop Edit Task reminders when mobile push is on and web push is off", async () => {
+    const harness = createEditHarness({
+      mobilePushAlertsEnabled: true,
+      webPushAlertsEnabled: false,
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        plannedStartDay: null,
+        plannedStartTime: "10:00",
+        plannedStartByDay: { tue: "10:00" },
+        plannedStartPushRemindersEnabled: false,
+      }),
+    });
+
+    harness.api.registerEditTaskEvents();
+    harness.api.openEdit(0);
+    const toggle = harness.editPlannedStartPushReminders;
+    expect(toggle.disabled).toBe(false);
+
+    toggle.checked = true;
+    const changeHandler = vi.mocked(harness.ctx.on).mock.calls.find(
+      ([element, eventName]) => element === toggle && eventName === "change"
+    )?.[2] as (() => Promise<void>) | undefined;
+    await changeHandler?.();
+    harness.api.closeEdit(true);
+
+    expect(harness.sourceTask.plannedStartPushRemindersEnabled).toBe(true);
+    expect(harness.ctx.save).toHaveBeenCalled();
   });
 
   it("updates the summary for a loaded recurring weekly task", () => {
@@ -405,7 +475,7 @@ describe("edit task schedule summary", () => {
     harness.api.syncEditTaskTimeGoalUi(harness.api.getCurrentEditTask());
 
     expect(harness.editTaskScheduleSummaryText.textContent).toBe(
-      "Task will be split into 12 minute daily scheduled blocks at 8:00 AM on your 5 productivity days."
+      "Starting September 7, 2026, task will be split into 12 minute daily scheduled blocks at 8:00 AM on your 5 productivity days."
     );
     expect(harness.editTaskScheduleSummary.classList.toggle).toHaveBeenLastCalledWith("isHidden", false);
     expect(harness.ctx.els.editTaskSplitAcrossProductivityDays?.checked).toBe(true);
@@ -433,7 +503,7 @@ describe("edit task schedule summary", () => {
     harness.api.syncEditTaskTimeGoalUi(harness.api.getCurrentEditTask());
 
     expect(harness.editTaskScheduleSummaryText.textContent).toBe(
-      "Task will be added as a 2 hours weekly scheduled block at 8:00 AM on Wednesday."
+      "Task will start on September 7, 2026 as a 2 hours weekly scheduled block at 8:00 AM on Wednesday."
     );
     expect(harness.ctx.els.editTaskSplitAcrossProductivityDays?.checked).toBe(false);
     expect(harness.editTaskWeeklyBlockDayField.classList.toggle).toHaveBeenLastCalledWith("isHidden", false);
@@ -453,7 +523,7 @@ describe("edit task schedule summary", () => {
 
     harness.api.syncEditTaskTimeGoalUi(harness.api.getCurrentEditTask());
 
-    expect(harness.editTaskScheduleSummaryText.textContent).toBe("Task will be added as a 1 hour scheduled block at 8:00 AM on Friday.");
+    expect(harness.editTaskScheduleSummaryText.textContent).toBe("Task will be added as a 1 hour scheduled block at 8:00 AM on September 11, 2026.");
   });
 });
 

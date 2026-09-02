@@ -1426,6 +1426,7 @@ async function processDuePlannedStartTask(docSnap, nowMs) {
     payloadData,
     webTitle: "Task Reminder",
     webBody: `${taskName} is scheduled to start now.`,
+    allowWeb: false,
   });
   if (response.successCount > 0) {
     await docSnap.ref.set({

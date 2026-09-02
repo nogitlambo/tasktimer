@@ -141,6 +141,7 @@ describe("saveTask Firestore planned start payloads", () => {
     await saveTask(
       "user-1",
       task({
+        plannedStartDate: "2026-09-02",
         plannedStartTime: "09:00",
         plannedStartPushRemindersEnabled: true,
       })
@@ -153,6 +154,7 @@ describe("saveTask Firestore planned start payloads", () => {
     expect(taskWrites).toHaveLength(2);
     expect(taskWrites[0]).toEqual(expect.objectContaining({
       bgTimeGoalPushEligible: true,
+      plannedStartDate: "2026-09-02",
     }));
     expect(taskWrites[1]).not.toHaveProperty("bgTimeGoalPushEligible");
     expect(taskWrites[1]).not.toHaveProperty("bgTimeGoalPushDueAtMs");
@@ -198,6 +200,7 @@ describe("saveTask Firestore planned start payloads", () => {
       nextBestActionSnoozedUntilMs: 3_000,
     }));
     expect(taskWrites[1]).toEqual(expect.objectContaining({
+      plannedStartDate: "2026-09-02",
       markedDoneAtMs: 1_000,
       markedDoneUntilMs: 2_000,
       nextBestActionSnoozedUntilMs: 3_000,
@@ -210,6 +213,9 @@ describe("saveTask Firestore planned start payloads", () => {
     expect(taskWrites[2]).not.toHaveProperty("markedDoneAtMs");
     expect(taskWrites[2]).not.toHaveProperty("markedDoneUntilMs");
     expect(taskWrites[2]).not.toHaveProperty("nextBestActionSnoozedUntilMs");
+    expect(taskWrites[2]).toEqual(expect.objectContaining({
+      plannedStartDate: "2026-09-02",
+    }));
   });
 
   it("maps legacy elapsed cloud task time into accumulated time", async () => {

@@ -21,14 +21,41 @@ function normalizeScheduleDayValue(raw: unknown): ScheduleDay | null {
 
 export function normalizeLocalDateValue(raw: unknown): string | null {
   const value = String(raw || "").trim();
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (year < 1 || month < 1 || month > 12 || day < 1) return null;
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1] || 0;
+  return day <= daysInMonth ? value : null;
 }
 
-function formatLocalDate(date: Date): string {
+export function formatLocalDate(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+export function getCurrentLocalDate(nowDate = new Date()): string {
+  return formatLocalDate(nowDate);
+}
+
+export function getScheduleDayForLocalDate(raw: unknown): ScheduleDay | null {
+  const value = normalizeLocalDateValue(raw);
+  if (!value) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+  return getLocalScheduleDay(date);
 }
 
 export function resolveNextScheduleDayDate(day: ScheduleDay, nowDate = new Date()): string {
@@ -115,6 +142,16 @@ export function getTaskPlannedStartByDay(task: Task): TaskPlannedStartByDay | nu
 
 export function hasTaskScheduledSlots(task: Task): boolean {
   return !!getTaskPlannedStartByDay(task);
+}
+
+export function hasMeaningfulTaskSchedule(task: Task | null | undefined): boolean {
+  if (!task) return false;
+  if (!!task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0) return true;
+  if (!!task.milestonesEnabled || (Array.isArray(task.milestones) && task.milestones.length > 0)) return true;
+  if (!!task.plannedStartOpenEnded) return !!task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0;
+  if (!!normalizeTaskPlannedStartByDay(task.plannedStartByDay)) return true;
+  if (!!normalizeScheduleStoredTime(task.plannedStartTime)) return true;
+  return task.taskType === "once-off" && !!(task.onceOffDay || task.onceOffTargetDate || task.plannedStartDay);
 }
 
 export function isFlexibleUnscheduledTask(task: Task): boolean {
@@ -687,8 +724,27 @@ export function setTaskScheduledTimeForDay(task: Task, day: ScheduleDay, rawTime
   if (task.taskType === "once-off") {
     task.onceOffDay = day;
     task.onceOffTargetDate = resolveNextScheduleDayDate(day, nowDate);
+    task.plannedStartDate = task.onceOffTargetDate;
+    task.plannedStartDay = day;
     task.plannedStartOpenEnded = false;
   }
+}
+
+export function syncOnceOffPlannedStartFields(task: Task) {
+  if (task.taskType !== "once-off") return;
+  const plannedStartDate = normalizeLocalDateValue(task.plannedStartDate) || normalizeLocalDateValue(task.onceOffTargetDate);
+  const day = getScheduleDayForLocalDate(plannedStartDate);
+  if (!plannedStartDate || !day) return;
+  const plannedStartTime =
+    normalizeScheduleStoredTime(task.plannedStartTime) ||
+    getTaskScheduledDayEntries(task).map((entry) => entry.time)[0] ||
+    null;
+  task.plannedStartDate = plannedStartDate;
+  task.onceOffTargetDate = plannedStartDate;
+  task.onceOffDay = day;
+  task.plannedStartDay = plannedStartTime ? day : null;
+  task.plannedStartTime = plannedStartTime;
+  task.plannedStartByDay = plannedStartTime ? { [day]: plannedStartTime } : null;
 }
 
 export function swapTaskScheduleSlotsForDay(

@@ -27,6 +27,7 @@ type TaskScheduleSummaryOptions = {
   durationValue: string | number;
   durationUnit: DurationUnit;
   durationPeriod: DurationPeriod;
+  plannedStartDate: string;
   plannedStartTime: string;
   productivityDays: readonly unknown[];
   onceOffDay?: ScheduleDay | string | null;
@@ -215,26 +216,33 @@ function formatScheduleSummaryDay(day: string | null | undefined): string {
   return labels[String(day || "").trim().toLowerCase()] || "Monday";
 }
 
+function formatScheduleSummaryDate(value: string): string {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return "";
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  if (date.getFullYear() !== Number(match[1]) || date.getMonth() !== Number(match[2]) - 1 || date.getDate() !== Number(match[3])) return "";
+  return new Intl.DateTimeFormat("en-US", { year: "numeric", month: "long", day: "numeric" }).format(date);
+}
+
 export function formatTaskScheduleSummary({
   taskType,
   durationValue,
   durationUnit,
   durationPeriod,
+  plannedStartDate,
   plannedStartTime,
   productivityDays,
-  onceOffDay,
   splitAcrossProductivityDays = true,
   weeklyBlockDay,
 }: TaskScheduleSummaryOptions): string {
   const goalMinutes = getTaskScheduleSummaryGoalMinutes(durationValue, durationUnit);
   const startMinutes = parseScheduleTimeMinutes(plannedStartTime);
-  if (!(goalMinutes > 0) || startMinutes == null) return "";
+  const startDateText = formatScheduleSummaryDate(plannedStartDate);
+  if (!(goalMinutes > 0) || startMinutes == null || !startDateText) return "";
 
   const startText = formatScheduleSlotTime(startMinutes);
   if (taskType === "once-off") {
-    return `Task will be added as a ${formatScheduleSummaryDuration(goalMinutes)} scheduled block at ${startText} on ${formatScheduleSummaryDay(
-      onceOffDay
-    )}.`;
+    return `Task will be added as a ${formatScheduleSummaryDuration(goalMinutes)} scheduled block at ${startText} on ${startDateText}.`;
   }
 
   const days = normalizeOptimalProductivityDays(productivityDays);
@@ -242,7 +250,7 @@ export function formatTaskScheduleSummary({
   const dayLabel = dayCount === 1 ? "productivity day" : "productivity days";
   if (durationPeriod === "week") {
     if (!splitAcrossProductivityDays) {
-      return `Task will be added as a ${formatScheduleSummaryDuration(goalMinutes)} weekly scheduled block at ${startText} on ${formatScheduleSummaryDay(
+      return `Task will start on ${startDateText} as a ${formatScheduleSummaryDuration(goalMinutes)} weekly scheduled block at ${startText} on ${formatScheduleSummaryDay(
         weeklyBlockDay
       )}.`;
     }
@@ -250,13 +258,13 @@ export function formatTaskScheduleSummary({
     const remainder = goalMinutes % dayCount;
     const minMinutes = baseMinutes;
     const maxMinutes = baseMinutes + (remainder > 0 ? 1 : 0);
-    return `Task will be split into ${formatScheduleSummaryDurationRange(
+    return `Starting ${startDateText}, task will be split into ${formatScheduleSummaryDurationRange(
       minMinutes,
       maxMinutes
     )} daily scheduled blocks at ${startText} on your ${dayCount} ${dayLabel}.`;
   }
 
-  return `Task will be added as ${formatScheduleSummaryDuration(
+  return `Starting ${startDateText}, task will be added as ${formatScheduleSummaryDuration(
     goalMinutes
   )} daily scheduled blocks at ${startText} on your ${dayCount} ${dayLabel}.`;
 }

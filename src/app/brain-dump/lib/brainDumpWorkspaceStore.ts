@@ -268,6 +268,7 @@ function mapBrainDumpTaskToFirestore(task: Task) {
     taskType,
     onceOffDay: taskType === "once-off" ? normalizePlannedStartDay(task.onceOffDay) : null,
     onceOffTargetDate: taskType === "once-off" ? normalizeLocalDate(task.onceOffTargetDate) : null,
+    plannedStartDate: normalizeLocalDate(task.plannedStartDate),
     plannedStartDay: normalizePlannedStartDay(task.plannedStartDay),
     plannedStartTime: getPersistedPlannedStartTime(task),
     plannedStartByDay: normalizePlannedStartByDay(task.plannedStartByDay),

@@ -3,8 +3,9 @@ import { normalizeOptimalProductivityDays } from "./productivityPeriod";
 import {
   buildWeeklyPlannedStartByDay,
   findFirstAvailableScheduleSlotFromProductivityWindow,
+  getCurrentLocalDate,
+  getScheduleDayForLocalDate,
   normalizeScheduleStoredTime,
-  resolveNextScheduleDayDate,
   setTaskScheduledTimeForDay,
   type ScheduleDay,
 } from "./schedule-placement";
@@ -61,6 +62,7 @@ function cloneImportedMilestones(config: SharedTaskImportConfig, createId: () =>
 function clearImportedTaskSchedule(task: Task) {
   task.onceOffDay = null;
   task.onceOffTargetDate = null;
+  task.plannedStartDate = null;
   task.plannedStartDay = null;
   task.plannedStartTime = null;
   task.plannedStartByDay = null;
@@ -68,13 +70,15 @@ function clearImportedTaskSchedule(task: Task) {
 }
 
 function applyRecipientSchedule(task: Task, config: SharedTaskImportConfig, days: ScheduleDay[], plannedStartTime: string, nowDate?: Date) {
-  const firstDay = days[0] || "mon";
+  const plannedStartDate = getCurrentLocalDate(nowDate);
+  const firstDay = config.taskType === "once-off" ? getScheduleDayForLocalDate(plannedStartDate) || "mon" : days[0] || "mon";
+  task.plannedStartDate = plannedStartDate;
   task.plannedStartOpenEnded = false;
   task.plannedStartTime = plannedStartTime;
   if (config.taskType === "once-off") {
     task.taskType = "once-off";
     task.onceOffDay = firstDay;
-    task.onceOffTargetDate = resolveNextScheduleDayDate(firstDay, nowDate);
+    task.onceOffTargetDate = plannedStartDate;
     task.plannedStartDay = firstDay;
     task.plannedStartByDay = { [firstDay]: plannedStartTime };
     return;

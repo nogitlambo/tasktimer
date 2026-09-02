@@ -130,6 +130,7 @@ export type TaskTimerMutableState = {
   addTaskWizardStep: 1 | 2 | 3 | 4 | 5;
   addTaskType: "recurring" | "once-off" | null;
   addTaskOnceOffDay: "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+  addTaskPlannedStartDate: string;
   addTaskPlannedStartTime: string;
   addTaskDurationValue: number;
   addTaskDurationUnit: "minute" | "hour";

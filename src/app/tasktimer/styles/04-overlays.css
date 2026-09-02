@@ -7451,8 +7451,17 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 }
 
 #editOverlay .editPlannedStartField,
-#addTaskOverlay .editPlannedStartField{
+#addTaskOverlay .editPlannedStartField,
+#editOverlay .editPlannedStartDateField,
+#addTaskOverlay .editPlannedStartDateField{
   padding-top: 16px;
+}
+
+#editOverlay .plannedStartDateInput,
+#addTaskOverlay .plannedStartDateInput{
+  width: min(220px, 100%);
+  min-height: 38px;
+  color-scheme: dark;
 }
 
 #editOverlay .taskScheduleFields.isHidden,

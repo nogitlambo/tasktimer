@@ -22,9 +22,11 @@ import {
   formatScheduleSlotTime,
   formatScheduleStoredTimeFromMinutes,
   formatScheduleTimeRange,
+  getCurrentLocalDate,
   getLocalScheduleDay,
+  getScheduleDayForLocalDate,
+  normalizeLocalDateValue,
   normalizeScheduleStoredTime,
-  resolveNextScheduleDayDate,
   setTaskScheduledTimeForDay,
   type ScheduleDay,
 } from "../lib/schedule-placement";
@@ -138,33 +140,23 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     els.addTaskError?.classList.remove("isOn");
     if (els.addTaskError) els.addTaskError.textContent = "";
     els.addTaskName?.classList.remove("isInvalid");
+    els.addTaskPlannedStartDateInput?.classList.remove("isInvalid");
     els.addTaskDurationValueInput?.classList.remove("isInvalid");
     els.addTaskMsArea?.classList.remove("isInvalid");
     els.addTaskMsList?.querySelectorAll?.(".msRow.isInvalid")?.forEach((el) => el.classList.remove("isInvalid"));
   }
 
-  function isNativeOrFilePushRuntime() {
-    if (typeof window === "undefined") return false;
-    if (window.location.protocol === "file:") return true;
-    try {
-      const cap = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
-      return typeof cap?.isNativePlatform === "function" && cap.isNativePlatform();
-    } catch {
-      return false;
-    }
-  }
-
-  function arePushAlertsEnabledForCurrentRuntime() {
-    return isNativeOrFilePushRuntime() ? ctx.getMobilePushAlertsEnabled() : ctx.getWebPushAlertsEnabled();
+  function areMobilePushAlertsEnabled() {
+    return ctx.getMobilePushAlertsEnabled();
   }
 
   function syncAddTaskPushReminderUi() {
-    const enabled = arePushAlertsEnabledForCurrentRuntime();
+    const enabled = areMobilePushAlertsEnabled();
     if (els.addTaskPlannedStartPushReminders) {
       if (!enabled) els.addTaskPlannedStartPushReminders.checked = false;
       els.addTaskPlannedStartPushReminders.disabled = !enabled;
       els.addTaskPlannedStartPushReminders.setAttribute("aria-disabled", String(!enabled));
-      els.addTaskPlannedStartPushReminders.title = enabled ? "" : "Enable push notifications in Settings to use reminders.";
+      els.addTaskPlannedStartPushReminders.title = enabled ? "" : "Enable mobile push alerts in Settings to use reminders.";
     }
     els.addTaskPlannedStartPushRemindersRow?.classList.toggle("isDisabled", !enabled);
     els.addTaskPlannedStartPushRemindersRow?.setAttribute("aria-disabled", String(!enabled));
@@ -269,6 +261,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
             durationValue: ctx.getAddTaskDurationValue(),
             durationUnit: ctx.getAddTaskDurationUnit(),
             durationPeriod: isOnceOffTaskType() ? "day" : ctx.getAddTaskDurationPeriod(),
+            plannedStartDate: ctx.getAddTaskPlannedStartDate(),
             plannedStartTime: ctx.getAddTaskPlannedStartTime() || "09:00",
             productivityDays: ctx.getOptimalProductivityDays(),
             onceOffDay: ctx.getAddTaskOnceOffDay(),
@@ -284,14 +277,16 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
 
   function buildAddTaskScheduleDraft(plannedStartTime: string): Task {
     const taskType = isOnceOffTaskType() ? "once-off" : "recurring";
-    const onceOffDay = ctx.getAddTaskOnceOffDay() as ScheduleDay;
+    const plannedStartDate = normalizeLocalDateValue(ctx.getAddTaskPlannedStartDate()) || getCurrentLocalDate();
+    const onceOffDay = getScheduleDayForLocalDate(plannedStartDate) || "mon";
     const timeGoalPeriod = taskType === "once-off" ? "day" : ctx.getAddTaskDurationPeriod();
     const draftTask = {
       id: "__add-task-schedule-draft__",
       name: String(els.addTaskName?.value || "").trim() || "Draft task",
       taskType,
       onceOffDay: taskType === "once-off" ? onceOffDay : null,
-      onceOffTargetDate: null,
+      onceOffTargetDate: taskType === "once-off" ? plannedStartDate : null,
+      plannedStartDate,
       order: 0,
       accumulatedMs: 0,
       running: false,
@@ -673,13 +668,15 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function validateAddTaskOnceOffDay() {
-    if (!isOnceOffTaskType()) return true;
-    const selectedDay = String(els.addTaskOnceOffDaySelect?.value || ctx.getAddTaskOnceOffDay()).trim().toLowerCase();
-    if (!selectedDay) {
-      showAddTaskValidationError("Choose a day for this once-off task.");
+    const plannedStartDate = normalizeLocalDateValue(els.addTaskPlannedStartDateInput?.value || ctx.getAddTaskPlannedStartDate());
+    if (!plannedStartDate) {
+      els.addTaskPlannedStartDateInput?.classList.add("isInvalid");
+      showAddTaskValidationError("Choose a valid planned start date.");
       return false;
     }
-    ctx.setAddTaskOnceOffDayState(selectedDay as ScheduleDay);
+    ctx.setAddTaskPlannedStartDateState(plannedStartDate);
+    const selectedDay = getScheduleDayForLocalDate(plannedStartDate);
+    if (selectedDay) ctx.setAddTaskOnceOffDayState(selectedDay);
     return true;
   }
 
@@ -926,6 +923,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       scheduleEnabled: addTaskScheduleEnabled,
       taskType: ctx.getAddTaskType(),
       onceOffDay: ctx.getAddTaskOnceOffDay(),
+      plannedStartDate: ctx.getAddTaskPlannedStartDate(),
       plannedStartTime: String(ctx.getAddTaskPlannedStartTime() || "").trim() || "09:00",
       plannedStartTouched: addTaskPlannedStartTouched,
       plannedStartPushRemindersEnabled: !!els.addTaskPlannedStartPushReminders?.checked,
@@ -947,6 +945,8 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     addTaskScheduleEnabled = false;
     ctx.setAddTaskTypeState("recurring");
     ctx.setAddTaskOnceOffDayState("mon");
+    const currentLocalDate = getCurrentLocalDate();
+    ctx.setAddTaskPlannedStartDateState(currentLocalDate);
     ctx.setAddTaskPlannedStartTimeState("09:00");
     ctx.setAddTaskDurationValueState(0);
     ctx.setAddTaskDurationUnitState("minute");
@@ -967,6 +967,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     syncAddTaskNamePlaceholder(true);
     if (els.addTaskDurationValueInput) els.addTaskDurationValueInput.value = "0";
     if (els.addTaskOnceOffDaySelect) els.addTaskOnceOffDaySelect.value = "mon";
+    if (els.addTaskPlannedStartDateInput) els.addTaskPlannedStartDateInput.value = currentLocalDate;
     if (els.addTaskPlannedStartPushReminders) els.addTaskPlannedStartPushReminders.checked = false;
     if (els.addTaskPlannedStartInput) els.addTaskPlannedStartInput.value = "09:00";
     if (els.addTaskCheckpointSoundModeSelect) els.addTaskCheckpointSoundModeSelect.value = "once";
@@ -1109,8 +1110,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
 
     if (taskType === "once-off") {
       const today = getLocalScheduleDay();
+      const todayDate = getCurrentLocalDate();
       newTask.onceOffDay = today;
-      newTask.onceOffTargetDate = resolveNextScheduleDayDate(today);
+      newTask.onceOffTargetDate = todayDate;
+      newTask.plannedStartDate = todayDate;
       newTask.plannedStartDay = today;
       newTask.plannedStartTime = plannedStartTime;
       newTask.plannedStartByDay = { [today]: plannedStartTime };
@@ -1119,6 +1122,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
 
     newTask.onceOffDay = null;
     newTask.onceOffTargetDate = null;
+    newTask.plannedStartDate = getCurrentLocalDate();
     newTask.plannedStartDay = null;
     newTask.plannedStartTime = plannedStartTime;
     newTask.splitAcrossProductivityDays = timeGoalPeriod === "week" ? true : undefined;
@@ -1236,6 +1240,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     });
 
     if (!addTaskScheduleEnabled) {
+      newTask.plannedStartDate = null;
       newTask.plannedStartPushRemindersEnabled = false;
       ctx.setTasks([...tasks, newTask]);
       ctx.render();
@@ -1282,18 +1287,21 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     newTask.presetIntervalsEnabled = false;
     newTask.presetIntervalValue = 0;
     newTask.timeGoalAction = "confirmModal";
-    newTask.plannedStartPushRemindersEnabled = arePushAlertsEnabledForCurrentRuntime() && !!els.addTaskPlannedStartPushReminders?.checked;
+    newTask.plannedStartPushRemindersEnabled = areMobilePushAlertsEnabled() && !!els.addTaskPlannedStartPushReminders?.checked;
 
     if (isOnceOffTaskType()) {
-      const onceOffDay = ctx.getAddTaskOnceOffDay() as ScheduleDay;
+      const plannedStartDate = normalizeLocalDateValue(ctx.getAddTaskPlannedStartDate())!;
+      const onceOffDay = getScheduleDayForLocalDate(plannedStartDate) || "mon";
       const plannedTime = String(ctx.getAddTaskPlannedStartTime() || "").trim() || "09:00";
+      newTask.plannedStartDate = plannedStartDate;
       newTask.onceOffDay = onceOffDay;
-      newTask.onceOffTargetDate = resolveNextScheduleDayDate(onceOffDay);
+      newTask.onceOffTargetDate = plannedStartDate;
       newTask.plannedStartOpenEnded = false;
       newTask.plannedStartDay = onceOffDay;
       newTask.plannedStartTime = plannedTime;
       newTask.plannedStartByDay = { [onceOffDay]: plannedTime };
     } else {
+      newTask.plannedStartDate = normalizeLocalDateValue(ctx.getAddTaskPlannedStartDate())!;
       newTask.onceOffDay = null;
       newTask.onceOffTargetDate = null;
       newTask.plannedStartOpenEnded = false;
@@ -1346,6 +1354,11 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       syncAddTaskScheduleToggleUi();
       syncAddTaskScheduleSummary();
       if (addTaskScheduleEnabled) {
+        if (!normalizeLocalDateValue(ctx.getAddTaskPlannedStartDate())) {
+          const currentLocalDate = getCurrentLocalDate();
+          ctx.setAddTaskPlannedStartDateState(currentLocalDate);
+          if (els.addTaskPlannedStartDateInput) els.addTaskPlannedStartDateInput.value = currentLocalDate;
+        }
         syncAddTaskTypeUi();
         syncAddTaskDurationUi();
         syncAddTaskSplitAcrossProductivityDaysUi();
@@ -1488,13 +1501,25 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.on(els.addTaskPlannedStartMeridiemSelect, "input", syncTouchedPlannedStart);
     ctx.on(els.addTaskPlannedStartTimeInput, "change", syncTouchedPlannedStart);
     ctx.on(els.addTaskPlannedStartTimeInput, "input", syncTouchedPlannedStart);
+    const syncPlannedStartDate = () => {
+      const nextDate = normalizeLocalDateValue(els.addTaskPlannedStartDateInput?.value);
+      ctx.setAddTaskPlannedStartDateState(nextDate || String(els.addTaskPlannedStartDateInput?.value || ""));
+      els.addTaskPlannedStartDateInput?.classList.remove("isInvalid");
+      if (nextDate) {
+        const day = getScheduleDayForLocalDate(nextDate);
+        if (day) ctx.setAddTaskOnceOffDayState(day);
+      }
+      syncAddTaskScheduleSummary();
+    };
+    ctx.on(els.addTaskPlannedStartDateInput, "change", syncPlannedStartDate);
+    ctx.on(els.addTaskPlannedStartDateInput, "input", syncPlannedStartDate);
     ctx.on(typeof window !== "undefined" ? window : null, "tasktimer:optimal-productivity-days-changed", () => {
       if (addTaskSplitAcrossProductivityDays) addTaskWeeklyBlockDay = getAddTaskDefaultWeeklyBlockDay();
       syncAddTaskSplitAcrossProductivityDaysUi();
       syncAddTaskScheduleSummary();
     });
     ctx.on(els.addTaskPlannedStartPushReminders, "change", () => {
-      if (!arePushAlertsEnabledForCurrentRuntime() && els.addTaskPlannedStartPushReminders) {
+      if (!areMobilePushAlertsEnabled() && els.addTaskPlannedStartPushReminders) {
         els.addTaskPlannedStartPushReminders.checked = false;
       }
       syncAddTaskPushReminderUi();

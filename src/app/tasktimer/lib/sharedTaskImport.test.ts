@@ -214,7 +214,7 @@ describe("shared task import scheduling", () => {
     expect(getScheduleTaskDurationMinutesForDay(result.task, "mon")).toBe(120);
   });
 
-  it("places once-off imports on the first recipient productivity day", () => {
+  it("anchors once-off imports to the recipient's current date", () => {
     const result = build({
       importConfig: importConfig({ taskType: "once-off", timeGoalPeriod: "day" }),
       optimalProductivityDays: ["fri", "mon"],
@@ -222,9 +222,10 @@ describe("shared task import scheduling", () => {
     });
 
     expect(result.task.taskType).toBe("once-off");
-    expect(result.task.onceOffDay).toBe("mon");
-    expect(result.task.onceOffTargetDate).toBe("2026-07-06");
-    expect(result.task.plannedStartByDay).toEqual({ mon: "09:00" });
+    expect(result.task.onceOffDay).toBe("tue");
+    expect(result.task.onceOffTargetDate).toBe("2026-06-30");
+    expect(result.task.plannedStartDate).toBe("2026-06-30");
+    expect(result.task.plannedStartByDay).toEqual({ tue: "09:00" });
   });
 
   it("detects existing imported copies by source owner and task", () => {

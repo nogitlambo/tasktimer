@@ -8,10 +8,20 @@ import {
   findFirstAvailableScheduleSlotFromProductivityWindow,
   formatScheduleTimeRange,
   getScheduleTaskDurationMinutesForDay,
+  normalizeLocalDateValue,
   swapTaskScheduleSlotsForDay,
   type ScheduleDay,
 } from "./schedule-placement";
 import type { Task } from "./types";
+
+describe("local schedule date normalization", () => {
+  it("accepts real local calendar dates and rejects impossible dates", () => {
+    expect(normalizeLocalDateValue("2028-02-29")).toBe("2028-02-29");
+    expect(normalizeLocalDateValue("2026-02-29")).toBeNull();
+    expect(normalizeLocalDateValue("2026-04-31")).toBeNull();
+    expect(normalizeLocalDateValue("2026-9-02")).toBeNull();
+  });
+});
 
 function task(overrides: Partial<Task> = {}): Task {
   const day = overrides.plannedStartDay || overrides.onceOffDay || "mon";

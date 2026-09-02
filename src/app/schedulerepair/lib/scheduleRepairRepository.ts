@@ -75,7 +75,7 @@ export function buildScheduleRepairTaskPatch(
     if (raw.pinned === true || raw.running === true || raw.editable === false || raw.completed === true || raw.status === "completed" || raw.status === "inactive") return null;
     if (raw.taskType === "once-off") {
       const day = weekdayToken(targetDate);
-      return { onceOffDay: day, onceOffTargetDate: targetDate, plannedStartDay: day };
+      return { onceOffDay: day, onceOffTargetDate: targetDate, plannedStartDate: targetDate, plannedStartDay: day };
     }
     const byDay = raw.plannedStartByDay && typeof raw.plannedStartByDay === "object" ? raw.plannedStartByDay as RawRow : {};
     const existingTimes = Object.values(byDay).map((value) => asString(value, 8)).filter((value) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value));
@@ -89,7 +89,7 @@ export function buildScheduleRepairTaskPatch(
     const exclusionPatch = Number.isFinite(Number(nextBestActionSnoozedUntilMs)) && Number(nextBestActionSnoozedUntilMs) > 0
       ? { nextBestActionSnoozedUntilMs: Math.floor(Number(nextBestActionSnoozedUntilMs)) }
       : {};
-    if (raw.taskType === "once-off") return { onceOffDay: null, onceOffTargetDate: null, plannedStartDay: null, plannedStartTime: null, plannedStartByDay: null, ...exclusionPatch };
+    if (raw.taskType === "once-off") return { onceOffDay: null, onceOffTargetDate: null, plannedStartDate: null, plannedStartDay: null, plannedStartTime: null, plannedStartByDay: null, ...exclusionPatch };
     const day = weekdayToken(localDate);
     const byDay = raw.plannedStartByDay && typeof raw.plannedStartByDay === "object" ? { ...(raw.plannedStartByDay as RawRow) } : {};
     delete byDay[day];

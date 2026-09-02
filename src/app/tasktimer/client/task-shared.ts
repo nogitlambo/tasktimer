@@ -1,8 +1,12 @@
 import {
+  getCurrentLocalDate,
+  getScheduleDayForLocalDate,
   hasLocalDatePassed,
+  hasMeaningfulTaskSchedule,
   normalizeLocalDateValue,
   normalizeTaskPlannedStartByDay,
   syncLegacyPlannedStartFields,
+  syncOnceOffPlannedStartFields,
 } from "../lib/schedule-placement";
 import type { Task } from "../lib/types";
 
@@ -79,6 +83,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
       taskType: "recurring",
       onceOffDay: null,
       onceOffTargetDate: null,
+      plannedStartDate: null,
       createdAtMs: Date.now(),
       order: order || 1,
       accumulatedMs: 0,
@@ -161,6 +166,14 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
         : Math.max(0, Math.floor(Number(task.order) || 0));
     task.onceOffDay = task.taskType === "once-off" ? normalizePlannedStartDay(task.onceOffDay) : null;
     task.onceOffTargetDate = task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null;
+    task.plannedStartDate =
+      normalizeLocalDateValue(task.plannedStartDate) ||
+      (task.taskType === "once-off" ? task.onceOffTargetDate : null) ||
+      (hasMeaningfulTaskSchedule(task) ? getCurrentLocalDate() : null);
+    if (task.taskType === "once-off" && task.plannedStartDate) {
+      task.onceOffTargetDate = task.plannedStartDate;
+      task.onceOffDay = getScheduleDayForLocalDate(task.plannedStartDate) || task.onceOffDay;
+    }
     task.plannedStartDay = normalizePlannedStartDay(task.plannedStartDay);
     task.plannedStartByDay = normalizeTaskPlannedStartByDay(task.plannedStartByDay);
     if (task.taskType === "once-off" && task.onceOffTargetDate && hasLocalDatePassed(task.onceOffTargetDate)) {
@@ -170,6 +183,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
       task.plannedStartOpenEnded = false;
     }
     syncLegacyPlannedStartFields(task);
+    syncOnceOffPlannedStartFields(task);
     task.plannedStartPushRemindersEnabled = task.plannedStartPushRemindersEnabled !== false;
     task.sharedSourceOwnerUid = task.sharedSourceOwnerUid == null ? null : String(task.sharedSourceOwnerUid).trim() || null;
     task.sharedSourceTaskId = task.sharedSourceTaskId == null ? null : String(task.sharedSourceTaskId).trim() || null;

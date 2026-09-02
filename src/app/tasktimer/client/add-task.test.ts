@@ -37,6 +37,7 @@ function createHarness(
   initialValue: string,
   overrides?: {
     tasks?: Array<Record<string, unknown>>;
+    plannedStartDate?: string;
     plannedStartTime?: string;
     taskType?: "recurring" | "once-off";
     productivityStartTime?: string;
@@ -100,6 +101,11 @@ function createHarness(
     value: addTaskPlannedStartTime,
     disabled: false,
     classList: { toggle: vi.fn() },
+  } as unknown as HTMLInputElement;
+  let addTaskPlannedStartDate = overrides?.plannedStartDate || "2026-09-02";
+  const addTaskPlannedStartDateInput = {
+    value: addTaskPlannedStartDate,
+    classList: { add: vi.fn(), remove: vi.fn(), toggle: vi.fn() },
   } as unknown as HTMLInputElement;
   const addTaskPlannedStartInput = {
     value: addTaskPlannedStartTime,
@@ -169,6 +175,7 @@ function createHarness(
       addTaskPlannedStartMinuteSelect: null,
       addTaskPlannedStartMeridiemSelect: null,
       addTaskPlannedStartTimeInput,
+      addTaskPlannedStartDateInput,
       addTaskColorTrigger: null,
       addTaskColorPopover: null,
       addTaskColorPalette: null,
@@ -254,6 +261,10 @@ function createHarness(
     setAddTaskOnceOffDayState: vi.fn((value: string) => {
       addTaskOnceOffDay = value;
     }),
+    getAddTaskPlannedStartDate: () => addTaskPlannedStartDate,
+    setAddTaskPlannedStartDateState: vi.fn((value: string) => {
+      addTaskPlannedStartDate = value;
+    }),
     getAddTaskPlannedStartTime: () => addTaskPlannedStartTime,
     setAddTaskPlannedStartTimeState: vi.fn((value: string) => {
       addTaskPlannedStartTime = value;
@@ -304,6 +315,7 @@ function createHarness(
     addTaskMsToggle,
     addTaskName,
     addTaskOverlay,
+    addTaskPlannedStartDateInput,
     addTaskPlannedStartTimeInput,
     addTaskScheduleSummary,
     addTaskScheduleSummaryText,
@@ -346,6 +358,21 @@ function createHarness(
     setOnceOffDay: (day: string) => {
       addTaskOnceOffDaySelect.value = day;
       handlers.get(addTaskOnceOffDaySelect)?.get("change")?.();
+      const dateByDay: Record<string, string> = {
+        mon: "2026-09-07",
+        tue: "2026-09-08",
+        wed: "2026-09-09",
+        thu: "2026-09-10",
+        fri: "2026-09-11",
+        sat: "2026-09-12",
+        sun: "2026-09-13",
+      };
+      addTaskPlannedStartDateInput.value = dateByDay[day] || "2026-09-07";
+      handlers.get(addTaskPlannedStartDateInput)?.get("change")?.();
+    },
+    setPlannedStartDate: (value: string) => {
+      addTaskPlannedStartDateInput.value = value;
+      handlers.get(addTaskPlannedStartDateInput)?.get("input")?.();
     },
     focus: () => handlers.get(addTaskDurationValueInput)?.get("focus")?.(),
     inputDuration: () => handlers.get(addTaskDurationValueInput)?.get("input")?.(),
@@ -380,6 +407,33 @@ function createHarness(
 }
 
 describe("createTaskTimerAddTask", () => {
+  it("defaults Planned Start Date to the current local date when opened", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 2, 23, 30));
+    try {
+      const harness = createHarness("0");
+      harness.open();
+      expect(harness.addTaskPlannedStartDateInput.value).toBe("2026-09-02");
+      expect(harness.ctx.setAddTaskPlannedStartDateState).toHaveBeenCalledWith("2026-09-02");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("requires Planned Start Date only for scheduled tasks", () => {
+    const scheduled = createHarness("1");
+    scheduled.toggleSchedule(true);
+    scheduled.setPlannedStartDate("");
+    scheduled.submit();
+    expect(scheduled.ctx.setTasks).not.toHaveBeenCalled();
+
+    const unscheduled = createHarness("0");
+    unscheduled.submit();
+    expect(unscheduled.ctx.setTasks).toHaveBeenCalledWith([
+      expect.objectContaining({ plannedStartDate: null }),
+    ]);
+  });
+
   it("closes Add Task immediately when Cancel is clicked on an unchanged draft", () => {
     const harness = createHarness("0");
 
@@ -440,8 +494,9 @@ describe("createTaskTimerAddTask", () => {
     expect(harness.addTaskName.value).toBe("");
   });
 
-  it("greys out Add Task Remind Me when current-runtime push is off", async () => {
+  it("greys out Add Task Remind Me when mobile push is off even if web push is on", async () => {
     const harness = createHarness("1");
+    harness.ctx.setWebPushAlertsEnabledState(true);
 
     harness.open();
     await harness.togglePlannedStartPushReminder(true);
@@ -450,7 +505,28 @@ describe("createTaskTimerAddTask", () => {
     expect(harness.addTaskPlannedStartPushReminders.checked).toBe(false);
     expect(harness.addTaskPlannedStartPushReminders.setAttribute).toHaveBeenCalledWith("aria-disabled", "true");
     expect(harness.addTaskPlannedStartPushRemindersRow.classList.toggle).toHaveBeenCalledWith("isDisabled", true);
+    expect(harness.addTaskPlannedStartPushReminders.title).toBe("Enable mobile push alerts in Settings to use reminders.");
     expect(harness.ctx.persistPushAlertsPreference).not.toHaveBeenCalled();
+  });
+
+  it("allows desktop Add Task reminders when mobile push is on and web push is off", async () => {
+    const harness = createHarness("1");
+    harness.ctx.setMobilePushAlertsEnabledState(true);
+    harness.ctx.setWebPushAlertsEnabledState(false);
+
+    harness.open();
+    expect(harness.addTaskPlannedStartPushReminders.disabled).toBe(false);
+    harness.addTaskName.value = "New Task";
+    harness.addTaskDurationValueInput.value = "1";
+    harness.addTaskMsToggle.checked = false;
+
+    await harness.togglePlannedStartPushReminder(true);
+    harness.toggleSchedule(true);
+    harness.submit();
+
+    expect(harness.ctx.setTasks).toHaveBeenCalledWith([
+      expect.objectContaining({ plannedStartPushRemindersEnabled: true }),
+    ]);
   });
 
   it("updates the schedule summary for weekly recurring planned blocks", () => {
@@ -462,7 +538,7 @@ describe("createTaskTimerAddTask", () => {
     harness.setManualPlannedStart("08:00");
 
     expect(harness.addTaskScheduleSummaryText.textContent).toBe(
-      "Task will be split into 12 minute daily scheduled blocks at 8:00 AM on your 5 productivity days."
+      "Starting September 2, 2026, task will be split into 12 minute daily scheduled blocks at 8:00 AM on your 5 productivity days."
     );
     expect(harness.addTaskScheduleSummary.classList.toggle).toHaveBeenLastCalledWith("isHidden", false);
   });
@@ -473,13 +549,13 @@ describe("createTaskTimerAddTask", () => {
     harness.toggleSchedule();
     harness.setManualPlannedStart("08:00");
     expect(harness.addTaskScheduleSummaryText.textContent).toBe(
-      "Task will be added as 1 minute daily scheduled blocks at 8:00 AM on your 5 productivity days."
+      "Starting September 2, 2026, task will be added as 1 minute daily scheduled blocks at 8:00 AM on your 5 productivity days."
     );
 
     harness.clickOnceOffType();
     harness.setOnceOffDay("fri");
 
-    expect(harness.addTaskScheduleSummaryText.textContent).toBe("Task will be added as a 1 minute scheduled block at 8:00 AM on Friday.");
+    expect(harness.addTaskScheduleSummaryText.textContent).toBe("Task will be added as a 1 minute scheduled block at 8:00 AM on September 11, 2026.");
   });
 
   it("clears the add-task time goal input on focus when the value is the default zero", () => {
@@ -1127,7 +1203,7 @@ describe("createTaskTimerAddTask", () => {
       plannedStartByDay: { mon: "07:15" },
       plannedStartOpenEnded: false,
     };
-    const harness = createHarness("15", { tasks: [existingTask], plannedStartTime: "07:00", taskType: "once-off" });
+    const harness = createHarness("15", { tasks: [existingTask], plannedStartDate: "2026-09-07", plannedStartTime: "07:00", taskType: "once-off" });
     harness.ctx.getAddTaskDurationUnit = () => "minute";
     harness.addTaskMsToggle.checked = false;
 
@@ -1173,7 +1249,7 @@ describe("createTaskTimerAddTask", () => {
       plannedStartOpenEnded: false,
     };
     const tasks = [existingTask];
-    const harness = createHarness("1", { tasks, taskType: "once-off" });
+    const harness = createHarness("1", { tasks, plannedStartDate: "2026-09-07", taskType: "once-off" });
     harness.addTaskMsToggle.checked = false;
 
     harness.toggleSchedule(true);
@@ -1230,7 +1306,7 @@ describe("createTaskTimerAddTask", () => {
       plannedStartByDay: { mon: "10:00" },
     };
     const tasks = [existingTask, laterTask];
-    const harness = createHarness("1", { tasks, taskType: "once-off" });
+    const harness = createHarness("1", { tasks, plannedStartDate: "2026-09-07", taskType: "once-off" });
     harness.addTaskMsToggle.checked = false;
 
     harness.toggleSchedule(true);
@@ -1280,7 +1356,7 @@ describe("createTaskTimerAddTask", () => {
       plannedStartOpenEnded: false,
     };
     const tasks = [existingTask];
-    const harness = createHarness("1", { tasks, taskType: "once-off" });
+    const harness = createHarness("1", { tasks, plannedStartDate: "2026-09-07", taskType: "once-off" });
     harness.addTaskMsToggle.checked = false;
 
     harness.toggleSchedule(true);

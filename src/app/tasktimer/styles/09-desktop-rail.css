@@ -607,7 +607,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
     width: calc(100% - 28px);
     min-height: 0;
     flex: 0 0 auto;
-    margin: 12px auto 18px;
+    margin: 12px auto calc(18px + env(safe-area-inset-bottom));
     visibility: hidden;
   }
 

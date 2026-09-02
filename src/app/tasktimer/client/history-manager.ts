@@ -95,6 +95,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       taskType: "recurring",
       onceOffDay: null,
       onceOffTargetDate: null,
+      plannedStartDate: null,
       order: ctx.getTasks().length + 1,
       accumulatedMs: 0,
       running: false,

@@ -1,11 +1,15 @@
 import type { HistoryByTaskId, Task } from "../lib/types";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import {
+  getCurrentLocalDate,
+  getScheduleDayForLocalDate,
   hasLocalDatePassed,
+  hasMeaningfulTaskSchedule,
   normalizeLocalDateValue,
   normalizeScheduleStoredTime,
   normalizeTaskPlannedStartByDay,
   syncLegacyPlannedStartFields,
+  syncOnceOffPlannedStartFields,
   type ScheduleDay,
 } from "../lib/schedule-placement";
 import type { TaskTimerImportExportContext } from "./context";
@@ -91,6 +95,7 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
       taskType,
       onceOffDay: taskType === "once-off" ? normalizeScheduleDay(task.onceOffDay) : null,
       onceOffTargetDate: taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,
+      plannedStartDate: normalizeLocalDateValue(task.plannedStartDate),
       plannedStartDay: normalizeScheduleDay(task.plannedStartDay),
       plannedStartTime,
       plannedStartByDay,
@@ -238,10 +243,16 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
       : null;
     nextTask.presetIntervalNextSeq = ctx.getPresetIntervalNextSeqNum(rawTask as Task);
     nextTask.taskType = rawTask.taskType === "once-off" ? "once-off" : "recurring";
-    nextTask.onceOffDay = nextTask.taskType === "once-off" ? normalizeScheduleDay(rawTask.onceOffDay) : null;
-    nextTask.onceOffTargetDate =
-      nextTask.taskType === "once-off" ? normalizeLocalDateValue(rawTask.onceOffTargetDate) : null;
-    nextTask.plannedStartDay = normalizeScheduleDay(rawTask.plannedStartDay);
+    const importedPlannedStartDate =
+      normalizeLocalDateValue(rawTask.plannedStartDate) ||
+      (nextTask.taskType === "once-off" ? normalizeLocalDateValue(rawTask.onceOffTargetDate) : null) ||
+      (hasMeaningfulTaskSchedule(rawTask as Task) ? getCurrentLocalDate() : null);
+    const importedPlannedStartDay = getScheduleDayForLocalDate(importedPlannedStartDate);
+    nextTask.plannedStartDate = importedPlannedStartDate;
+    nextTask.onceOffDay = nextTask.taskType === "once-off" ? importedPlannedStartDay || normalizeScheduleDay(rawTask.onceOffDay) : null;
+    nextTask.onceOffTargetDate = nextTask.taskType === "once-off" ? importedPlannedStartDate : null;
+    nextTask.plannedStartDay =
+      nextTask.taskType === "once-off" ? importedPlannedStartDay || normalizeScheduleDay(rawTask.plannedStartDay) : normalizeScheduleDay(rawTask.plannedStartDay);
     nextTask.plannedStartTime = normalizeScheduleStoredTime(rawTask.plannedStartTime);
     nextTask.plannedStartByDay = normalizeTaskPlannedStartByDay(rawTask.plannedStartByDay);
     nextTask.plannedStartOpenEnded = !!rawTask.plannedStartOpenEnded;
@@ -253,6 +264,7 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
       nextTask.plannedStartOpenEnded = false;
     }
     syncLegacyPlannedStartFields(nextTask);
+    syncOnceOffPlannedStartFields(nextTask);
     nextTask.color = rawTask.color ? String(rawTask.color) : null;
     nextTask.accumulatedMs = normalizeTaskElapsedValue(rawTask);
     nextTask.hasStarted = !!rawTask.hasStarted || nextTask.accumulatedMs > 0;

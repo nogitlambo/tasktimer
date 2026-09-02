@@ -41,10 +41,14 @@ import { nowMs } from "./time";
 import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, reconcileRewardProgressWithHistory } from "./rewards";
 import { normalizeSessionNoteAttachments } from "./sessionNoteAttachments";
 import {
+  getCurrentLocalDate,
+  getScheduleDayForLocalDate,
   hasLocalDatePassed,
+  hasMeaningfulTaskSchedule,
   normalizeLocalDateValue,
   normalizeTaskPlannedStartByDay,
   syncLegacyPlannedStartFields,
+  syncOnceOffPlannedStartFields,
 } from "./schedule-placement";
 import { normalizeDashboardWeekStart } from "./historyChart";
 import {
@@ -320,13 +324,18 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
     plannedStartDayRaw === "sun"
       ? plannedStartDayRaw
       : null;
+  const explicitPlannedStartDate = normalizeLocalDateValue(task.plannedStartDate);
+  const legacyOnceOffDate = task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null;
+  const plannedStartDate =
+    explicitPlannedStartDate || legacyOnceOffDate || (hasMeaningfulTaskSchedule(task) ? getCurrentLocalDate() : null);
+  const plannedStartDateDay = getScheduleDayForLocalDate(plannedStartDate);
   const normalizedTask: Task = {
     ...taskWithoutMode,
     accumulatedMs,
     hasStarted: !!task.hasStarted || accumulatedMs > 0,
     taskType: task.taskType === "once-off" ? "once-off" : "recurring",
-    onceOffDay: task.taskType === "once-off" ? plannedStartDay : null,
-    onceOffTargetDate: task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,
+    onceOffDay: task.taskType === "once-off" ? plannedStartDateDay || plannedStartDay : null,
+    onceOffTargetDate: task.taskType === "once-off" ? plannedStartDate : null,
     createdAtMs:
       Number.isFinite(Number(task.createdAtMs)) && Number(task.createdAtMs) > 0
         ? Math.floor(Number(task.createdAtMs))
@@ -364,7 +373,8 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
       typeof task.resumePendingSinceDayKey === "string" && /^\d{4}-\d{2}-\d{2}$/.test(task.resumePendingSinceDayKey)
         ? task.resumePendingSinceDayKey
         : null,
-    plannedStartDay,
+    plannedStartDate,
+    plannedStartDay: task.taskType === "once-off" ? plannedStartDateDay || plannedStartDay : plannedStartDay,
     plannedStartTime: task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
     plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
     plannedStartOpenEnded: !!task.plannedStartOpenEnded,
@@ -384,6 +394,7 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
     normalizedTask.plannedStartOpenEnded = false;
   }
   syncLegacyPlannedStartFields(normalizedTask);
+  syncOnceOffPlannedStartFields(normalizedTask);
   return normalizedTask;
 }
 
@@ -398,6 +409,7 @@ function mergeMissingScheduleFromShadow(task: Task, shadowTask: Task | null | un
   const mergedTask = normalizeTaskShape({
     ...task,
     plannedStartDay: shadowTask.plannedStartDay ?? null,
+    plannedStartDate: shadowTask.plannedStartDate ?? null,
     plannedStartTime: shadowTask.plannedStartTime ?? null,
     plannedStartByDay: normalizeTaskPlannedStartByDay(shadowTask.plannedStartByDay),
     plannedStartOpenEnded: !!shadowTask.plannedStartOpenEnded,
@@ -916,6 +928,7 @@ function taskSignature(task: Task | null | undefined): string {
     onceOffDay: task.taskType === "once-off" ? String(task.onceOffDay || "").trim().toLowerCase() || null : null,
     onceOffTargetDate: task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,
     plannedStartDay: task.plannedStartDay == null ? null : String(task.plannedStartDay).trim().toLowerCase() || null,
+    plannedStartDate: normalizeLocalDateValue(task.plannedStartDate),
     plannedStartTime: task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
     plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
     plannedStartOpenEnded: !!task.plannedStartOpenEnded,

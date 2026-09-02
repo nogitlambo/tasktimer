@@ -878,6 +878,16 @@ describe("sendScheduledTaskNotification", () => {
         appActive: true,
         appStateUpdatedAtMs: dueAtMs,
       },
+      {
+        id: "web-1",
+        token: "web-token",
+        enabled: true,
+        native: false,
+        provider: "fcm",
+        platform: "web",
+        appActive: false,
+        appStateUpdatedAtMs: dueAtMs,
+      },
     ];
     state.sendEachForMulticast = vi.fn(async () => ({
       successCount: 1,
@@ -909,6 +919,9 @@ describe("sendScheduledTaskNotification", () => {
 
     expect(result.status).toBe("sent");
     expect(state.sendEachForMulticast).toHaveBeenCalledTimes(1);
+    expect(state.sendEachForMulticast).toHaveBeenCalledWith(
+      expect.objectContaining({ tokens: ["native-token"] })
+    );
     expect(ref.set).toHaveBeenCalledWith(
       expect.objectContaining({
         dueAtMs: new Date(2026, 5, 5, 9, 0, 0).getTime(),

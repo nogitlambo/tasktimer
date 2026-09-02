@@ -518,7 +518,6 @@ body[data-theme="lime"] #landingEmailInput.webSignInAuthInput:focus-visible {
 }
 
 .webSignInSignedIn {
-  background: rgba(7, 8, 10, 0.84);
   color: rgba(248, 250, 252, 0.74);
   font-family: var(--font-readable);
 }

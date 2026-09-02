@@ -151,6 +151,13 @@ describe("firestore shared task summary rules", () => {
 });
 
 describe("firestore task document rules", () => {
+  it("allows nullable YYYY-MM-DD planned start dates", () => {
+    const block = functionBlock(readRules(), "isTaskDoc");
+
+    expect(block).toContain('"plannedStartDate"');
+    expect(block).toContain("request.resource.data.plannedStartDate.matches('^\\\\d{4}-\\\\d{2}-\\\\d{2}$')");
+  });
+
   it("allows manual completion and Next Best Action snooze timestamps", () => {
     const block = functionBlock(readRules(), "isTaskDoc");
 
