@@ -10,6 +10,25 @@
   "storage": {
     "rules": "storage.rules"
   },
+  "hosting": {
+    "site": "tasktimer-prod",
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "/.well-known/assetlinks.json",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      }
+    ]
+  },
   "apphosting": {
     "backendId": "tasktimer",
     "rootDir": "/",

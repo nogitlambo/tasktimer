@@ -9,6 +9,12 @@ function readManifest() {
   return readFileSync(manifestPath, "utf8");
 }
 
+function readFirebaseConfig() {
+  return JSON.parse(readFileSync(resolve(process.cwd(), "firebase.json"), "utf8")) as {
+    hosting?: { site?: string; public?: string };
+  };
+}
+
 describe("Android push notification manifest", () => {
   it("declares microphone access for native Brain Dump voice capture", () => {
     expect(readManifest()).toContain('android.permission.RECORD_AUDIO');
@@ -40,5 +46,15 @@ describe("Android push notification manifest", () => {
     expect(manifest).toContain('android:host="tasklaunch.app"');
     expect(manifest).toContain('android:pathPrefix="/account"');
     expect(manifest).toContain('android:pathPrefix="/settings"');
+  });
+
+  it("publishes app-link verification files to the Firebase Auth link domain", () => {
+    const hosting = readFirebaseConfig().hosting;
+
+    expect(hosting?.site).toBe("tasktimer-prod");
+    expect(hosting?.public).toBe("public");
+    expect(readFileSync(resolve(process.cwd(), "public/.well-known/assetlinks.json"), "utf8")).toContain(
+      '"delegate_permission/common.handle_all_urls"',
+    );
   });
 });
