@@ -1,6 +1,6 @@
 {
   "name": "tasklaunch",
-  "version": "2.0.77",
+  "version": "2.0.78",
   "private": true,
   "engines": {
     "node": "24.x"

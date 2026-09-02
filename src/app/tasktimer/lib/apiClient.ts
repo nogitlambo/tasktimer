@@ -16,9 +16,16 @@ function normalizeOrigin(value: string) {
   }
 }
 
+function withTrailingSlashBeforeSuffix(path: string) {
+  const suffixIndex = path.search(/[?#]/);
+  const pathname = suffixIndex >= 0 ? path.slice(0, suffixIndex) : path;
+  const suffix = suffixIndex >= 0 ? path.slice(suffixIndex) : "";
+  return `${pathname.endsWith("/") ? pathname : `${pathname}/`}${suffix}`;
+}
+
 export function getApiUrl(path: string) {
   const normalizedPath = String(path || "").startsWith("/") ? String(path || "") : `/${String(path || "")}`;
   if (!isNativeOrFileRuntime()) return normalizedPath;
   const configuredOrigin = normalizeOrigin(process.env.NEXT_PUBLIC_APP_URL || "");
-  return `${configuredOrigin || DEFAULT_NATIVE_API_ORIGIN}${normalizedPath}`;
+  return `${configuredOrigin || DEFAULT_NATIVE_API_ORIGIN}${withTrailingSlashBeforeSuffix(normalizedPath)}`;
 }

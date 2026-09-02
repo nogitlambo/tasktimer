@@ -40,4 +40,24 @@ describe("getApiUrl", () => {
 
     expect(getApiUrl("/api/account/delete-user-data/")).toBe("https://tasklaunch.app/api/account/delete-user-data/");
   });
+
+  it("adds the deployed trailing slash before query parameters in native runtime", async () => {
+    mocks.isNativeOrFileRuntime.mockReturnValue(true);
+    process.env.NEXT_PUBLIC_APP_URL = "https://tasklaunch.app";
+    const { getApiUrl } = await import("./apiClient");
+
+    expect(getApiUrl("/api/daily-executive-brief")).toBe(
+      "https://tasklaunch.app/api/daily-executive-brief/",
+    );
+    expect(
+      getApiUrl(
+        "/api/executive-function/capacity/today?timezone=Australia%2FSydney&forceRefresh=true",
+      ),
+    ).toBe(
+      "https://tasklaunch.app/api/executive-function/capacity/today/?timezone=Australia%2FSydney&forceRefresh=true",
+    );
+    expect(getApiUrl("/api/recommendations/next-best-action#current")).toBe(
+      "https://tasklaunch.app/api/recommendations/next-best-action/#current",
+    );
+  });
 });
