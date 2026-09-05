@@ -94,6 +94,7 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
   let abortController: AbortController | null = null;
   let expanded = true;
   let currentBrief: DailyExecutiveBriefDashboard | null = null;
+  let plannedStartRevision = 0;
 
   function setState(state: "loading" | "ready" | "empty" | "insufficient" | "stale" | "error" | "locked", message: string) {
     card?.setAttribute("data-daily-executive-brief-state", state);
@@ -211,12 +212,18 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
       return;
     }
     if (!recommendation) return;
+    const launchRevision = plannedStartRevision;
     setState("loading", "Revalidating the recommended task...");
     try {
       const idToken = await getIdToken();
       if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-      const response = await fetchImpl(getApiUrl(`/api/recommendations/next-best-action/${encodeURIComponent(recommendation.recommendationId)}/start`), { method: "POST", headers: { "Content-Type": "application/json", "x-firebase-auth": idToken }, body: "{}" });
+      const response = await fetchImpl(getApiUrl(`/api/recommendations/next-best-action/${encodeURIComponent(recommendation.recommendationId)}/start`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
+        body: JSON.stringify({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC" }),
+      });
       const payload = await response.json().catch(() => ({}));
+      if (launchRevision !== plannedStartRevision) throw new Error("This recommendation changed while it was being revalidated.");
       if (!response.ok) throw new Error(asString((payload as Record<string, unknown>).error, 240) || "This recommendation can no longer be started.");
       const launchResult = options.startTaskById?.(recommendation.taskId);
       if (!options.startTaskById) {
@@ -230,6 +237,7 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
       void trackDailyExecutiveBrief("started", { planHealth: currentBrief?.plan.planHealth });
       setState("ready", "Task started from the daily brief.");
     } catch (error) {
+      if (launchRevision !== plannedStartRevision) return;
       setState("stale", error instanceof Error ? error.message : "Could not start the recommended task.");
     }
   }
@@ -309,7 +317,14 @@ export function createDashboardDailyExecutiveBrief(options: Options) {
     if (options.getCurrentAppPage() === "dashboard") void refresh();
   }
   function destroy() { abortController?.abort(); requestSequence += 1; }
-  return { register, refresh, destroy, parseBriefResponse };
+  function invalidateForPlannedStartChange() {
+    plannedStartRevision += 1;
+    currentBrief = null;
+    abortController?.abort();
+    requestSequence += 1;
+    setState("loading", "Refreshing the brief after the planned start changed...");
+  }
+  return { register, refresh, invalidateForPlannedStartChange, destroy, parseBriefResponse };
 }
 
 export { parseBriefResponse };

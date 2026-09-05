@@ -4,6 +4,7 @@ import { parseRecommendationRecord } from "@/app/taskclarification/lib/taskClari
 import { computeTaskClarificationSourceVersion, type TaskClarificationRecommendation } from "@/app/taskclarification/lib/taskClarification";
 import type { HistoryEntry, Task } from "@/app/tasktimer/lib/types";
 import { isTaskMarkedDone, isTaskSnoozedForNextBestAction } from "@/app/tasktimer/lib/taskManualCompletion";
+import { isTaskPlannedActivationEligible } from "@/app/tasktimer/lib/schedule-placement";
 import {
   DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS,
   DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
@@ -96,6 +97,23 @@ export function localDateForRecommendationTimezone(timezone: string, nowMs: numb
   }).formatToParts(new Date(nowMs));
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${values.year}-${values.month}-${values.day}`;
+}
+
+export function localDateTimeForRecommendationTimezone(timezone: string, nowMs: number) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: normalizeTimezone(timezone),
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(nowMs));
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return {
+    localDate: `${values.year}-${values.month}-${values.day}`,
+    localTime: `${values.hour}:${values.minute}`,
+  };
 }
 
 export function localWeekStartDateForRecommendationTimezone(timezone: string, nowMs: number, weekStarting: unknown = "mon") {
@@ -248,6 +266,7 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
       const preferences = preferencesSnapshot.exists ? (preferencesSnapshot.data() as RawRow) : null;
       const weekStarting = normalizeDashboardWeekStart(preferences?.weekStarting);
       const recommendationTimezone = normalizeTimezone(timezone);
+      const recommendationLocalDateTime = localDateTimeForRecommendationTimezone(recommendationTimezone, nowMs);
       const candidates = await Promise.all(
         taskSnapshot.docs.map(async (doc) => {
           const raw = doc.data() as RawRow;
@@ -271,7 +290,9 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
               isTaskCompletedForRecommendationPeriod(raw, nowMs, recommendationTimezone, weekStarting),
             blocked: raw.blocked === true || raw.isBlocked === true,
             actionable: raw.actionable !== false && !snoozedForToday,
-            hardDateEligible: raw.hardDateEligible !== false,
+            hardDateEligible:
+              raw.hardDateEligible !== false &&
+              isTaskPlannedActivationEligible(task, recommendationLocalDateTime),
             incompatibleRunning: raw.incompatibleRunning === true,
             explicitPriority: raw.priority === "high" || raw.priority === "medium" || raw.priority === "low" ? raw.priority : null,
             history,
@@ -445,7 +466,11 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
         const currentTaskVersion = computeTaskClarificationSourceVersion(recommendation.taskId, taskData);
         if (currentTaskVersion !== recommendation.sourceTaskVersion) return { kind: "stale" } as const;
         const completedForPeriod = isTaskCompletedForRecommendationPeriod(taskData, nowMs, timezone, weekStarting);
-        const eligible = taskData.running !== true && taskData.active !== false && taskData.deleted !== true && taskData.status !== "inactive" && taskData.status !== "completed" && taskData.completed !== true && !completedForPeriod && !isTaskMarkedDone(task, nowMs) && !isTaskSnoozedForNextBestAction(task, nowMs) && taskData.blocked !== true && taskData.isBlocked !== true && taskData.actionable !== false;
+        const plannedStartEligible = isTaskPlannedActivationEligible(
+          task,
+          localDateTimeForRecommendationTimezone(timezone, nowMs)
+        );
+        const eligible = taskData.running !== true && taskData.active !== false && taskData.deleted !== true && taskData.status !== "inactive" && taskData.status !== "completed" && taskData.completed !== true && !completedForPeriod && !isTaskMarkedDone(task, nowMs) && !isTaskSnoozedForNextBestAction(task, nowMs) && taskData.blocked !== true && taskData.isBlocked !== true && taskData.actionable !== false && taskData.hardDateEligible !== false && plannedStartEligible;
         if (!eligible) return { kind: "ineligible" } as const;
         const startedAt = new Date(nowMs).toISOString();
         transaction.update(recommendationRef, { status: "STARTED", startedAt: Timestamp.fromMillis(nowMs), respondedAt: Timestamp.fromMillis(nowMs) });

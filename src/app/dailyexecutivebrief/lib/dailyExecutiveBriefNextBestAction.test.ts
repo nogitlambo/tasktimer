@@ -52,6 +52,13 @@ describe("resolveDailyBriefNextBestAction", () => {
     expect(repo.saveRecommendation).not.toHaveBeenCalled();
   });
 
+  it("omits candidates behind the shared planned-start gate", async () => {
+    const repo = repository([{ ...candidate, hardDateEligible: false }]);
+    const result = await resolveDailyBriefNextBestAction({ uid: "uid-1", date: "2026-08-07", nowMs: Date.parse("2026-08-07T09:00:00Z"), timezone: "UTC", repository: repo });
+    expect(result.recommendation).toBeNull();
+    expect(repo.saveRecommendation).not.toHaveBeenCalled();
+  });
+
   it("passes adaptive remaining capacity into the existing ranking path", async () => {
     const repo = repository([candidate]);
     const result = await resolveDailyBriefNextBestAction({ uid: "uid-1", date: "2026-08-07", nowMs: Date.parse("2026-08-07T09:00:00Z"), timezone: "UTC", remainingCapacityRange: { min: 10, max: 20 }, repository: repo });

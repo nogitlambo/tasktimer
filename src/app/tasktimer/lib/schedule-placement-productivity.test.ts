@@ -8,7 +8,9 @@ import {
   findFirstAvailableScheduleSlotFromProductivityWindow,
   formatScheduleTimeRange,
   getScheduleTaskDurationMinutesForDay,
+  isTaskPlannedActivationEligible,
   normalizeLocalDateValue,
+  resolveTaskPlannedActivation,
   swapTaskScheduleSlotsForDay,
   type ScheduleDay,
 } from "./schedule-placement";
@@ -20,6 +22,46 @@ describe("local schedule date normalization", () => {
     expect(normalizeLocalDateValue("2026-02-29")).toBeNull();
     expect(normalizeLocalDateValue("2026-04-31")).toBeNull();
     expect(normalizeLocalDateValue("2026-9-02")).toBeNull();
+  });
+});
+
+describe("planned task activation", () => {
+  it("resolves explicit, matching-day, and midnight start times", () => {
+    expect(resolveTaskPlannedActivation(task({
+      plannedStartDate: "2026-09-02",
+      plannedStartTime: "8:05",
+      plannedStartByDay: { wed: "10:30" },
+    }))).toEqual({ localDate: "2026-09-02", localTime: "08:05" });
+    expect(resolveTaskPlannedActivation(task({
+      plannedStartDate: "2026-09-02",
+      plannedStartTime: null,
+      plannedStartDay: null,
+      plannedStartByDay: { wed: "10:30" },
+    }))).toEqual({ localDate: "2026-09-02", localTime: "10:30" });
+    expect(resolveTaskPlannedActivation(task({
+      plannedStartDate: "2026-09-02",
+      plannedStartTime: null,
+      plannedStartDay: null,
+      plannedStartByDay: { mon: "10:30" },
+    }))).toEqual({ localDate: "2026-09-02", localTime: "00:00" });
+  });
+
+  it("is ineligible before the boundary and eligible at or after it", () => {
+    const candidate = task({ plannedStartDate: "2026-09-02", plannedStartTime: "10:30" });
+    expect(isTaskPlannedActivationEligible(candidate, { localDate: "2026-09-01", localTime: "23:59" })).toBe(false);
+    expect(isTaskPlannedActivationEligible(candidate, { localDate: "2026-09-02", localTime: "10:29" })).toBe(false);
+    expect(isTaskPlannedActivationEligible(candidate, { localDate: "2026-09-02", localTime: "10:30" })).toBe(true);
+    expect(isTaskPlannedActivationEligible(candidate, { localDate: "2026-09-02", localTime: "10:31" })).toBe(true);
+    expect(isTaskPlannedActivationEligible(candidate, { localDate: "2026-09-03", localTime: "00:00" })).toBe(true);
+  });
+
+  it("keeps missing and invalid dates eligible for backward compatibility", () => {
+    expect(resolveTaskPlannedActivation(task({ plannedStartDate: null }))).toBeNull();
+    expect(resolveTaskPlannedActivation(task({ plannedStartDate: "2026-02-29" }))).toBeNull();
+    expect(isTaskPlannedActivationEligible(task({ plannedStartDate: "invalid" }), {
+      localDate: "2026-09-02",
+      localTime: "10:30",
+    })).toBe(true);
   });
 });
 

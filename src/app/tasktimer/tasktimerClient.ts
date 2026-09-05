@@ -61,7 +61,7 @@ import { createTaskTimerPreferences } from "./client/preferences";
 import { createTaskTimerHistoryManager } from "./client/history-manager";
 import { resolveHistoryManagerRowTarget } from "./client/history-manager-shared";
 import { createTaskTimerHistoryInline } from "./client/history-inline";
-import { createTaskTimerCloudSync } from "./client/cloud-sync";
+import { createTaskTimerCloudSync, TASKTIMER_APP_RESUMED_EVENT } from "./client/cloud-sync";
 import { registerCloudSyncNoticeRuntime } from "./client/cloud-sync-notice";
 import { createTaskTimerPersistence } from "./client/persistence";
 import { createTaskTimerConfirmOverlay } from "./client/confirm-overlay";
@@ -144,6 +144,7 @@ import { createDashboardExecutiveSummary } from "./client/dashboard-executive-su
 import { createExecutiveSurface } from "./client/executive-surface";
 import { createExecutiveRequestCoordinator } from "./client/executive-request-coordinator";
 import { createExecutivePanelRefreshScheduler } from "./client/executive-panel-refresh-scheduler";
+import { createPlannedStartActivationScheduler } from "./client/planned-start-activation-scheduler";
 import { launchRecommendedTaskById } from "./client/recommended-task-launcher";
 import { dispatchTaskCompletionChangedEvent } from "./client/task-completion-events";
 import { getRichNoteEditorValue, setRichNoteEditorValue } from "./client/rich-session-notes";
@@ -343,6 +344,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let dashboardExecutiveSummaryApi: ReturnType<typeof createDashboardExecutiveSummary> | null = null;
   let executiveSurfaceApi: ReturnType<typeof createExecutiveSurface> | null = null;
   let executivePanelRefreshScheduler: ReturnType<typeof createExecutivePanelRefreshScheduler> | null = null;
+  let plannedStartActivationScheduler: ReturnType<typeof createPlannedStartActivationScheduler> | null = null;
   const executiveRequestCoordinator = createExecutiveRequestCoordinator(window.fetch.bind(window));
 
   const destroy = () => {
@@ -368,6 +370,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     dashboardExecutiveSummaryApi?.destroy();
     executiveSurfaceApi?.destroy();
     executivePanelRefreshScheduler?.destroy();
+    plannedStartActivationScheduler?.destroy();
     finishInitialAuthHydration();
     dashboardBusyApi.destroy();
     destroyTaskTimerRuntime({
@@ -950,6 +953,36 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       void executiveSurfaceApi?.refresh();
     },
   });
+  function refreshVisiblePlannedStartSurfaces(forceBrief: boolean) {
+    const page = appRuntimeState.get("currentAppPage");
+    if (page !== "dashboard" && page !== "executive") return;
+    void dashboardNextBestActionApi?.refresh();
+    void dashboardDailyExecutiveBriefApi?.refresh(forceBrief);
+    void dashboardRecoveryApi?.refresh();
+    if (page === "executive") void executiveSurfaceApi?.refresh();
+  }
+  plannedStartActivationScheduler = createPlannedStartActivationScheduler({
+    getTasks: () => taskCollectionBindings.getTasks(),
+    onActivation: () => {
+      render();
+      if (appRuntimeState.get("currentAppPage") === "dashboard") renderBindings.renderDashboardWidgets();
+      refreshVisiblePlannedStartSurfaces(true);
+    },
+    onScheduleChanged: async () => {
+      const page = appRuntimeState.get("currentAppPage");
+      if (page !== "dashboard" && page !== "executive") return;
+      if (page === "dashboard") renderBindings.renderDashboardWidgets();
+      dashboardNextBestActionApi?.invalidateForPlannedStartChange();
+      dashboardDailyExecutiveBriefApi?.invalidateForPlannedStartChange();
+      await workspaceRepository.waitForPendingTaskSync().catch(() => {});
+      if (!runtime.destroyed) refreshVisiblePlannedStartSurfaces(true);
+    },
+  });
+  on(document, "visibilitychange", () => {
+    if (document.visibilityState === "visible") plannedStartActivationScheduler?.handleResume();
+  });
+  on(window, "focus", () => plannedStartActivationScheduler?.handleResume());
+  on(window, TASKTIMER_APP_RESUMED_EVENT, () => plannedStartActivationScheduler?.handleResume());
   on(window, "tasklaunch:app-page-changed", () => {
     executivePanelRefreshScheduler?.handlePageChange();
   });
@@ -1540,7 +1573,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   getTaskElapsedMs = runtimeFacade.getTaskElapsedMs;
   renderSchedulePage = runtimeFacade.renderSchedulePage;
   requestScheduleEntryScroll = runtimeFacade.requestScheduleEntryScroll;
-  render = runtimeFacade.render;
+  render = () => {
+    runtimeFacade.render();
+    plannedStartActivationScheduler?.sync();
+  };
   resetAllOpenHistoryChartSelections = runtimeFacade.resetAllOpenHistoryChartSelections;
   closeUnpinnedOpenHistoryCharts = runtimeFacade.closeUnpinnedOpenHistoryCharts;
   renderHistory = runtimeFacade.renderHistory;
@@ -2038,6 +2074,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     dashboardExecutiveSummaryApi?.register();
     executiveSurfaceApi?.register();
     executivePanelRefreshScheduler?.syncForCurrentPage();
+    plannedStartActivationScheduler?.sync();
   }
 
   function hydrateUiStateFromCaches(opts?: { skipDashboardWidgetsRender?: boolean }) {

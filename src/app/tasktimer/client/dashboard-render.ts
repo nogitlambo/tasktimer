@@ -13,6 +13,7 @@ import {
   getTaskScheduledDayEntries,
   getScheduleTaskDurationMinutes,
   getWeeklyScheduleTaskDurationMinutes,
+  isTaskPlannedActivationEligible,
   normalizeLocalDateValue,
   parseScheduleTimeMinutes,
   type ScheduleDay,
@@ -25,7 +26,10 @@ import type { TaskTimerDashboardRenderContext } from "./context";
 import type { DashboardMomentumDriverKey, DashboardTimelineDensity } from "./types";
 export { buildMomentumDriverMessages, buildMomentumSummaryMessage, getPrimaryMomentumDriverKey } from "./dashboard-card-momentum";
 import { buildMomentumDriverMessages, buildMomentumSummaryMessage } from "./dashboard-card-momentum";
-import { buildDashboardTasksCompletedModel } from "./dashboard-card-tasks-completed";
+import {
+  buildDashboardTasksCompletedModel,
+  shouldIncludeTaskOverviewForPlannedActivation,
+} from "./dashboard-card-tasks-completed";
 import { buildDashboardTasksCompletedLabelLayout } from "./dashboard-card-tasks-completed-layout";
 import { buildDashboardTodayHoursModel, formatDashboardTodayHoursDeltaText } from "./dashboard-card-today-hours";
 import {
@@ -1987,7 +1991,32 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       return todayEntries.length ? Math.min(...todayEntries) : Number.POSITIVE_INFINITY;
     };
     const opportunities = getDashboardFilteredTasks()
-      .map((task) => getTaskOverviewOpportunity(task, nowValue))
+      .map((task) => {
+        const plannedStartVisible = shouldIncludeTaskOverviewForPlannedActivation({
+          task,
+          historyByTaskId,
+          nowMs: nowValue,
+          weekStartMs,
+          todayKey,
+          isTaskRunning: (candidate) => isDashboardTaskActivelyRunning(candidate),
+          normalizeHistoryTimestampMs: (value) => ctx.normalizeHistoryTimestampMs(value),
+        });
+        if (!plannedStartVisible) return null;
+        const scheduledOpportunity = getTaskOverviewOpportunity(task, nowValue);
+        if (scheduledOpportunity) return scheduledOpportunity;
+        const nowDate = new Date(nowValue);
+        const activationEligible = isTaskPlannedActivationEligible(task, {
+          localDate: formatLocalDateForToday(nowValue),
+          localTime: `${String(nowDate.getHours()).padStart(2, "0")}:${String(nowDate.getMinutes()).padStart(2, "0")}`,
+        });
+        if (activationEligible) return null;
+        const historyScope = task.taskType !== "once-off" && task.timeGoalPeriod === "week" ? "week" as const : "day" as const;
+        return {
+          task,
+          goalMinutes: Math.max(0, Number(task.timeGoalMinutes || getScheduleTaskDurationMinutes(task))),
+          historyScope,
+        };
+      })
       .filter((opportunity): opportunity is NonNullable<typeof opportunity> => !!opportunity)
       .sort((a, b) => {
         const aStart = getTodayScheduledStartMinutes(a.task);

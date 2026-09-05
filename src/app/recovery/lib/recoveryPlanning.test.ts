@@ -73,4 +73,15 @@ describe("Recovery backlog planning", () => {
     expect(plan.flexibleTaskIds).toEqual(["flexible-1"]);
     expect(new Set(plan.visibleTaskIds).size).toBe(plan.visibleTaskIds.length);
   });
+
+  it("does not choose a pre-activation task as the Recovery restart", () => {
+    const tasks = [
+      task({ taskId: "future-urgent", title: "Future urgent", dueDate: "2026-08-08", hardDeadline: true, nextBestActionCandidate: { ownerUid: "uid-1", hardDateEligible: false, task: { id: "future-urgent", name: "Future urgent", timeGoalMinutes: 15, createdAtMs: 1 } } as RecoveryBacklogTask["nextBestActionCandidate"] }),
+      task({ taskId: "eligible", title: "Eligible", priority: "high", nextBestActionCandidate: { ownerUid: "uid-1", task: { id: "eligible", name: "Eligible", timeGoalMinutes: 20, createdAtMs: 2 }, clarification: { firstAction: "Open the checklist." } } as RecoveryBacklogTask["nextBestActionCandidate"] }),
+    ];
+
+    const plan = buildRecoveryBacklogPlan({ userId: "uid-1", localDate: "2026-08-08", tasks });
+
+    expect(plan.restartTaskId).toBe("eligible");
+  });
 });

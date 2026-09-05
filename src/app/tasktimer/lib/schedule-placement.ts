@@ -140,6 +140,40 @@ export function getTaskPlannedStartByDay(task: Task): TaskPlannedStartByDay | nu
   return normalizeTaskPlannedStartByDay(task.plannedStartByDay) || buildLegacyTaskPlannedStartByDay(task);
 }
 
+export type TaskPlannedActivation = {
+  localDate: string;
+  localTime: string;
+};
+
+/**
+ * Resolves the first instant at which a planned task is available. An invalid or
+ * absent date intentionally returns null so legacy tasks remain eligible.
+ */
+export function resolveTaskPlannedActivation(task: Task): TaskPlannedActivation | null {
+  const localDate = normalizeLocalDateValue(task.plannedStartDate);
+  if (!localDate) return null;
+  const scheduledDay = getScheduleDayForLocalDate(localDate);
+  const byDay = getTaskPlannedStartByDay(task);
+  const localTime =
+    normalizeScheduleStoredTime(task.plannedStartTime) ||
+    (scheduledDay ? normalizeScheduleStoredTime(byDay?.[scheduledDay]) : null) ||
+    "00:00";
+  return { localDate, localTime };
+}
+
+export function isTaskPlannedActivationEligible(
+  task: Task,
+  current: { localDate: string; localTime: string }
+): boolean {
+  const activation = resolveTaskPlannedActivation(task);
+  if (!activation) return true;
+  const localDate = normalizeLocalDateValue(current.localDate);
+  const localTime = normalizeScheduleStoredTime(current.localTime);
+  if (!localDate || !localTime) return true;
+  if (localDate !== activation.localDate) return localDate > activation.localDate;
+  return localTime >= activation.localTime;
+}
+
 export function hasTaskScheduledSlots(task: Task): boolean {
   return !!getTaskPlannedStartByDay(task);
 }

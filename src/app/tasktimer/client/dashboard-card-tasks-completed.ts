@@ -1,4 +1,5 @@
 import type { HistoryByTaskId, Task } from "../lib/types";
+import { isTaskPlannedActivationEligible } from "../lib/schedule-placement";
 import { normalizeTaskColor } from "../lib/taskColors";
 
 export type DashboardTasksCompletedItem = {
@@ -23,6 +24,47 @@ export type DashboardTasksCompletedOpportunity = {
   goalMinutes: number;
   historyScope: "day" | "week";
 };
+
+function localDayKeyForTimestamp(value: number) {
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function shouldIncludeTaskOverviewForPlannedActivation(options: {
+  task: Task;
+  historyByTaskId: HistoryByTaskId;
+  nowMs: number;
+  weekStartMs: number;
+  todayKey: string;
+  isTaskRunning: (task: Task) => boolean;
+  normalizeHistoryTimestampMs: (value: unknown) => number;
+}) {
+  const nowDate = new Date(options.nowMs);
+  const eligible = isTaskPlannedActivationEligible(options.task, {
+    localDate: options.todayKey,
+    localTime: `${String(nowDate.getHours()).padStart(2, "0")}:${String(nowDate.getMinutes()).padStart(2, "0")}`,
+  });
+  if (eligible) return true;
+  if (options.isTaskRunning(options.task)) return true;
+
+  const weekly = options.task.taskType !== "once-off" && options.task.timeGoalPeriod === "week";
+  const entries = options.historyByTaskId[String(options.task.id || "").trim()] || [];
+  const hasCurrentHistory = entries.some((entry) => {
+    const timestamp = options.normalizeHistoryTimestampMs(entry?.ts);
+    if (!(timestamp > 0) || timestamp > options.nowMs) return false;
+    return weekly ? timestamp >= options.weekStartMs : localDayKeyForTimestamp(timestamp) === options.todayKey;
+  });
+  if (hasCurrentHistory) return true;
+
+  const completionAtMs = Number(options.task.timeGoalCompletedAtMs);
+  if (!Number.isFinite(completionAtMs) || completionAtMs > options.nowMs) return false;
+  return weekly
+    ? String(options.task.timeGoalCompletedWeekKey || "").trim() === localDayKeyForTimestamp(options.weekStartMs)
+    : String(options.task.timeGoalCompletedDayKey || "").trim() === options.todayKey;
+}
 
 export function buildDashboardTasksCompletedModel(options: {
   opportunities: DashboardTasksCompletedOpportunity[];
@@ -81,14 +123,6 @@ export function buildDashboardTasksCompletedModel(options: {
     const elapsedMs = Number(task.timeGoalCompletedElapsedMs);
     if (!Number.isFinite(elapsedMs)) return null;
     return Math.max(0, Math.min(1, elapsedMs / (getCompletionGoalMinutes(opportunity, goalMinutes) * 60000)));
-  }
-
-  function localDayKeyForTimestamp(value: number) {
-    const date = new Date(value);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
   }
 
   options.opportunities.forEach((opportunity, index) => {

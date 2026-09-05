@@ -9,6 +9,8 @@ import type { TaskTimerStateAccessor } from "./root-state";
 import type { DashboardRenderOptions } from "./types";
 import { isOverlayVisible } from "./overlay-visibility";
 
+export const TASKTIMER_APP_RESUMED_EVENT = "tasktimer:app-resumed";
+
 type CreateTaskTimerCloudSyncOptions = {
   workspaceRepository: Pick<
     TaskTimerWorkspaceRepository,
@@ -318,6 +320,7 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
           if (state?.isActive) {
             refreshCloudStateIfStale(0);
             options.maybeRestorePendingTimeGoalFlow();
+            window.dispatchEvent(new CustomEvent(TASKTIMER_APP_RESUMED_EVENT));
           }
         });
         if (isPromiseLike<CapListenerHandle>(maybePromise)) {

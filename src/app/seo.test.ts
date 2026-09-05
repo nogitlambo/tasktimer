@@ -18,7 +18,7 @@ describe("TaskLaunch brand assets", () => {
     expect(iconSources).toContain("/logo/tasklaunch-icon-512.png");
     expect(iconSources).not.toContain("/logo/tasklaunch-logo-main.png");
     expect(iconSources.some((source) => String(source).includes("lime-icon"))).toBe(false);
-    expect(layoutSource).toContain("seoConfig.appIconPath");
+    expect(layoutSource).toContain('icon: "/favicon.ico"');
     expect(layoutSource).not.toContain("seoConfig.organizationWordmarkPath");
 
     for (const source of iconSources) {

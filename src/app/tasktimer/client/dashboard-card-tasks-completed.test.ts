@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Task } from "../lib/types";
-import { buildDashboardTasksCompletedModel, type DashboardTasksCompletedOpportunity } from "./dashboard-card-tasks-completed";
+import {
+  buildDashboardTasksCompletedModel,
+  shouldIncludeTaskOverviewForPlannedActivation,
+  type DashboardTasksCompletedOpportunity,
+} from "./dashboard-card-tasks-completed";
 
 function task(overrides: Partial<Task>): Task {
   return {
@@ -32,6 +36,46 @@ function opportunity(taskRow: Task, overrides: Partial<DashboardTasksCompletedOp
 }
 
 describe("dashboard tasks completed card module", () => {
+  it("hides future planned tasks until activation", () => {
+    const nowMs = new Date(2026, 4, 5, 10, 29).getTime();
+    const future = task({ plannedStartDate: "2026-05-05", plannedStartTime: "10:30" });
+    const options = {
+      task: future,
+      historyByTaskId: {},
+      nowMs,
+      weekStartMs: new Date(2026, 4, 4).getTime(),
+      todayKey: "2026-05-05",
+      isTaskRunning: (row: Task) => !!row.running,
+      normalizeHistoryTimestampMs: (value: unknown) => Number(value) || 0,
+    };
+
+    expect(shouldIncludeTaskOverviewForPlannedActivation(options)).toBe(false);
+    expect(shouldIncludeTaskOverviewForPlannedActivation({ ...options, nowMs: new Date(2026, 4, 5, 10, 30).getTime() })).toBe(true);
+  });
+
+  it("shows early current-period work without changing recommendation eligibility", () => {
+    const nowMs = new Date(2026, 4, 5, 10, 0).getTime();
+    const future = task({ plannedStartDate: "2026-05-06", plannedStartTime: "10:30" });
+    const base = {
+      task: future,
+      nowMs,
+      weekStartMs: new Date(2026, 4, 4).getTime(),
+      todayKey: "2026-05-05",
+      isTaskRunning: (row: Task) => !!row.running,
+      normalizeHistoryTimestampMs: (value: unknown) => Number(value) || 0,
+    };
+
+    expect(shouldIncludeTaskOverviewForPlannedActivation({
+      ...base,
+      historyByTaskId: { [future.id]: [{ ts: nowMs - 1000, name: future.name, ms: 1000 }] },
+    })).toBe(true);
+    expect(shouldIncludeTaskOverviewForPlannedActivation({
+      ...base,
+      task: { ...future, running: true },
+      historyByTaskId: {},
+    })).toBe(true);
+  });
+
   it("derives completed count and live progress without rendering DOM", () => {
     const nowMs = new Date("2026-05-05T12:00:00Z").getTime();
     const focus = task({ id: "task-1", name: "Focus" });

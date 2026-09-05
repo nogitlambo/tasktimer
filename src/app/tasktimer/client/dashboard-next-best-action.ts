@@ -310,6 +310,7 @@ export function createDashboardNextBestAction(
   let abortController: AbortController | null = null;
   let isDestroyed = false;
   let launchInFlight = false;
+  let plannedStartRevision = 0;
   const shownTaskIds = new Set<string>();
 
   function setStatus(
@@ -618,6 +619,7 @@ export function createDashboardNextBestAction(
     );
     if (!recommendationId || !taskId) return;
     launchInFlight = true;
+    const launchRevision = plannedStartRevision;
     renderRecommendationLaunching();
     try {
       const idToken = await getIdToken();
@@ -641,6 +643,8 @@ export function createDashboardNextBestAction(
         },
       );
       const payload = await response.json().catch(() => ({}));
+      if (launchRevision !== plannedStartRevision)
+        throw new Error("This recommendation changed while it was being revalidated.");
       if (!response.ok) {
         const error = new Error(
           asString(asRecord(payload)?.error, 240) ||
@@ -662,6 +666,7 @@ export function createDashboardNextBestAction(
       }
       renderRecommendationStarted();
     } catch (error) {
+      if (launchRevision !== plannedStartRevision) return;
       const code = (error as Error & { code?: string })?.code;
       renderRecommendationLaunchError(
         code === "recommendation/stale" || code === "recommendation/expired"
@@ -887,5 +892,13 @@ export function createDashboardNextBestAction(
     getElement(documentRef, "dashboardNextBestActionRetry")?.removeEventListener?.("click", handleRetry);
   }
 
-  return { register, refresh, destroy };
+  function invalidateForPlannedStartChange() {
+    plannedStartRevision += 1;
+    abortController?.abort();
+    requestSequence += 1;
+    launchInFlight = false;
+    setStatus("Refreshing recommendation after the planned start changed...", "loading");
+  }
+
+  return { register, refresh, invalidateForPlannedStartChange, destroy };
 }

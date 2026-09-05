@@ -6,6 +6,7 @@ import {
   buildNextBestActionFirestoreRecord,
   createFirestoreNextBestActionRepository,
   isTaskCompletedForRecommendationPeriod,
+  localDateTimeForRecommendationTimezone,
 } from "./nextBestActionRepository";
 
 function recommendation() {
@@ -58,6 +59,18 @@ function startHarness(options: { task?: Record<string, unknown>; recommendation?
 }
 
 describe("Next Best Action recommendation persistence", () => {
+  it("resolves recommendation boundaries in the request timezone", () => {
+    const instant = Date.parse("2026-09-02T00:15:00.000Z");
+    expect(localDateTimeForRecommendationTimezone("Australia/Sydney", instant)).toEqual({
+      localDate: "2026-09-02",
+      localTime: "10:15",
+    });
+    expect(localDateTimeForRecommendationTimezone("America/Los_Angeles", instant)).toEqual({
+      localDate: "2026-09-01",
+      localTime: "17:15",
+    });
+  });
+
   it("excludes current goal completions but allows reset completions and prior days", () => {
     const currentDay = {
       timeGoalPeriod: "day",
@@ -142,6 +155,7 @@ describe("Next Best Action recommendation persistence", () => {
       running: false,
       startMs: null,
       hasStarted: false,
+      plannedStartDate: "2026-08-08",
       plannedStartDay: "mon",
       plannedStartTime: "10:00",
       timeGoalMinutes: 45,
@@ -179,6 +193,7 @@ describe("Next Best Action recommendation persistence", () => {
       ownerUid: "uid-1",
       task: { id: "task-1", name: "Prepare launch", timeGoalMinutes: 45 },
       completed: true,
+      hardDateEligible: false,
       history: [{ name: "Prepare launch", ms: 30 * 60000 }],
       focusWindowMatched: true,
       productivityWindow: {
@@ -227,6 +242,28 @@ describe("Next Best Action recommendation persistence", () => {
     expect((updates[0]?.ref as { path?: string }).path).toBe(recommendationRef.path);
     expect(updates[0]).toMatchObject({ value: { status: "STARTED" } });
     expect(updates[0]?.value).toHaveProperty("startedAt");
+  });
+
+  it("rejects Start when the task was postponed beyond the request-time boundary", async () => {
+    const nowMs = Date.parse("2026-08-07T00:15:00.000Z");
+    const harness = startHarness({ task: {
+      id: "task-1",
+      name: "Prepare launch",
+      active: true,
+      actionable: true,
+      blocked: false,
+      completed: false,
+      plannedStartDate: "2026-08-07",
+      plannedStartTime: "10:30",
+    } });
+
+    await expect(harness.repository.startRecommendation({
+      uid: "uid-1",
+      recommendationId: "nba-1",
+      nowMs,
+      timezone: "Australia/Sydney",
+    })).resolves.toMatchObject({ kind: "ineligible" });
+    expect(harness.updates).toHaveLength(0);
   });
 
   it("returns stale, expired, ineligible, and idempotent outcomes without starting invalid work", async () => {
