@@ -57,26 +57,17 @@ describe("POST /api/stripe/create-checkout-session", () => {
     checkoutSessionsCreate.mockResolvedValue({ url: "https://checkout.stripe.com/session" });
   });
 
-  it("creates a subscription checkout session for the configured price without forcing a trial", async () => {
-    const response = await POST(checkoutRequest());
+  it.each([undefined, "plus_monthly"])("returns the monthly payment link for offer %s with account attribution", async (offer) => {
+    delete process.env.STRIPE_PRICE_ID_PLUS_MONTHLY;
+    const response = await POST(checkoutRequest({ offer }));
 
     expect(response.status).toBe(200);
-    expect(response.headers.get("content-type")).toContain("application/json");
-    expect(await response.json()).toEqual({ url: "https://checkout.stripe.com/session" });
-
-    expect(checkoutSessionsCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        mode: "subscription",
-        line_items: [{ price: "price_live_no_trial", quantity: 1 }],
-        success_url: "https://tasklaunch.app/dashboard?checkout=success&session_id={CHECKOUT_SESSION_ID}",
-        cancel_url: "https://tasklaunch.app/login?checkout=cancelled",
-        subscription_data: {
-          metadata: { uid: "uid-123", offer: "plus_monthly", priceId: "price_live_no_trial" },
-        },
-        metadata: { uid: "uid-123", offer: "plus_monthly", priceId: "price_live_no_trial" },
-      })
-    );
-    expect(checkoutSessionsCreate.mock.calls[0]?.[0]?.subscription_data).not.toHaveProperty("trial_period_days");
+    const { url } = await response.json();
+    const paymentLink = new URL(url);
+    expect(paymentLink.origin + paymentLink.pathname).toBe("https://buy.stripe.com/5kQaEZ2QT2WsfJTfNHenS02");
+    expect(paymentLink.searchParams.get("client_reference_id")).toBe("uid-123");
+    expect(paymentLink.searchParams.get("prefilled_email")).toBe("user@example.com");
+    expect(checkoutSessionsCreate).not.toHaveBeenCalled();
   });
 
   it("creates a subscription checkout session for the yearly offer", async () => {
@@ -98,6 +89,7 @@ describe("POST /api/stripe/create-checkout-session", () => {
     await POST(
       checkoutRequest({
         idToken: "token",
+        offer: "plus_yearly",
         returnTarget: "native",
         successReturnPath: "/account",
         cancelReturnPath: "/settings?page=general",
@@ -116,6 +108,7 @@ describe("POST /api/stripe/create-checkout-session", () => {
     await POST(
       checkoutRequest({
         idToken: "token",
+        offer: "plus_yearly",
         returnTarget: "native",
         successReturnPath: "https://evil.example/account",
         cancelReturnPath: "//evil.example/settings",
@@ -166,7 +159,7 @@ describe("POST /api/stripe/create-checkout-session", () => {
       })
       .mockResolvedValueOnce({ url: "https://checkout.stripe.com/session" });
 
-    const response = await POST(checkoutRequest());
+    const response = await POST(checkoutRequest({ offer: "plus_yearly" }));
 
     expect(response.status).toBe(200);
     expect(checkoutSessionsCreate).toHaveBeenCalledTimes(2);
@@ -194,7 +187,7 @@ describe("POST /api/stripe/create-checkout-session", () => {
       param: "line_items[0][price]",
     });
 
-    const response = await POST(checkoutRequest());
+    const response = await POST(checkoutRequest({ offer: "plus_yearly" }));
 
     expect(checkoutSessionsCreate).toHaveBeenCalledTimes(1);
     expect(createStripeApiErrorResponse).toHaveBeenCalledWith(

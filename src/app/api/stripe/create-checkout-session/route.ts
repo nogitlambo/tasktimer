@@ -85,6 +85,12 @@ export async function POST(req: Request) {
     });
 
     const offer = resolveCheckoutOffer(body.offer) || "plus_monthly";
+    if (offer === "plus_monthly") {
+      const paymentLink = new URL("https://buy.stripe.com/5kQaEZ2QT2WsfJTfNHenS02");
+      paymentLink.searchParams.set("client_reference_id", uid);
+      if (email) paymentLink.searchParams.set("prefilled_email", email);
+      return withAuthenticatedApiCors(req, NextResponse.json({ url: paymentLink.toString() }));
+    }
     const monthlyPriceId = asString(process.env.STRIPE_PRICE_ID_PLUS_MONTHLY);
     const yearlyPriceId = asString(process.env.STRIPE_PRICE_ID_PLUS_YEARLY);
     const priceId = offer === "plus_yearly" ? yearlyPriceId : monthlyPriceId;
