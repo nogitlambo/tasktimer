@@ -4008,24 +4008,40 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
 
 @media (min-width: 720px){
 body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list[data-tile-columns="2"]{
+    display:flex;
+    flex-direction:column;
+  }
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskTypeSectionCards[data-tile-columns="2"]{
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 1200px){
 body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list[data-tile-columns="3"]{
+    display:flex;
+    flex-direction:column;
+  }
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskTypeSectionCards[data-tile-columns="3"]{
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 1500px){
 body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list[data-tile-columns="4"]{
+    display:flex;
+    flex-direction:column;
+  }
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskTypeSectionCards[data-tile-columns="4"]{
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 639px){
 body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list[data-tile-columns="1"]{
+    display:flex;
+    flex-direction:column;
+  }
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskTypeSectionCards[data-tile-columns="1"]{
     grid-template-columns: 1fr;
   }
 }
@@ -5415,7 +5431,7 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
   transform:none !important;
 }
 
-/* Press-and-hold task actions and completed once-off grouping. */
+/* Press-and-hold task actions. */
 #app[aria-label="TaskLaunch App"] #appPageTasks .task.isTaskPrimaryHoldMenuOpen{
   z-index:140;
   overflow:visible;
@@ -5467,69 +5483,67 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
   cursor:not-allowed;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksSection{
-  grid-column:1 / -1;
+#app[aria-label="TaskLaunch App"] #appPageTasks .taskTypeSection{
   width:100%;
   min-width:0;
-  margin-top:22px;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksToggle{
-  width:100%;
-  min-height:42px;
-  padding:10px 12px;
   display:flex;
-  align-items:center;
-  justify-content:space-between;
-  border:1px solid rgba(174,182,192,.2);
-  border-radius:0;
-  background:#0d0f13;
-  color:#aeb6c0;
-  font-family:var(--font-orbitron), sans-serif;
-  font-size:12px;
-  letter-spacing:.04em;
-  text-align:left;
-  cursor:pointer;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksToggle:hover,
-#app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksToggle:focus-visible{
-  border-color:#c9ff19;
-  color:#c9ff19;
-  outline:none;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksChevron{
-  font-size:18px;
-  line-height:1;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksCards{
-  margin-top:14px;
-  display:grid;
-  grid-template-columns:minmax(0, 1fr);
+  flex-direction:column;
   gap:14px;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksCards[hidden]{
+#app[aria-label="TaskLaunch App"] #appPageTasks .taskTypeSection + .taskTypeSection{
+  margin-top:22px;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .taskTypeSectionHeader{
+  display:flex;
+  align-items:center;
+  min-height:28px;
+  border-bottom:1px solid rgba(174,182,192,.18);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .taskTypeSectionTitle{
+  margin:0;
+  color:#f2f5f7;
+  font-family:var(--font-orbitron), sans-serif;
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .taskTypeSectionEmpty{
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  padding:10px 12px;
+  border:1px solid rgba(174,182,192,.14);
+  background:rgba(13,15,19,.72);
+  color:#7f8790;
+  font-family:var(--font-readable), sans-serif;
+  font-size:13px;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .taskTypeSectionEmpty[hidden]{
   display:none !important;
 }
 
-@media (min-width:720px){
-  body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksCards[data-tile-columns="2"]{
-    grid-template-columns:repeat(2, minmax(0, 1fr));
-  }
+#app[aria-label="TaskLaunch App"] #appPageTasks .taskTypeSectionCards{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  min-width:0;
 }
 
-@media (min-width:1200px){
-  body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksCards[data-tile-columns="3"]{
-    grid-template-columns:repeat(3, minmax(0, 1fr));
-  }
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list[data-tile-columns]{
+  display:flex;
+  flex-direction:column;
+  gap:0;
 }
 
-@media (min-width:1500px){
-  body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .completedOnceOffTasksCards[data-tile-columns="4"]{
-    grid-template-columns:repeat(4, minmax(0, 1fr));
-  }
+body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskTypeSectionCards[data-tile-columns]{
+  display:grid;
+  gap:14px;
+  align-items:start;
+  grid-auto-flow:row dense;
 }
-

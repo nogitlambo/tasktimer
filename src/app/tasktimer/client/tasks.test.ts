@@ -59,6 +59,10 @@ function elementStub(tagName = "div") {
     classList: { add: vi.fn(), remove: vi.fn(), toggle: vi.fn() },
     setAttribute: vi.fn(),
     removeAttribute: vi.fn(),
+    querySelectorAll: (selector: string) => {
+      void selector;
+      return [] as TestTarget[];
+    },
     appendChild: vi.fn((child: unknown) => {
       node.children.push(child);
       return child;
@@ -70,6 +74,7 @@ function elementStub(tagName = "div") {
 
 function createHarness(overrides: { tasks?: Task[]; deferTimers?: boolean } = {}) {
   const calls: string[] = [];
+  const savedTaskSnapshots: Task[][] = [];
   const handlers = new Map<object, Map<string, (event: TestEvent) => void>>();
   let tasks = overrides.tasks || [task()];
   const checkpointFiredKeysByTaskId: Record<string, Set<string>> = {};
@@ -167,7 +172,10 @@ function createHarness(overrides: { tasks?: Task[]; deferTimers?: boolean } = {}
     getDeletedTaskMeta: () => ({}),
     setDeletedTaskMeta: vi.fn(() => calls.push("setDeletedTaskMeta")),
     saveDeletedMeta: vi.fn(() => calls.push("saveDeletedMeta")),
-    save: vi.fn(() => calls.push("save")),
+    save: vi.fn(() => {
+      savedTaskSnapshots.push(JSON.parse(JSON.stringify(tasks)) as Task[]);
+      calls.push("save");
+    }),
     deleteSharedTaskSummariesForTask: vi.fn(async () => {}),
     refreshOwnSharedSummaries: vi.fn(async () => {}),
     getCurrentUid: () => "user-1",
@@ -227,6 +235,7 @@ function createHarness(overrides: { tasks?: Task[]; deferTimers?: boolean } = {}
 
   return {
     calls,
+    savedTaskSnapshots,
     confirm: () => confirmOk?.(),
     clickTaskTopRow: () => {
       const taskEl = {
@@ -283,7 +292,6 @@ function createHarness(overrides: { tasks?: Task[]; deferTimers?: boolean } = {}
           closest: (selector: string) => {
             if (selector === ".task") return taskEl;
             if (selector === "[data-hold-action]") return actionEl;
-            if (selector === '[data-action="toggleCompletedOnceOffTasks"]') return null;
             return null;
           },
         },
@@ -656,6 +664,7 @@ describe("createTaskTimerTasks", () => {
 
     expect(harness.ctx.finalizeLiveSession).toHaveBeenCalledTimes(1);
     expect(harness.getTasks()[0]).toMatchObject({ running: false, accumulatedMs: 0, markedDoneAtMs: expect.any(Number), markedDoneUntilMs: expect.any(Number) });
+    expect(harness.savedTaskSnapshots.at(-1)?.[0]).toMatchObject({ running: false, accumulatedMs: 0, markedDoneAtMs: expect.any(Number), markedDoneUntilMs: expect.any(Number) });
     expect(harness.ctx.showActionConfirmation).toHaveBeenCalledWith("Task marked done");
   });
 

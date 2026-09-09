@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createTaskTimerAppShell } from "./app-shell";
@@ -36,6 +38,14 @@ afterEach(() => {
 });
 
 describe("createTaskTimerAppShell routing", () => {
+  it("opens Brain Dump by switching to Executive and preserving the brain-dump query", () => {
+    const source = readFileSync(resolve(__dirname, "app-shell.ts"), "utf8");
+
+    expect(source).toContain('TASKTIMER_OPEN_BRAIN_DUMP_EVENT');
+    expect(source).toContain('applyAppPage("executive", { pushNavStack: true });');
+    expect(source).toContain('appRoute("/executive?view=brain-dump")');
+  });
+
   it("resolves the Notes app page from the /notes route", () => {
     stubLocation("/notes");
 

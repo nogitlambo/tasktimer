@@ -7414,32 +7414,6 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   padding-top: 14px;
 }
 
-#editOverlay .taskScheduleToggleRow,
-#addTaskOverlay .taskScheduleToggleRow{
-  margin:2px 0 10px;
-}
-
-#editOverlay .taskScheduleToggleRow,
-#addTaskOverlay .taskScheduleToggleRow{
-  justify-content: flex-start;
-  gap: 10px;
-  margin: 12px 0 14px;
-}
-
-#editOverlay .taskScheduleToggleRow input[type="checkbox"],
-#addTaskOverlay .taskScheduleToggleRow input[type="checkbox"]{
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  flex: 0 0 auto;
-  accent-color: #c9ff24;
-}
-
-#editOverlay .taskScheduleToggleRow > span,
-#addTaskOverlay .taskScheduleToggleRow > span{
-  font-size: 11px;
-}
-
 #editOverlay .taskScheduleFields,
 #addTaskOverlay .taskScheduleFields{
   display:block;
@@ -14024,7 +13998,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   }
 }
 
-#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation{
+#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation,
+#addTaskChoiceOverlay.addTaskChoicePrimitiveOverlay .modal.addTaskChoicePrimitiveModal.modalConfirmation{
   display: block !important;
   width: min(420px, 100%) !important;
   min-height: 0 !important;
@@ -14041,11 +14016,14 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation::before,
-#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation::after{
+#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation::after,
+#addTaskChoiceOverlay.addTaskChoicePrimitiveOverlay .modal.addTaskChoicePrimitiveModal.modalConfirmation::before,
+#addTaskChoiceOverlay.addTaskChoicePrimitiveOverlay .modal.addTaskChoicePrimitiveModal.modalConfirmation::after{
   content: none !important;
 }
 
-#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation > h2{
+#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation > h2,
+#addTaskChoiceOverlay.addTaskChoicePrimitiveOverlay .modal.addTaskChoicePrimitiveModal.modalConfirmation > h2{
   display: block !important;
   min-height: 0 !important;
   margin: 0 !important;
@@ -14062,7 +14040,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   text-shadow: none !important;
 }
 
-#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation .confirmText{
+#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation .confirmText,
+#addTaskChoiceOverlay.addTaskChoicePrimitiveOverlay .modal.addTaskChoicePrimitiveModal.modalConfirmation .confirmText{
   min-height: 0 !important;
   margin: 0 !important;
   padding: 16px 0 !important;
@@ -14075,7 +14054,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   text-shadow: none !important;
 }
 
-#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation .confirmBtns{
+#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation .confirmBtns,
+#addTaskChoiceOverlay.addTaskChoicePrimitiveOverlay .modal.addTaskChoicePrimitiveModal.modalConfirmation .confirmBtns{
   display: flex !important;
   min-height: 0 !important;
   align-items: center !important;
@@ -14089,11 +14069,58 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   box-shadow: none !important;
 }
 
-#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation .confirmBtns .btn{
+#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation .confirmBtns .btn,
+#addTaskChoiceOverlay.addTaskChoicePrimitiveOverlay .modal.addTaskChoicePrimitiveModal.modalConfirmation .confirmBtns .btn{
   min-width: min(178px, 38vw) !important;
   height: 48px !important;
   min-height: 48px !important;
   max-height: 48px !important;
+}
+
+#addTaskChoiceOverlay.addTaskChoicePrimitiveOverlay .modal.addTaskChoicePrimitiveModal.modalConfirmation{
+  width:min(460px, 100%) !important;
+}
+
+#addTaskChoiceOverlay.addTaskChoicePrimitiveOverlay .confirmText{
+  margin-bottom:14px !important;
+}
+
+#addTaskChoiceOverlay.addTaskChoicePrimitiveOverlay .addTaskChoiceGrid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:12px;
+  margin:0 0 14px;
+}
+
+#addTaskChoiceOverlay.addTaskChoicePrimitiveOverlay .addTaskChoiceTile{
+  min-height:112px !important;
+  width:100%;
+  padding:16px 14px !important;
+  align-items:center;
+  justify-content:center;
+  white-space:normal !important;
+  text-align:center;
+  text-decoration:none;
+}
+
+#addTaskChoiceOverlay.addTaskChoicePrimitiveOverlay .addTaskChoiceTileTitle{
+  display:block;
+  overflow-wrap:anywhere;
+  line-height:1.25;
+}
+
+#addTaskChoiceOverlay.addTaskChoicePrimitiveOverlay .addTaskChoicePrimitiveFooter{
+  justify-content:center !important;
+}
+
+@media (max-width: 520px){
+  #addTaskChoiceOverlay.addTaskChoicePrimitiveOverlay .addTaskChoiceGrid{
+    grid-template-columns:minmax(0, 1fr);
+  }
+
+  #addTaskChoiceOverlay.addTaskChoicePrimitiveOverlay .addTaskChoiceTile{
+    min-height:82px !important;
+  }
 }
 
 #dashboardDailyCapacityAdjustOverlay.dashboardDailyCapacityAdjustPrimitiveOverlay{

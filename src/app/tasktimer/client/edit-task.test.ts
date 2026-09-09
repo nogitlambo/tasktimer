@@ -63,10 +63,13 @@ function timeInputStub(value = "") {
 }
 
 function buttonStub() {
+  const attributes = new Map<string, string>();
   return {
     disabled: false,
     title: "",
     classList: { add: vi.fn(), remove: vi.fn(), toggle: vi.fn() },
+    setAttribute: vi.fn((name: string, value: string) => attributes.set(name, value)),
+    getAttribute: vi.fn((name: string) => attributes.get(name) || null),
   } as unknown as HTMLButtonElement;
 }
 
@@ -98,6 +101,7 @@ function createEditHarness(overrides: {
   webPushAlertsEnabled?: boolean;
 } = {}) {
   vi.stubGlobal("HTMLElement", class HTMLElementStub {});
+  vi.stubGlobal("HTMLInputElement", class HTMLInputElementStub {});
   vi.stubGlobal("window", {
     location: { protocol: "http:" },
     setTimeout: vi.fn((callback: () => void) => {
@@ -152,7 +156,11 @@ function createEditHarness(overrides: {
   const editTaskScheduleSummaryText = {
     textContent: "",
   } as HTMLElement;
-  const editTaskScheduleToggle = { checked: false } as HTMLInputElement;
+  const editTaskScheduleFields = {
+    classList: { remove: vi.fn(), toggle: vi.fn() },
+  } as unknown as HTMLElement;
+  const editTaskTypeRecurringBtn = buttonStub();
+  const editTaskTypeOnceOffBtn = buttonStub();
   const editTaskSplitAcrossProductivityDaysRow = {
     classList: { toggle: vi.fn() },
   } as unknown as HTMLElement;
@@ -182,7 +190,9 @@ function createEditHarness(overrides: {
     els: {
       cancelEditBtn,
       editName: { value: "Focus" } as HTMLInputElement,
-      editTaskScheduleToggle,
+      editTaskTypeRecurringBtn,
+      editTaskTypeOnceOffBtn,
+      editTaskScheduleFields,
       editTaskDurationValueInput: {
         value: overrides.durationValue || "1",
         classList: { remove: vi.fn(), toggle: vi.fn() },
@@ -294,11 +304,18 @@ function createEditHarness(overrides: {
     editPlannedStartPushRemindersRow,
     editTaskSplitAcrossProductivityDaysRow,
     editTaskWeeklyBlockDayField,
+    setDraftTaskType: (value: "recurring" | "once-off") => {
+      draft.taskType = value;
+    },
     getEditIndex: () => editIndex,
     cancel: () =>
       (vi.mocked(ctx.on).mock.calls.find(([element, eventName]) => element === cancelEditBtn && eventName === "click")?.[2] as
         | ((event?: Event) => void)
         | undefined)?.({ preventDefault: vi.fn() } as unknown as Event),
+    clickOnceOffType: () =>
+      (vi.mocked(ctx.on).mock.calls.find(([element, eventName]) => element === editTaskTypeOnceOffBtn && eventName === "click")?.[2] as
+        | (() => void)
+        | undefined)?.(),
   };
 }
 
@@ -911,6 +928,86 @@ describe("edit task planned start initialization", () => {
 });
 
 describe("edit task schedule conflict confirmation", () => {
+  it("persists a recurring task changed to once-off", () => {
+    const harness = createEditHarness({
+      durationValue: "1",
+      busyTask: task({
+        id: "busy",
+        name: "Deep Work",
+        taskType: "once-off",
+        onceOffDay: "tue",
+        plannedStartDay: "tue",
+        plannedStartTime: "15:00",
+        plannedStartByDay: { tue: "15:00" },
+      }),
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalValue: 1,
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartDate: "2026-09-09",
+        plannedStartDay: "wed",
+        plannedStartTime: "09:00",
+        plannedStartByDay: { wed: "09:00" },
+      }),
+    });
+
+    harness.api.registerEditTaskEvents();
+    harness.api.openEdit(0);
+    harness.clickOnceOffType();
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.sourceTask.taskType).toBe("once-off");
+    expect(harness.sourceTask.onceOffDay).toBe("wed");
+    expect(harness.sourceTask.onceOffTargetDate).toBe("2026-09-09");
+    expect(harness.sourceTask.plannedStartDate).toBe("2026-09-09");
+    expect(harness.sourceTask.plannedStartDay).toBe("wed");
+    expect(harness.sourceTask.plannedStartTime).toBe("09:00");
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ wed: "09:00" });
+    expect(harness.ctx.save).toHaveBeenCalled();
+  });
+
+  it("persists a recurring task changed to once-off when the draft task type is stale", () => {
+    const harness = createEditHarness({
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        plannedStartDate: "2026-09-09",
+        plannedStartDay: "wed",
+        plannedStartTime: "09:00",
+        plannedStartByDay: { wed: "09:00" },
+      }),
+      busyTask: task({
+        id: "busy",
+        name: "Later",
+        taskType: "once-off",
+        onceOffDay: "wed",
+        onceOffTargetDate: "2026-09-09",
+        plannedStartDate: "2026-09-09",
+        plannedStartDay: "wed",
+        plannedStartTime: "11:00",
+        plannedStartByDay: { wed: "11:00" },
+      }),
+    });
+    harness.api.registerEditTaskEvents();
+
+    harness.api.openEdit(0);
+    harness.clickOnceOffType();
+    harness.setDraftTaskType("recurring");
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.sourceTask.taskType).toBe("once-off");
+    expect(harness.sourceTask.onceOffDay).toBe("wed");
+    expect(harness.sourceTask.onceOffTargetDate).toBe("2026-09-09");
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ wed: "09:00" });
+    expect(harness.ctx.save).toHaveBeenCalled();
+  });
+
   it("saves unchecked recurring weekly tasks as one weekly block on the selected day", () => {
     const harness = createEditHarness({
       durationValue: "2",
@@ -1238,7 +1335,7 @@ describe("edit task scheduled days outside productivity preferences", () => {
     plannedStartByDay: { tue: "15:00" },
   });
 
-  it("does not prompt after re-enabling an intentionally cleared task with stale non-optimal schedule data", () => {
+  it("saves an open-ended recurring task through the always-visible schedule fields without prompting", () => {
     vi.stubGlobal("document", {
       getElementById: vi.fn(() => null),
       querySelectorAll: vi.fn(() => []),
@@ -1263,19 +1360,12 @@ describe("edit task scheduled days outside productivity preferences", () => {
     });
     harness.api.registerEditTaskEvents();
     harness.api.openEdit(0);
-    const toggle = harness.ctx.els.editTaskScheduleToggle as HTMLInputElement;
-    toggle.checked = true;
-    const toggleChangeHandler = vi.mocked(harness.ctx.on).mock.calls.find(
-      ([element, eventName]) => element === toggle && eventName === "change"
-    )?.[2] as (() => void) | undefined;
 
-    toggleChangeHandler?.();
-    expect(harness.api.getCurrentEditTask()?.plannedStartByDay).toBeNull();
+    expect(harness.api.getCurrentEditTask()?.plannedStartDate).toBeTruthy();
     harness.api.closeEdit(true);
 
     expect(harness.ctx.confirm).not.toHaveBeenCalled();
-    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00", wed: "09:00", fri: "09:00" });
-    expect(harness.sourceTask.plannedStartByDay).not.toHaveProperty("sat");
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ sat: "09:00" });
     expect(harness.ctx.save).toHaveBeenCalled();
   });
 

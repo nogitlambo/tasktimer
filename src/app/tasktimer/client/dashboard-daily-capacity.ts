@@ -114,6 +114,7 @@ export function createDashboardDailyCapacity(options: Options) {
   let hasViewed = false;
   let previouslyFocusedElement: HTMLElement | null = null;
   let keydownHandler: ((event: KeyboardEvent) => void) | null = null;
+  let selectedOverrideState: DailyCapacityState = "STANDARD";
 
   function telemetry(stage: Parameters<typeof trackDailyCapacity>[0], input: Parameters<typeof trackDailyCapacity>[1] = {}) {
     void trackDailyCapacity(stage, input).catch(() => {});
@@ -192,8 +193,9 @@ export function createDashboardDailyCapacity(options: Options) {
       previouslyFocusedElement = documentRef.activeElement instanceof HTMLElement ? documentRef.activeElement : null;
       const override = currentCapacity?.manualOverride;
       const selectedState = override?.type === "STATE" ? override.state : currentCapacity?.state;
+      selectedOverrideState = states.has(selectedState as DailyCapacityState) ? selectedState as DailyCapacityState : "STANDARD";
       documentRef.querySelectorAll<HTMLElement>("[data-daily-capacity-state-option]").forEach((button) => {
-        const selected = button.getAttribute("data-daily-capacity-state-option") === selectedState;
+        const selected = button.getAttribute("data-daily-capacity-state-option") === selectedOverrideState;
         button.setAttribute("aria-pressed", String(selected));
       });
       const input = element(documentRef, "dashboardDailyCapacityCustomMinutesInput") as HTMLInputElement | null;
@@ -246,11 +248,10 @@ export function createDashboardDailyCapacity(options: Options) {
       const idToken = await getIdToken();
       if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
       const input = element(documentRef, "dashboardDailyCapacityCustomMinutesInput") as HTMLInputElement | null;
-      const selected = documentRef.querySelector<HTMLElement>('[data-daily-capacity-state-option][aria-pressed="true"]')?.getAttribute("data-daily-capacity-state-option") || "STANDARD";
       const body = method === "POST"
         ? input?.value.trim()
           ? { type: "MINUTES", minutes: Number(input.value) }
-          : { type: "STATE", state: selected }
+          : { type: "STATE", state: selectedOverrideState }
         : undefined;
       const timezone = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
       const response = await fetchImpl(getApiUrl(`/api/executive-function/capacity/today/override?timezone=${timezone}`), {
@@ -273,6 +274,17 @@ export function createDashboardDailyCapacity(options: Options) {
   function register() {
     if (!card) return;
     documentRef.addEventListener("click", (event) => {
+      const stateOption = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-daily-capacity-state-option]");
+      if (stateOption) {
+        const selected = stateOption.getAttribute("data-daily-capacity-state-option") as DailyCapacityState | null;
+        if (selected && states.has(selected)) {
+          selectedOverrideState = selected;
+          documentRef.querySelectorAll<HTMLElement>("[data-daily-capacity-state-option]").forEach((button) => button.setAttribute("aria-pressed", String(button === stateOption)));
+          const input = element(documentRef, "dashboardDailyCapacityCustomMinutesInput") as HTMLInputElement | null;
+          if (input) input.value = "";
+        }
+        return;
+      }
       const target = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-daily-capacity]");
       const action = target?.getAttribute("data-daily-capacity");
       if (action && action !== "close" && lockIfNeeded()) {
@@ -291,12 +303,6 @@ export function createDashboardDailyCapacity(options: Options) {
       if (action === "apply") void updateOverride("POST");
       if (action === "clear") void updateOverride("DELETE");
       if (action === "close") setOverlay(false);
-      const stateOption = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-daily-capacity-state-option]");
-      if (stateOption) {
-        documentRef.querySelectorAll<HTMLElement>("[data-daily-capacity-state-option]").forEach((button) => button.setAttribute("aria-pressed", String(button === stateOption)));
-        const input = element(documentRef, "dashboardDailyCapacityCustomMinutesInput") as HTMLInputElement | null;
-        if (input) input.value = "";
-      }
     });
     windowRef.addEventListener("tasklaunch:app-page-changed", (event) => {
       if ((event as CustomEvent<{ page?: string }>).detail?.page === "dashboard") void refresh();

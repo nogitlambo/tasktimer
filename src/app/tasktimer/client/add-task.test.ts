@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createTaskTimerAddTask } from "./add-task";
+import { TASKTIMER_OPEN_BRAIN_DUMP_EVENT } from "./brain-dump-events";
 import { getLocalScheduleDay, getScheduleTaskDurationMinutesForDay } from "../lib/schedule-placement";
 import type { Task } from "../lib/types";
 import {
@@ -12,10 +13,21 @@ import {
 type HandlerMap = Map<string, (event?: Event) => void>;
 
 function buttonStub() {
+  const attributes = new Map<string, string>();
+  const classes = new Set<string>();
   return {
     disabled: false,
-    classList: { toggle: vi.fn() },
-    setAttribute: vi.fn(),
+    classList: {
+      toggle: vi.fn((name: string, force?: boolean) => {
+        const shouldAdd = typeof force === "boolean" ? force : !classes.has(name);
+        if (shouldAdd) classes.add(name);
+        else classes.delete(name);
+        return shouldAdd;
+      }),
+      contains: vi.fn((name: string) => classes.has(name)),
+    },
+    setAttribute: vi.fn((name: string, value: string) => attributes.set(name, value)),
+    getAttribute: vi.fn((name: string) => attributes.get(name) || null),
   } as unknown as HTMLButtonElement;
 }
 
@@ -30,6 +42,7 @@ function overlayStub() {
       remove: vi.fn(),
       toggle: vi.fn(),
     },
+    querySelector: vi.fn(() => null),
   } as unknown as HTMLElement;
 }
 
@@ -47,10 +60,22 @@ function createHarness(
 ) {
   const handlers = new Map<object, HandlerMap>();
   const documentStub = {};
-  vi.stubGlobal("HTMLElement", class HTMLElementStub {});
+  class ElementStub {}
+  vi.stubGlobal("Element", ElementStub);
+  vi.stubGlobal("HTMLElement", ElementStub);
   vi.stubGlobal("document", documentStub);
+  vi.stubGlobal("CustomEvent", class CustomEventStub<T = unknown> {
+    type: string;
+    detail: T | undefined;
+
+    constructor(type: string, init?: CustomEventInit<T>) {
+      this.type = type;
+      this.detail = init?.detail;
+    }
+  });
   const windowStub = {
     location: { protocol: "http:" },
+    dispatchEvent: vi.fn(),
     setTimeout: vi.fn((callback: () => void) => {
       callback();
       return 1;
@@ -80,11 +105,8 @@ function createHarness(
     disabled: false,
     setAttribute: vi.fn(),
   } as unknown as HTMLInputElement;
-  const addTaskScheduleToggle = {
-    checked: false,
-  } as unknown as HTMLInputElement;
   const addTaskScheduleFields = {
-    classList: { toggle: vi.fn() },
+    classList: { remove: vi.fn(), toggle: vi.fn() },
   } as unknown as HTMLElement;
   const addTaskTypeRecurringBtn = buttonStub();
   const addTaskTypeOnceOffBtn = buttonStub();
@@ -93,6 +115,11 @@ function createHarness(
   const addTaskDurationPeriodDay = buttonStub();
   const addTaskDurationPeriodWeek = buttonStub();
   const addTaskCancelBtn = buttonStub();
+  const addTaskChoiceCancelBtn = buttonStub();
+  const addTaskChoiceOverlay = {
+    ...overlayStub(),
+    querySelector: vi.fn((selector: string) => selector === "#addTaskChoiceCancelBtn" ? addTaskChoiceCancelBtn : null),
+  } as unknown as HTMLElement;
   const addTaskOverlay = overlayStub();
   const addTaskOnceOffDaySelect = {
     value: addTaskOnceOffDay,
@@ -158,7 +185,6 @@ function createHarness(
       addTaskForm: {} as HTMLFormElement,
       addTaskTypeRecurringBtn,
       addTaskTypeOnceOffBtn,
-      addTaskScheduleToggle,
       addTaskScheduleFields,
       addTaskOnceOffDaySelect,
       addTaskNameMenu: null,
@@ -182,6 +208,7 @@ function createHarness(
       addTaskMsToggle,
       addTaskCheckpointSoundModeSelect: null,
       addTaskAddMsBtn: null,
+      addTaskChoiceOverlay,
       addTaskOverlay,
       addTaskOnceOffDayField: null,
       addTaskScheduleSummary,
@@ -312,6 +339,7 @@ function createHarness(
   return {
     addTaskDurationValueInput,
     addTaskCancelBtn,
+    addTaskChoiceOverlay,
     addTaskMsToggle,
     addTaskName,
     addTaskOverlay,
@@ -326,11 +354,37 @@ function createHarness(
     ctx,
     api,
     open: () => api.openAddTaskModal(),
+    openChoice: () => api.openAddTaskChoiceModal(),
     cancel: () => handlers.get(addTaskCancelBtn)?.get("click")?.({ preventDefault: vi.fn() } as unknown as Event),
+    cancelChoice: () => handlers.get(addTaskChoiceCancelBtn)?.get("click")?.({ preventDefault: vi.fn() } as unknown as Event),
+    clickDocumentAddTaskLauncher: () => {
+      const target = Object.assign(new ElementStub(), {
+        closest: (selector: string) => selector === '[data-action="openAddTask"]' ? target : null,
+      });
+      handlers.get(documentStub)?.get("click")?.({ target, preventDefault: vi.fn() } as unknown as Event);
+    },
+    clickAddTaskChoiceBackdrop: () =>
+      handlers.get(addTaskChoiceOverlay)?.get("click")?.({ target: addTaskChoiceOverlay } as unknown as Event),
+    clickManualChoice: () => {
+      const manualChoice = Object.assign(new ElementStub(), {
+        getAttribute: (name: string) => name === "data-add-task-choice" ? "manual" : "",
+        closest: (selector: string) => selector === "[data-add-task-choice]" ? manualChoice : null,
+      });
+      handlers.get(addTaskChoiceOverlay)?.get("click")?.({ target: manualChoice, preventDefault: vi.fn() } as unknown as Event);
+    },
+    clickBrainDumpChoice: () => {
+      const event = { target: null, preventDefault: vi.fn() };
+      const brainDumpChoice = Object.assign(new ElementStub(), {
+        getAttribute: (name: string) => name === "data-add-task-choice" ? "brain-dump" : "",
+        closest: (selector: string) => selector === "[data-add-task-choice]" ? brainDumpChoice : null,
+      });
+      event.target = brainDumpChoice as never;
+      handlers.get(addTaskChoiceOverlay)?.get("click")?.(event as unknown as Event);
+      return event;
+    },
     submit: () => submitHandler()?.({ preventDefault: vi.fn() } as unknown as Event),
-    toggleSchedule: (checked = true) => {
-      addTaskScheduleToggle.checked = checked;
-      handlers.get(addTaskScheduleToggle)?.get("change")?.();
+    toggleSchedule: (_checked = true) => {
+      void _checked;
     },
     setManualPlannedStart: (value: string) => {
       addTaskPlannedStartTimeInput.value = value;
@@ -407,6 +461,49 @@ function createHarness(
 }
 
 describe("createTaskTimerAddTask", () => {
+  it("opens the Add Task choice modal from delegated Add Task launchers", () => {
+    const harness = createHarness("0");
+
+    harness.clickDocumentAddTaskLauncher();
+
+    expect(harness.ctx.openOverlay).toHaveBeenCalledWith(harness.addTaskChoiceOverlay);
+    expect(harness.ctx.openOverlay).not.toHaveBeenCalledWith(harness.addTaskOverlay);
+  });
+
+  it("opens the current Add Task modal after Manual Task Creation is selected", () => {
+    const harness = createHarness("0");
+
+    harness.openChoice();
+    vi.mocked(harness.ctx.openOverlay).mockClear();
+    vi.mocked(harness.ctx.closeOverlay).mockClear();
+    harness.clickManualChoice();
+
+    expect(harness.ctx.closeOverlay).toHaveBeenCalledWith(harness.addTaskChoiceOverlay);
+    expect(harness.ctx.openOverlay).toHaveBeenCalledWith(harness.addTaskOverlay);
+  });
+
+  it("opens Brain Dump through the mounted app event instead of plain link navigation", () => {
+    const harness = createHarness("0");
+
+    const event = harness.clickBrainDumpChoice();
+    const dispatched = vi.mocked(window.dispatchEvent).mock.calls[0]?.[0] as CustomEvent<{ entryPoint?: string }> | undefined;
+
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(harness.ctx.closeOverlay).toHaveBeenCalledWith(harness.addTaskChoiceOverlay);
+    expect(dispatched?.type).toBe(TASKTIMER_OPEN_BRAIN_DUMP_EVENT);
+    expect(dispatched?.detail).toEqual({ entryPoint: "add-task-choice" });
+  });
+
+  it("closes the Add Task choice modal from Cancel or backdrop", () => {
+    const harness = createHarness("0");
+
+    harness.cancelChoice();
+    harness.clickAddTaskChoiceBackdrop();
+
+    expect(harness.ctx.closeOverlay).toHaveBeenCalledWith(harness.addTaskChoiceOverlay);
+    expect(harness.ctx.closeOverlay).toHaveBeenCalledTimes(2);
+  });
+
   it("defaults Planned Start Date to the current local date when opened", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 8, 2, 23, 30));
@@ -420,18 +517,11 @@ describe("createTaskTimerAddTask", () => {
     }
   });
 
-  it("requires Planned Start Date only for scheduled tasks", () => {
+  it("requires Planned Start Date for task creation", () => {
     const scheduled = createHarness("1");
-    scheduled.toggleSchedule(true);
     scheduled.setPlannedStartDate("");
     scheduled.submit();
     expect(scheduled.ctx.setTasks).not.toHaveBeenCalled();
-
-    const unscheduled = createHarness("0");
-    unscheduled.submit();
-    expect(unscheduled.ctx.setTasks).toHaveBeenCalledWith([
-      expect.objectContaining({ plannedStartDate: null }),
-    ]);
   });
 
   it("closes Add Task immediately when Cancel is clicked on an unchanged draft", () => {
@@ -521,7 +611,7 @@ describe("createTaskTimerAddTask", () => {
     harness.addTaskMsToggle.checked = false;
 
     await harness.togglePlannedStartPushReminder(true);
-    harness.toggleSchedule(true);
+    harness.inputDuration();
     harness.submit();
 
     expect(harness.ctx.setTasks).toHaveBeenCalledWith([
@@ -603,7 +693,7 @@ describe("createTaskTimerAddTask", () => {
     ]);
     vi.mocked(harness.ctx.sharedTasks.hasDuplicateCheckpointTime).mockReturnValue(true);
 
-    harness.toggleSchedule(true);
+    harness.inputDuration();
     harness.submit();
 
     expect(harness.ctx.sharedTasks.hasDuplicateCheckpointTime).toHaveBeenCalled();
@@ -632,30 +722,11 @@ describe("createTaskTimerAddTask", () => {
     expect(harness.ctx.jumpToTaskAndHighlight).toHaveBeenCalledWith("task-1");
   });
 
-  it("creates a name-only task when Schedule this task is unchecked", () => {
-    const harness = createHarness("1");
-    const setTasksMock = vi.mocked(harness.ctx.setTasks);
-
-    harness.submit();
-
-    expect(setTasksMock).toHaveBeenCalledWith([
-      expect.objectContaining({
-        name: "New Task",
-        timeGoalEnabled: false,
-        timeGoalMinutes: 0,
-        milestonesEnabled: false,
-        milestones: [],
-        plannedStartPushRemindersEnabled: false,
-      }),
-    ]);
-  });
-
-  it("preserves scheduled-task creation when Schedule this task is checked", () => {
+  it("creates a scheduled task by default", () => {
     const harness = createHarness("1");
     harness.addTaskMsToggle.checked = false;
     const setTasksMock = vi.mocked(harness.ctx.setTasks);
 
-    harness.toggleSchedule(true);
     harness.submit();
 
     expect(setTasksMock).toHaveBeenCalledWith([
@@ -667,6 +738,76 @@ describe("createTaskTimerAddTask", () => {
         timeGoalUnit: "minute",
         timeGoalPeriod: "day",
         timeGoalMinutes: 1,
+        plannedStartByDay: { mon: "09:00", wed: "09:00", fri: "09:00" },
+        milestonesEnabled: false,
+        milestones: [],
+      }),
+    ]);
+  });
+
+  it("preserves scheduled-task creation without a schedule checkbox", () => {
+    const harness = createHarness("1");
+    harness.addTaskMsToggle.checked = false;
+    const setTasksMock = vi.mocked(harness.ctx.setTasks);
+
+    harness.inputDuration();
+    harness.submit();
+
+    expect(setTasksMock).toHaveBeenCalledWith([
+      expect.objectContaining({
+        name: "New Task",
+        taskType: "recurring",
+        timeGoalEnabled: true,
+        timeGoalValue: 1,
+        timeGoalUnit: "minute",
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 1,
+      }),
+    ]);
+  });
+
+  it("creates a scheduled once-off task when Once-Off is selected", () => {
+    const harness = createHarness("1", { plannedStartDate: "2026-09-09", plannedStartTime: "14:00" });
+    harness.addTaskMsToggle.checked = false;
+    const setTasksMock = vi.mocked(harness.ctx.setTasks);
+
+    harness.clickOnceOffType();
+    harness.setManualPlannedStart("14:00");
+    harness.submit();
+
+    expect(setTasksMock).toHaveBeenCalledWith([
+      expect.objectContaining({
+        name: "New Task",
+        taskType: "once-off",
+        onceOffDay: "wed",
+        onceOffTargetDate: "2026-09-09",
+        plannedStartDate: "2026-09-09",
+        plannedStartDay: "wed",
+        plannedStartTime: "14:00",
+        plannedStartByDay: { wed: "14:00" },
+        timeGoalPeriod: "day",
+      }),
+    ]);
+  });
+
+  it("creates a once-off task when the selected pill is once-off even if task-type state is stale", () => {
+    const harness = createHarness("1", { plannedStartDate: "2026-09-09", plannedStartTime: "14:00" });
+    harness.addTaskMsToggle.checked = false;
+    harness.clickOnceOffType();
+    harness.ctx.getAddTaskType = () => "recurring";
+    harness.setManualPlannedStart("14:00");
+
+    harness.submit();
+
+    expect(harness.ctx.setTasks).toHaveBeenCalledWith([
+      expect.objectContaining({
+        taskType: "once-off",
+        onceOffDay: "wed",
+        onceOffTargetDate: "2026-09-09",
+        plannedStartDate: "2026-09-09",
+        plannedStartDay: "wed",
+        plannedStartTime: "14:00",
+        plannedStartByDay: { wed: "14:00" },
       }),
     ]);
   });
@@ -850,7 +991,7 @@ describe("createTaskTimerAddTask", () => {
     const harness = createHarness("1", { productivityStartTime: "08:00", productivityEndTime: "12:00" });
     harness.addTaskMsToggle.checked = false;
 
-    harness.toggleSchedule(true);
+    harness.inputDuration();
 
     expect(harness.ctx.setAddTaskPlannedStartTimeState).toHaveBeenLastCalledWith("08:00");
     expect(harness.addTaskPlannedStartTimeInput.value).toBe("08:00");
@@ -885,7 +1026,7 @@ describe("createTaskTimerAddTask", () => {
     const harness = createHarness("1", { tasks: [existingTask], productivityStartTime: "09:00", productivityEndTime: "12:00" });
     harness.addTaskMsToggle.checked = false;
 
-    harness.toggleSchedule(true);
+    harness.inputDuration();
 
     expect(harness.ctx.setAddTaskPlannedStartTimeState).toHaveBeenLastCalledWith("10:00");
     expect(harness.addTaskPlannedStartTimeInput.value).toBe("10:00");
@@ -920,7 +1061,7 @@ describe("createTaskTimerAddTask", () => {
     const harness = createHarness("1", { tasks: [existingTask], productivityStartTime: "09:00", productivityEndTime: "09:59" });
     harness.addTaskMsToggle.checked = false;
 
-    harness.toggleSchedule(true);
+    harness.inputDuration();
 
     expect(harness.ctx.setAddTaskPlannedStartTimeState).toHaveBeenLastCalledWith("10:00");
     expect(harness.addTaskPlannedStartTimeInput.value).toBe("10:00");
@@ -930,7 +1071,7 @@ describe("createTaskTimerAddTask", () => {
     const harness = createHarness("1", { productivityStartTime: "08:00", productivityEndTime: "12:00" });
     harness.addTaskMsToggle.checked = false;
 
-    harness.toggleSchedule(true);
+    harness.inputDuration();
     harness.setManualPlannedStart("11:00");
     harness.addTaskDurationValueInput.value = "2";
     harness.inputDuration();
@@ -982,7 +1123,7 @@ describe("createTaskTimerAddTask", () => {
     });
     harness.addTaskMsToggle.checked = false;
 
-    harness.toggleSchedule(true);
+    harness.inputDuration();
     harness.clickMinuteUnit();
     harness.clickWeeklyPeriod();
 
@@ -996,7 +1137,7 @@ describe("createTaskTimerAddTask", () => {
     const setTasksMock = vi.mocked(harness.ctx.setTasks);
     harness.ctx.getAddTaskDurationPeriod = () => "week";
 
-    harness.toggleSchedule(true);
+    harness.inputDuration();
     harness.clickHourUnit();
     harness.submit();
 
@@ -1014,7 +1155,7 @@ describe("createTaskTimerAddTask", () => {
   it("shows the split checkbox only for weekly recurring tasks with 2 or more productivity days", () => {
     const harness = createHarness("1", { productivityDays: ["mon", "wed"] });
 
-    harness.toggleSchedule(true);
+    harness.inputDuration();
     expect(harness.addTaskSplitAcrossProductivityDaysRow.classList.toggle).toHaveBeenLastCalledWith("isHidden", true);
 
     harness.clickWeeklyPeriod();
@@ -1215,6 +1356,7 @@ describe("createTaskTimerAddTask", () => {
     expect(harness.ctx.setTasks).toHaveBeenCalledWith([
       existingTask,
       expect.objectContaining({
+        taskType: "once-off",
         plannedStartTime: "07:00",
         plannedStartByDay: { mon: "07:00" },
         timeGoalMinutes: 15,
@@ -1263,6 +1405,8 @@ describe("createTaskTimerAddTask", () => {
     expect(harness.ctx.setTasks).toHaveBeenCalledWith([
       existingTask,
       expect.objectContaining({
+        taskType: "once-off",
+        onceOffTargetDate: "2026-09-07",
         plannedStartTime: "10:00",
         plannedStartByDay: expect.objectContaining({ mon: "10:00" }),
       }),
@@ -1321,6 +1465,8 @@ describe("createTaskTimerAddTask", () => {
       existingTask,
       laterTask,
       expect.objectContaining({
+        taskType: "once-off",
+        onceOffTargetDate: "2026-09-07",
         plannedStartTime: "08:00",
         plannedStartByDay: expect.objectContaining({ mon: "08:00" }),
       }),
@@ -1374,6 +1520,8 @@ describe("createTaskTimerAddTask", () => {
         plannedStartByDay: expect.objectContaining({ mon: "10:00" }),
       }),
       expect.objectContaining({
+        taskType: "once-off",
+        onceOffTargetDate: "2026-09-07",
         plannedStartTime: "09:00",
         plannedStartByDay: expect.objectContaining({ mon: "09:00" }),
       }),

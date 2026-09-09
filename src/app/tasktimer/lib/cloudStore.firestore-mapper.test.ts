@@ -162,14 +162,48 @@ describe("saveTask Firestore planned start payloads", () => {
     expect(taskWrites[1]).not.toHaveProperty("bgTimeGoalPushSentDueAtMs");
   });
 
-  it("strips manual completion fields from the compatibility task fallback payload", async () => {
+  it.each([false, true])("preserves once-off identity in cloud fallback (minimal: %s)", async (minimal) => {
+    let savedRow: Record<string, unknown> = {};
+    firestoreMocks.setDoc.mockImplementation(async (ref?: { path?: string }, row?: Record<string, unknown>) => {
+      if (ref?.path !== "users/user-1/tasks/task-1") return;
+      if ("schemaVersion" in (row || {}) || (minimal && "plannedStartDate" in (row || {}))) {
+        throw Object.assign(new Error("Missing or insufficient permissions."), { code: "permission-denied" });
+      }
+      savedRow = row || {};
+    });
+    await saveTask("user-1", task({
+      taskType: "once-off",
+      onceOffTargetDate: "2099-09-09",
+      plannedStartDate: "2099-09-09",
+      plannedStartTime: "14:00",
+      timeGoalEnabled: true,
+      timeGoalMinutes: 60,
+      timeGoalPeriod: "day",
+    }));
+    expect(savedRow).toEqual(expect.objectContaining({
+      taskType: "once-off",
+      onceOffTargetDate: "2099-09-09",
+      timeGoalMinutes: 60,
+    }));
+    firestoreMocks.getDocs.mockImplementation(async (ref?: { path?: string }) => ({
+      docs: ref?.path === "users/user-1/tasks" ? [{ id: "task-1", data: () => savedRow }] : [],
+    }));
+    const { loadUserTimerState } = await import("./cloudStore");
+    const reloaded = await loadUserTimerState("user-1");
+    expect(reloaded.tasks[0]).toEqual(expect.objectContaining({
+      taskType: "once-off",
+      onceOffTargetDate: "2099-09-09",
+      timeGoalMinutes: 60,
+    }));
+  });
+
+  it("preserves manual completion fields in the compatibility task fallback payload", async () => {
     firestoreMocks.setDoc.mockImplementation(async (ref?: { path?: string }, row?: Record<string, unknown>) => {
       if (ref?.path !== "users/user-1/tasks/task-1") return undefined;
       const hasCurrentOnlyField = Object.keys(row || {}).some((key) =>
         key.startsWith("bgTimeGoalPush") ||
-        key === "markedDoneAtMs" ||
-        key === "markedDoneUntilMs" ||
-        key === "nextBestActionSnoozedUntilMs"
+        key === "resumePendingSinceDayKey" ||
+        key.startsWith("sharedSource")
       );
       if (!hasCurrentOnlyField) return undefined;
       const error = new Error("Missing or insufficient permissions.") as Error & { code?: string };
@@ -184,6 +218,7 @@ describe("saveTask Firestore planned start payloads", () => {
         plannedStartPushRemindersEnabled: true,
         markedDoneAtMs: 1_000,
         markedDoneUntilMs: 2_000,
+        plannedStartDate: "2026-09-08",
         nextBestActionSnoozedUntilMs: 3_000,
       })
     );
@@ -200,7 +235,7 @@ describe("saveTask Firestore planned start payloads", () => {
       nextBestActionSnoozedUntilMs: 3_000,
     }));
     expect(taskWrites[1]).toEqual(expect.objectContaining({
-      plannedStartDate: "2026-09-02",
+      plannedStartDate: "2026-09-08",
       markedDoneAtMs: 1_000,
       markedDoneUntilMs: 2_000,
       nextBestActionSnoozedUntilMs: 3_000,
@@ -210,12 +245,100 @@ describe("saveTask Firestore planned start payloads", () => {
     expect(taskWrites[2]).not.toHaveProperty("bgTimeGoalPushDueAtMs");
     expect(taskWrites[2]).not.toHaveProperty("bgTimeGoalPushSentAtMs");
     expect(taskWrites[2]).not.toHaveProperty("bgTimeGoalPushSentDueAtMs");
-    expect(taskWrites[2]).not.toHaveProperty("markedDoneAtMs");
-    expect(taskWrites[2]).not.toHaveProperty("markedDoneUntilMs");
-    expect(taskWrites[2]).not.toHaveProperty("nextBestActionSnoozedUntilMs");
     expect(taskWrites[2]).toEqual(expect.objectContaining({
-      plannedStartDate: "2026-09-02",
+      plannedStartDate: "2026-09-08",
+      markedDoneAtMs: 1_000,
+      markedDoneUntilMs: 2_000,
+      nextBestActionSnoozedUntilMs: 3_000,
     }));
+  });
+
+  it("preserves manual completion fields in the minimal compatibility task fallback payload", async () => {
+    firestoreMocks.setDoc.mockImplementation(async (ref?: { path?: string }, row?: Record<string, unknown>) => {
+      if (ref?.path !== "users/user-1/tasks/task-1") return undefined;
+      const rejectedKeys = new Set([
+        "bgTimeGoalPushEligible",
+        "bgTimeGoalPushDueAtMs",
+        "bgTimeGoalPushSentAtMs",
+        "bgTimeGoalPushSentDueAtMs",
+        "resumePendingSinceDayKey",
+        "plannedStartDate",
+        "plannedStartDay",
+        "plannedStartTime",
+        "plannedStartByDay",
+        "plannedStartOpenEnded",
+        "plannedStartPushRemindersEnabled",
+        "sharedSourceOwnerUid",
+        "sharedSourceTaskId",
+        "sharedSourceShareDocId",
+        "sharedSourceImportedAtMs",
+        "createdAt",
+        "updatedAt",
+        "schemaVersion",
+      ]);
+      if (!Object.keys(row || {}).some((key) => rejectedKeys.has(key))) return undefined;
+      const error = new Error("Missing or insufficient permissions.") as Error & { code?: string };
+      error.code = "permission-denied";
+      throw error;
+    });
+
+    await saveTask(
+      "user-1",
+      task({
+        taskType: "once-off",
+        onceOffTargetDate: "2026-09-08",
+        plannedStartDate: "2026-09-08",
+        plannedStartTime: "09:00",
+        plannedStartByDay: { tue: "09:00" },
+        plannedStartPushRemindersEnabled: true,
+        markedDoneAtMs: 1_000,
+        markedDoneUntilMs: null,
+        nextBestActionSnoozedUntilMs: 3_000,
+      })
+    );
+
+    const taskWrites = (firestoreMocks.setDoc.mock.calls as unknown as Array<[{ path: string }, Record<string, unknown>]>)
+      .filter(([ref]) => ref.path === "users/user-1/tasks/task-1")
+      .map(([, row]) => row);
+
+    expect(taskWrites).toHaveLength(4);
+    expect(taskWrites[3]).toEqual(expect.objectContaining({
+      markedDoneAtMs: 1_000,
+      markedDoneUntilMs: null,
+      nextBestActionSnoozedUntilMs: 3_000,
+    }));
+    expect(taskWrites[3]).not.toHaveProperty("plannedStartDate");
+    expect(taskWrites[3]).not.toHaveProperty("plannedStartByDay");
+    expect(taskWrites[3]).not.toHaveProperty("schemaVersion");
+  });
+
+  it("omits metadata fields from the compatibility task fallback payload", async () => {
+    firestoreMocks.setDoc.mockImplementation(async (ref?: { path?: string }, row?: Record<string, unknown>) => {
+      if (ref?.path !== "users/user-1/tasks/task-1") return undefined;
+      if (!("schemaVersion" in (row || {}))) return undefined;
+      const error = new Error("Missing or insufficient permissions.") as Error & { code?: string };
+      error.code = "permission-denied";
+      throw error;
+    });
+
+    await saveTask(
+      "user-1",
+      task({
+        plannedStartTime: "09:00",
+        plannedStartPushRemindersEnabled: true,
+      })
+    );
+
+    const taskWrites = (firestoreMocks.setDoc.mock.calls as unknown as Array<[{ path: string }, Record<string, unknown>]>)
+      .filter(([ref]) => ref.path === "users/user-1/tasks/task-1")
+      .map(([, row]) => row);
+
+    expect(taskWrites).toHaveLength(3);
+    expect(taskWrites[0]).toHaveProperty("schemaVersion", 1);
+    expect(taskWrites[1]).toHaveProperty("schemaVersion", 1);
+    expect(taskWrites[2]).not.toHaveProperty("schemaVersion");
+    expect(taskWrites[2]).not.toHaveProperty("createdAt");
+    expect(taskWrites[2]).not.toHaveProperty("updatedAt");
   });
 
   it("maps legacy elapsed cloud task time into accumulated time", async () => {

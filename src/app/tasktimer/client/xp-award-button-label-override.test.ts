@@ -6,18 +6,19 @@ import {
   setXpAwardButtonLabelOverride,
 } from "./xp-award-button-label-override";
 
-function fakeTaskElement() {
-  const classNames = new Set<string>();
+function fakeTaskElement(opts?: { classNames?: string[]; labelText?: string }) {
+  const classNames = new Set<string>(opts?.classNames || []);
   const button = {
     disabled: true,
     classList: {
       add: vi.fn((...classes: string[]) => classes.forEach((className) => classNames.add(className))),
       remove: vi.fn((...classes: string[]) => classes.forEach((className) => classNames.delete(className))),
+      contains: vi.fn((className: string) => classNames.has(className)),
     },
     setAttribute: vi.fn(),
   };
   const label = {
-    textContent: "Reset",
+    textContent: opts?.labelText || "Reset",
   };
   const taskEl = {
     querySelector: vi.fn((selector: string) => {
@@ -64,6 +65,24 @@ describe("XP award button label override", () => {
     expect(button.setAttribute).toHaveBeenCalledWith("title", "Reset");
     expect(button.setAttribute).toHaveBeenCalledWith("aria-label", "Reset");
     expect(button.disabled).toBe(false);
+
+    clearXpAwardButtonLabelOverride("task-1");
+  });
+
+  it("does not promote a held Reset label over an already rendered done button", () => {
+    const { taskEl, button, label, classNames } = fakeTaskElement({
+      classNames: ["btn-done", "taskPrimaryActionDone"],
+      labelText: "Done",
+    });
+
+    setXpAwardButtonLabelOverride("task-1", "Reset");
+    applyXpAwardButtonLabelOverride(taskEl as unknown as HTMLElement, "task-1");
+
+    expect(label.textContent).toBe("Done");
+    expect(classNames.has("taskPrimaryActionDone")).toBe(true);
+    expect(classNames.has("taskPrimaryActionReset")).toBe(false);
+    expect(button.setAttribute).not.toHaveBeenCalled();
+    expect(button.disabled).toBe(true);
 
     clearXpAwardButtonLabelOverride("task-1");
   });

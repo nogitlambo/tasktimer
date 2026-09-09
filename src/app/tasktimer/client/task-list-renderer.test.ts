@@ -94,7 +94,6 @@ function createHarness(
     tileColumnCount: number;
     historyByTaskId: Record<string, Array<{ ts: number; ms: number; name: string }>>;
     pruneInactiveHistoryTasks: (activeTaskIds: Set<string>) => boolean;
-    completedOnceOffTasksCollapsed: boolean;
   }> = {}
 ) {
   const taskListEl = elementStub("section");
@@ -114,7 +113,6 @@ function createHarness(
     getTaskView: () => overrides.taskView ?? "list",
     getTaskOrderBy: () => overrides.taskOrderBy ?? "custom",
     getTileColumnCount: () => overrides.tileColumnCount ?? 2,
-    getCompletedOnceOffTasksCollapsed: () => overrides.completedOnceOffTasksCollapsed ?? false,
     setCurrentTileColumnCount: (value) => calls.push(`tile-count:${value}`),
     getOpenHistoryTaskIds: () => openHistoryTaskIds,
     getPinnedHistoryTaskIds: () => pinnedHistoryTaskIds,
@@ -152,14 +150,37 @@ function createHarness(
   return { renderer, taskListEl, openHistoryTaskIds, pinnedHistoryTaskIds, historyViewByTaskId, calls, rafQueue };
 }
 
+function taskTypeSections(taskListEl: StubElement) {
+  return taskListEl.children.filter((child) => child.className === "taskTypeSection");
+}
+
+function sectionCards(section: StubElement) {
+  return section.children.find((child) => child.className === "taskTypeSectionCards") || null;
+}
+
+function sectionTasks(section: StubElement) {
+  return sectionCards(section)?.children || [];
+}
+
+function allRenderedTasks(taskListEl: StubElement): StubElement[] {
+  const tasks: StubElement[] = [];
+  const visit = (node: StubElement) => {
+    if (node.dataset.taskId) tasks.push(node);
+    node.children.forEach(visit);
+  };
+  taskListEl.children.forEach(visit);
+  return tasks;
+}
+
 describe("task list renderer", () => {
   it("reapplies active XP countdown labels after task card rerenders", () => {
     const source = readFileSync(resolve(__dirname, "task-list-renderer.ts"), "utf8");
 
     expect(source).toContain('import { applyXpAwardButtonLabelOverride, getXpAwardButtonLabelOverride } from "./xp-award-button-label-override";');
-    expect(source).toContain('const isHeldResetPrimaryAction = getXpAwardButtonLabelOverride(taskId) === "Reset";');
+    expect(source).toContain('const hasHeldResetPrimaryAction = getXpAwardButtonLabelOverride(taskId) === "Reset";');
     expect(source).toContain("const isRecordedGoalCompleted = hasRecordedTaskGoalCompletion(task);");
     expect(source).toContain("const isCompletedForCurrentPeriod = isTaskTimeGoalStartLockedForPeriod(task, Date.now(), options.getWeekStarting?.() || \"mon\");");
+    expect(source).toContain("const isHeldResetPrimaryAction = hasHeldResetPrimaryAction && !isCompletedForCurrentPeriod;");
     expect(source).toContain("isStaleRecordedGoalCompleted: isRecordedGoalCompleted && !isCompletedForCurrentPeriod,");
     expect(source).toMatch(/isTimeGoalCompleted:\s*isHeldResetPrimaryAction\s*\|\|\s*isCompletedForCurrentPeriod,/);
     expect(source).toContain("applyXpAwardButtonLabelOverride(taskEl, taskId);");
@@ -202,35 +223,81 @@ describe("task list renderer", () => {
     expect(harness.calls).toEqual(["tile-count:1", "sync-flips:", "dashboard", "sync-goal", "restore-goal-flow"]);
   });
 
+  it("renders recurring and once-off section headers when tasks exist", () => {
+    const harness = createHarness({
+      tasks: [
+        task({ id: "recurring", name: "Recurring task", order: 1, taskType: "recurring" }),
+        task({ id: "once", name: "Once task", order: 2, taskType: "once-off" }),
+      ],
+    });
+
+    harness.renderer.renderTasksPage();
+
+    const sections = taskTypeSections(harness.taskListEl);
+    expect(sections).toHaveLength(2);
+    expect(sections[0]?.dataset.taskTypeSection).toBe("recurring");
+    expect(sections[0]?.innerHTML).toContain("Recurring");
+    expect(sections[1]?.dataset.taskTypeSection).toBe("once-off");
+    expect(sections[1]?.innerHTML).toContain("Once-Off");
+  });
+
+  it("groups legacy recurring tasks and once-off tasks into separate sections", () => {
+    const harness = createHarness({
+      tasks: [
+        task({ id: "once", name: "Once", order: 1, taskType: "once-off" }),
+        task({ id: "legacy", name: "Legacy", order: 2, taskType: undefined }),
+        task({ id: "recurring", name: "Recurring", order: 3, taskType: "recurring" }),
+      ],
+    });
+
+    harness.renderer.renderTasksPage();
+
+    const [recurringSection, onceOffSection] = taskTypeSections(harness.taskListEl);
+    expect(sectionTasks(recurringSection).map((entry) => entry.dataset.taskId)).toEqual(["legacy", "recurring"]);
+    expect(sectionTasks(onceOffSection).map((entry) => entry.dataset.taskId)).toEqual(["once"]);
+  });
+
+  it("shows empty section messages when one task type has no active tasks", () => {
+    const harness = createHarness({
+      tasks: [task({ id: "recurring", name: "Recurring", order: 1, taskType: "recurring" })],
+    });
+
+    harness.renderer.renderTasksPage();
+
+    const [recurringSection, onceOffSection] = taskTypeSections(harness.taskListEl);
+    expect(recurringSection.innerHTML).toContain('<div class="taskTypeSectionEmpty" hidden>No recurring tasks</div>');
+    expect(onceOffSection.innerHTML).toContain('<div class="taskTypeSectionEmpty">No once-off tasks</div>');
+  });
+
   it("moves completed once-off tasks below active tasks in newest-first order", () => {
     const harness = createHarness({ tasks: [
       task({ id: "done-old", name: "Old", order: 1, taskType: "once-off", markedDoneAtMs: 100 }),
       task({ id: "active", name: "Active", order: 2, taskType: "recurring" }),
+      task({ id: "once-active", name: "Once Active", order: 3, taskType: "once-off" }),
       task({ id: "done-new", name: "New", order: 3, taskType: "once-off", markedDoneAtMs: 200 }),
     ] });
 
     harness.renderer.renderTasksPage();
 
-    expect(harness.taskListEl.children[0]?.dataset.taskId).toBe("active");
-    const section = harness.taskListEl.children[1];
-    expect(section?.className).toBe("completedOnceOffTasksSection");
-    expect(section?.innerHTML).toContain("Completed Once-off Tasks");
-    const cards = section?.children[0];
-    expect(cards?.children.map((entry) => entry.dataset.taskId)).toEqual(["done-new", "done-old"]);
-    expect(cards?.children.every((entry) => entry.attributes.get("draggable") === "false")).toBe(true);
+    const [recurringSection, onceOffSection] = taskTypeSections(harness.taskListEl);
+    expect(sectionTasks(recurringSection).map((entry) => entry.dataset.taskId)).toEqual(["active"]);
+    const onceOffCards = sectionTasks(onceOffSection);
+    expect(onceOffCards.map((entry) => entry.dataset.taskId)).toEqual(["once-active", "done-new", "done-old"]);
+    expect(onceOffSection.children.some((child) => child.className === "completedOnceOffTasksSection")).toBe(false);
+    expect(onceOffCards.slice(1).every((entry) => entry.attributes.get("draggable") === "false")).toBe(true);
   });
 
-  it("honors the locally persisted completed-section collapsed state", () => {
+  it("keeps the once-off section visible when it only contains completed tasks", () => {
     const harness = createHarness({
-      completedOnceOffTasksCollapsed: true,
       tasks: [task({ id: "done", name: "Done", taskType: "once-off", markedDoneAtMs: 100 })],
     });
 
     harness.renderer.renderTasksPage();
 
-    const section = harness.taskListEl.children[0];
-    expect(section?.innerHTML).toContain('aria-expanded="false"');
-    expect((section?.children[0] as StubElement & { hidden?: boolean })?.hidden).toBe(true);
+    const onceOffSection = taskTypeSections(harness.taskListEl)[1];
+    expect(onceOffSection.innerHTML).toContain('<div class="taskTypeSectionEmpty" hidden>No once-off tasks</div>');
+    expect(sectionTasks(onceOffSection).map((entry) => entry.dataset.taskId)).toEqual(["done"]);
+    expect(onceOffSection.children.some((child) => child.className === "completedOnceOffTasksSection")).toBe(false);
   });
 
   it("renders task cards into tile columns and preserves source indexes", () => {
@@ -240,10 +307,12 @@ describe("task list renderer", () => {
 
     expect(harness.taskListEl.attributes.get("data-tile-columns")).toBe("2");
     expect(harness.taskListEl.children).toHaveLength(2);
-    expect(harness.taskListEl.children[0]?.className).toBe("taskTileColumn");
-    expect(harness.taskListEl.children[1]?.className).toBe("taskTileColumn");
-    const firstColumnTask = harness.taskListEl.children[0]?.children[0];
-    const secondColumnTask = harness.taskListEl.children[1]?.children[0];
+    const recurringCards = sectionCards(taskTypeSections(harness.taskListEl)[0]);
+    expect(recurringCards?.attributes.get("data-tile-columns")).toBe("2");
+    expect(recurringCards?.children[0]?.className).toBe("taskTileColumn");
+    expect(recurringCards?.children[1]?.className).toBe("taskTileColumn");
+    const firstColumnTask = recurringCards?.children[0]?.children[0];
+    const secondColumnTask = recurringCards?.children[1]?.children[0];
     expect(firstColumnTask?.dataset.taskId).toBe("a");
     expect(firstColumnTask?.dataset.index).toBe("1");
     expect(firstColumnTask?.attributes.get("draggable")).toBe("false");
@@ -285,10 +354,11 @@ describe("task list renderer", () => {
 
     harness.renderer.renderTasksPage();
 
-    expect(harness.taskListEl.children[0]?.dataset.taskId).toBe("duplicate");
-    expect(harness.taskListEl.children[0]?.dataset.index).toBe("0");
-    expect(harness.taskListEl.children[1]?.dataset.taskId).toBe("duplicate");
-    expect(harness.taskListEl.children[1]?.dataset.index).toBe("1");
+    const renderedTasks = allRenderedTasks(harness.taskListEl);
+    expect(renderedTasks[0]?.dataset.taskId).toBe("duplicate");
+    expect(renderedTasks[0]?.dataset.index).toBe("0");
+    expect(renderedTasks[1]?.dataset.taskId).toBe("duplicate");
+    expect(renderedTasks[1]?.dataset.index).toBe("1");
   });
 
   it("renders four tile columns when the responsive helper selects four", () => {
@@ -308,14 +378,15 @@ describe("task list renderer", () => {
     harness.renderer.renderTasksPage();
 
     expect(harness.taskListEl.attributes.get("data-tile-columns")).toBe("4");
-    expect(harness.taskListEl.children).toHaveLength(4);
-    expect(harness.taskListEl.children.map((column) => column.className)).toEqual([
+    const recurringCards = sectionCards(taskTypeSections(harness.taskListEl)[0]);
+    expect(recurringCards?.children).toHaveLength(4);
+    expect(recurringCards?.children.map((column) => column.className)).toEqual([
       "taskTileColumn",
       "taskTileColumn",
       "taskTileColumn",
       "taskTileColumn",
     ]);
-    expect(harness.taskListEl.children.map((column) => column.children.map((child) => child.dataset.taskId))).toEqual([
+    expect(recurringCards?.children.map((column) => column.children.map((child) => child.dataset.taskId))).toEqual([
       ["a", "e"],
       ["b"],
       ["c"],
@@ -364,7 +435,7 @@ describe("task list renderer", () => {
     harness.renderer.renderTasksPage();
     while (harness.rafQueue.length) harness.rafQueue.shift()?.();
 
-    const openingTask = harness.taskListEl.children[0];
+    const openingTask = allRenderedTasks(harness.taskListEl)[0];
     expect(openingTask?.dataset.taskId).toBe("a");
     expect(openingTask?.className).toContain("taskHistoryOpeningSpace");
     expect(openingTask?.innerHTML).toContain("historyInline historyInlineMotion isOpeningSpace");
@@ -380,7 +451,7 @@ describe("task list renderer", () => {
 
     harness.renderer.renderTasksPage();
 
-    const renderedTask = harness.taskListEl.children[0];
+    const renderedTask = allRenderedTasks(harness.taskListEl)[0];
     const historyIndex = renderedTask?.innerHTML.indexOf("historyInline historyInlineMotion");
     const backFaceIndex = renderedTask?.innerHTML.indexOf('class="taskFace taskFaceBack"');
 
@@ -399,7 +470,7 @@ describe("task list renderer", () => {
     harness.renderer.renderTasksPage();
     while (harness.rafQueue.length) harness.rafQueue.shift()?.();
 
-    const openingTask = harness.taskListEl.children[0];
+    const openingTask = allRenderedTasks(harness.taskListEl)[0];
     expect(openingTask?.dataset.taskId).toBe("a");
     expect(openingTask?.className).toContain("taskHistoryOpening");
     expect(openingTask?.innerHTML).toContain("historyInline historyInlineMotion isOpening");
@@ -407,7 +478,7 @@ describe("task list renderer", () => {
     expect(harness.calls.filter((call) => call === "render-history:b")).toHaveLength(2);
   });
 
-  it("renders current-period goal completion metadata without history as resettable", () => {
+  it("renders current-period goal completion metadata without history as done", () => {
     const nowValue = Date.now();
     const harness = createHarness({
       tasks: [
@@ -426,11 +497,46 @@ describe("task list renderer", () => {
 
     harness.renderer.renderTasksPage();
 
-    const renderedTask = harness.taskListEl.children[0];
+    const renderedTask = allRenderedTasks(harness.taskListEl)[0];
     expect(renderedTask?.className).toContain("taskCompleted");
-    expect(renderedTask?.innerHTML).toContain('data-action="reset" title="Reset"');
-    expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionReset");
-    expect(renderedTask?.innerHTML).not.toContain("Done until tomorrow");
+    expect(renderedTask?.innerHTML).toContain('data-action="reset" title="Done until tomorrow"');
+    expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionDone");
+    expect(renderedTask?.innerHTML).toContain('<span class="taskPrimaryActionPrimary">Done</span>');
+    expect(renderedTask?.innerHTML).not.toContain("taskPrimaryAction taskPrimaryActionReset");
+  });
+
+  it("renders current-period goal completion metadata as done despite a held reset override", () => {
+    const nowValue = Date.now();
+    const harness = createHarness({
+      tasks: [
+        task({
+          id: "task-1",
+          name: "Focus",
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+          timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(nowValue),
+          timeGoalCompletedAtMs: nowValue,
+          timeGoalCompletedReason: "goal",
+        }),
+      ],
+    });
+
+    try {
+      setXpAwardButtonLabelOverride("task-1", "Reset");
+
+      harness.renderer.renderTasksPage();
+
+      const renderedTask = allRenderedTasks(harness.taskListEl)[0];
+      expect(renderedTask?.className).toContain("taskCompleted");
+      expect(renderedTask?.innerHTML).toContain('data-action="reset" title="Done until tomorrow"');
+      expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionDone");
+      expect(renderedTask?.innerHTML).toContain('<span class="taskPrimaryActionPrimary">Done</span>');
+      expect(renderedTask?.innerHTML).not.toContain("taskPrimaryAction taskPrimaryActionReset");
+      expect(renderedTask?.innerHTML).not.toContain('title="Reset"');
+    } finally {
+      clearXpAwardButtonLabelOverride("task-1");
+    }
   });
 
   it("renders current-period reset completion metadata as launchable", () => {
@@ -452,7 +558,7 @@ describe("task list renderer", () => {
 
     harness.renderer.renderTasksPage();
 
-    const renderedTask = harness.taskListEl.children[0];
+    const renderedTask = allRenderedTasks(harness.taskListEl)[0];
     expect(renderedTask?.className).not.toContain("taskCompleted");
     expect(renderedTask?.innerHTML).not.toContain("Done until tomorrow");
     expect(renderedTask?.innerHTML).toContain('data-action="start" title="Launch"');
@@ -479,7 +585,7 @@ describe("task list renderer", () => {
 
       harness.renderer.renderTasksPage();
 
-      const renderedTask = harness.taskListEl.children[0];
+      const renderedTask = allRenderedTasks(harness.taskListEl)[0];
       expect(renderedTask?.className).toContain("taskCompleted");
       expect(renderedTask?.innerHTML).toContain('data-action="reset" title="Reset"');
       expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionReset");
@@ -490,7 +596,7 @@ describe("task list renderer", () => {
     }
   });
 
-  it("renders goal completion metadata with qualifying history as resettable", () => {
+  it("renders goal completion metadata with qualifying history as done", () => {
     const nowValue = Date.now();
     const harness = createHarness({
       tasks: [
@@ -512,11 +618,12 @@ describe("task list renderer", () => {
 
     harness.renderer.renderTasksPage();
 
-    const renderedTask = harness.taskListEl.children[0];
+    const renderedTask = allRenderedTasks(harness.taskListEl)[0];
     expect(renderedTask?.className).toContain("taskCompleted");
-    expect(renderedTask?.innerHTML).toContain('data-action="reset" title="Reset"');
-    expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionReset");
-    expect(renderedTask?.innerHTML).not.toContain("Done until tomorrow");
+    expect(renderedTask?.innerHTML).toContain('data-action="reset" title="Done until tomorrow"');
+    expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionDone");
+    expect(renderedTask?.innerHTML).toContain('<span class="taskPrimaryActionPrimary">Done</span>');
+    expect(renderedTask?.innerHTML).not.toContain("taskPrimaryAction taskPrimaryActionReset");
   });
 
   it("renders an August 1, 2026 completed goal task as launchable on Sunday, August 2, 2026", () => {
@@ -545,7 +652,7 @@ describe("task list renderer", () => {
 
       harness.renderer.renderTasksPage();
 
-      const renderedTask = harness.taskListEl.children[0];
+      const renderedTask = allRenderedTasks(harness.taskListEl)[0];
       expect(renderedTask?.className).not.toContain("taskCompleted");
       expect(renderedTask?.innerHTML).toContain('data-action="start" title="Launch"');
       expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionLaunch");

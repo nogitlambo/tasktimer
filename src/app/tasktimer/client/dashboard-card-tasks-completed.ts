@@ -1,12 +1,14 @@
 import type { HistoryByTaskId, Task } from "../lib/types";
 import { isTaskPlannedActivationEligible } from "../lib/schedule-placement";
 import { normalizeTaskColor } from "../lib/taskColors";
+import { isTaskMarkedDone } from "../lib/taskManualCompletion";
 
 export type DashboardTasksCompletedItem = {
   name: string;
   goalMinutes: number;
   progress: number;
   complete: boolean;
+  manuallyDone: boolean;
   running: boolean;
   color: string;
 };
@@ -125,6 +127,10 @@ export function buildDashboardTasksCompletedModel(options: {
     return Math.max(0, Math.min(1, elapsedMs / (getCompletionGoalMinutes(opportunity, goalMinutes) * 60000)));
   }
 
+  function isManualDoneCompletion(opportunity: DashboardTasksCompletedOpportunity) {
+    return isTaskMarkedDone(opportunity.task, options.nowMs);
+  }
+
   options.opportunities.forEach((opportunity, index) => {
     const { task, historyScope } = opportunity;
     const taskId = String(task.id || "").trim();
@@ -153,9 +159,10 @@ export function buildDashboardTasksCompletedModel(options: {
     const goalMinutes = Math.max(0, Math.floor(Number(opportunity.goalMinutes || 0)));
     const loggedMs = loggedMsByOpportunity.get(index) || 0;
     const liveMs = liveMsByOpportunity.get(index) || 0;
+    const manualDoneProgress = isManualDoneCompletion(opportunity) ? 1 : null;
     const resetProgress = getResetCompletionProgress(opportunity, goalMinutes);
     const goalProgress = getGoalCompletionProgress(opportunity, goalMinutes);
-    const progress = goalProgress ?? resetProgress ?? (goalMinutes > 0 ? Math.max(0, Math.min(1, loggedMs / (goalMinutes * 60000))) : loggedMs > 0 || liveMs > 0 ? 1 : 0);
+    const progress = manualDoneProgress ?? goalProgress ?? resetProgress ?? (goalMinutes > 0 ? Math.max(0, Math.min(1, loggedMs / (goalMinutes * 60000))) : loggedMs > 0 || liveMs > 0 ? 1 : 0);
     progressByOpportunity.set(index, progress);
     const complete = progress >= 1;
     completeByOpportunity.set(index, complete);
@@ -166,9 +173,10 @@ export function buildDashboardTasksCompletedModel(options: {
     const goalMinutes = Math.max(0, Math.floor(Number(opportunity.goalMinutes || 0)));
     const loggedMs = loggedMsByOpportunity.get(index) || 0;
     const liveMs = liveMsByOpportunity.get(index) || 0;
+    const manualDoneProgress = isManualDoneCompletion(opportunity) ? 1 : null;
     const resetProgress = getResetCompletionProgress(opportunity, goalMinutes);
     const goalProgress = getGoalCompletionProgress(opportunity, goalMinutes);
-    const liveProgress = goalProgress ?? resetProgress ?? (goalMinutes > 0 ? Math.max(0, Math.min(1, (loggedMs + liveMs) / (goalMinutes * 60000))) : loggedMs > 0 || liveMs > 0 ? 1 : 0);
+    const liveProgress = manualDoneProgress ?? goalProgress ?? resetProgress ?? (goalMinutes > 0 ? Math.max(0, Math.min(1, (loggedMs + liveMs) / (goalMinutes * 60000))) : loggedMs > 0 || liveMs > 0 ? 1 : 0);
     liveProgressByOpportunity.set(index, liveProgress);
   });
 
@@ -185,6 +193,7 @@ export function buildDashboardTasksCompletedModel(options: {
         goalMinutes: Math.max(0, Math.floor(Number(opportunity.goalMinutes || 0))),
         progress,
         complete: completeByOpportunity.get(index) === true,
+        manuallyDone: isManualDoneCompletion(opportunity),
         running: options.isTaskRunning(task),
         color: normalizeTaskColor(task.color) || options.fallbackColor,
       };

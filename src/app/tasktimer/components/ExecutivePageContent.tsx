@@ -8,6 +8,7 @@ import BrainDumpClient from "@/app/brain-dump/BrainDumpClient";
 import { trackEvent } from "@/lib/firebaseTelemetry";
 import NativePlusUpsellModal from "./NativePlusUpsellModal";
 import { useNativePlusUpsell } from "./useNativePlusUpsell";
+import { TASKTIMER_OPEN_BRAIN_DUMP_EVENT } from "../client/brain-dump-events";
 import {
   hasTaskTimerEntitlement,
   readTaskTimerPlanFromStorage,
@@ -340,10 +341,16 @@ export default function ExecutivePageContent({ active }: Props) {
           "brain-dump",
       );
     };
+    const openBrainDumpFromEvent = () => {
+      setIsBrainDumpOpen(true);
+    };
     syncBrainDumpFaceFromLocation();
     window.addEventListener("popstate", syncBrainDumpFaceFromLocation);
-    return () =>
+    window.addEventListener(TASKTIMER_OPEN_BRAIN_DUMP_EVENT, openBrainDumpFromEvent);
+    return () => {
       window.removeEventListener("popstate", syncBrainDumpFaceFromLocation);
+      window.removeEventListener(TASKTIMER_OPEN_BRAIN_DUMP_EVENT, openBrainDumpFromEvent);
+    };
   }, []);
 
   useEffect(() => {

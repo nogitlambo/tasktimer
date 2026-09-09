@@ -28,11 +28,6 @@ export default function EditTaskOverlay() {
               </div>
             </div>
 
-            <label className="addTaskPlannedStartCheckboxRow editTaskInlineCheckboxLabel taskScheduleToggleRow" htmlFor="editTaskScheduleToggle">
-              <input id="editTaskScheduleToggle" type="checkbox" />
-              <span>Schedule This Task</span>
-            </label>
-
             <div className="taskScheduleFields" id="editTaskScheduleFields">
               <div className="unitButtons timerTypePills editTaskTypePills taskScreenPillGroup" id="editTaskTypePills" role="group" aria-label="Task type">
                 <button className="btn btn-ghost small unitBtn timerTypePill taskScreenPill taskScreenHeaderBtn isOn" id="editTaskTypeRecurringBtn" type="button" aria-pressed="true">

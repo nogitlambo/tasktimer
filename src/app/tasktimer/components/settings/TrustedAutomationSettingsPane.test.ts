@@ -22,6 +22,18 @@ describe("TrustedAutomationSettingsPane helpers", () => {
     expect(source.indexOf("if (!canUseExecutiveFunction)")).toBeLessThan(source.indexOf('fetch(getApiUrl("/api/automation/settings")'));
   });
 
+  it("treats server-side plan and Executive Function locks as state, not load failures", () => {
+    const source = readFileSync(resolve(__dirname, "TrustedAutomationSettingsPane.tsx"), "utf8");
+
+    expect(source).toContain('code === "plan/plus-required"');
+    expect(source).toContain('code === "executive-function/disabled"');
+    expect(source).toContain("if (isAutomationPlanLockError(cause))");
+    expect(source).toContain("setCanUseExecutiveFunction(false);");
+    expect(source).toContain("if (isAutomationExecutiveFunctionDisabledError(cause))");
+    expect(source).toContain("setExecutiveFunctionEnabled(false);");
+    expect(source.indexOf("if (isAutomationPlanLockError(cause))")).toBeLessThan(source.indexOf('console.error("[TrustedAutomationSettingsPane] load failed"'));
+  });
+
   it("uses a single OFF ASSISTED TRUSTED pill control for each rule", () => {
     const source = readFileSync(resolve(__dirname, "TrustedAutomationSettingsPane.tsx"), "utf8");
 

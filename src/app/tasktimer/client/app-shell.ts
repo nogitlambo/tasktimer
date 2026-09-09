@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { trackScreen } from "@/lib/firebaseTelemetry";
+import { TASKTIMER_OPEN_BRAIN_DUMP_EVENT } from "./brain-dump-events";
 import type { TaskTimerAppPageOptions, TaskTimerAppShellContext } from "./context";
 import type { AppPage } from "./types";
 import {
@@ -312,6 +313,15 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     }
     pushCurrentScreenToNavStack();
     window.location.href = appRoute(path);
+  }
+
+  function openBrainDumpRoute() {
+    applyAppPage("executive", { pushNavStack: true });
+    try {
+      window.history.pushState({ page: "executive", view: "brain-dump" }, "", appRoute("/executive?view=brain-dump"));
+    } catch {
+      window.location.href = appRoute("/executive?view=brain-dump");
+    }
   }
 
   function getCapAppPlugin() {
@@ -647,6 +657,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   }
 
   function registerAppShellEvents() {
+    ctx.on(window as any, TASKTIMER_OPEN_BRAIN_DUMP_EVENT, () => {
+      openBrainDumpRoute();
+    });
+
     ctx.on(window as any, TASKTIMER_MODULE_INTRO_TOUR_APPLY_PAGE_EVENT, (event: Event) => {
       const detail = (event as CustomEvent<ModuleIntroTourApplyPageEventDetail>).detail;
       const page = normalizeModuleIntroTourPage(detail?.page);

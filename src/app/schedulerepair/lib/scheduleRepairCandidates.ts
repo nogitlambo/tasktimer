@@ -152,7 +152,7 @@ export function generateScheduleRepairCandidates(input: {
   config?: Partial<ScheduleRepairCandidateConfig>;
 }) {
   const config = { ...DEFAULT_SCHEDULE_REPAIR_CANDIDATE_CONFIG, ...input.config };
-  const activeTasks = input.tasks.filter((task) => task.active !== false && !task.completed);
+  const activeTasks = input.tasks.filter((task) => task.active !== false && !task.completed && task.plannedDate === input.localDate);
   const knownDurationTaskCount = activeTasks.filter((task) => task.estimatedMinutes != null).length;
   const remainingPlannedMinutes = activeTasks.reduce((sum, task) => sum + Math.max(0, safeMinutes(task.estimatedMinutes) - safeMinutes(task.completedMinutes)), 0);
   const evaluated = evaluateScheduleRepair({

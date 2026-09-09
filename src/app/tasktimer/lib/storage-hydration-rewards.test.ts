@@ -181,6 +181,32 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     vi.clearAllMocks();
   });
 
+  it.each([false, true])("preserves scheduled once-off tasks through save and reload (conversion: %s)", async (conversion) => {
+    if (conversion) saveTasks([task("once-off-save", "Scheduled task", { taskType: "recurring" })]);
+    const scheduledTask = task("once-off-save", "Scheduled task", {
+      taskType: "once-off",
+      onceOffDay: "wed",
+      onceOffTargetDate: "2026-09-09",
+      plannedStartDate: "2026-09-09",
+      plannedStartDay: "wed",
+      plannedStartTime: "14:00",
+      plannedStartByDay: { wed: "14:00" },
+      timeGoalEnabled: true,
+      timeGoalMinutes: 60,
+      timeGoalValue: 1,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "day",
+    });
+    saveTasks([scheduledTask]);
+    expect(loadTasks()).toEqual([expect.objectContaining(scheduledTask)]);
+    await vi.runOnlyPendingTimersAsync();
+    expect(cloudStoreMocks.saveTask).toHaveBeenCalledWith(
+      "uid-1",
+      expect.objectContaining(scheduledTask),
+      expect.anything(),
+    );
+  });
+
   it("preserves full color task cards as a signed-out fallback when clearing scoped state", () => {
     saveCloudPreferences({
       ...buildDefaultCloudPreferences(),

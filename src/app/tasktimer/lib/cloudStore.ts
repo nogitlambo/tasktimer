@@ -1437,12 +1437,6 @@ function mapTaskToCompatibilityFirestore(task: Task): Record<string, unknown> {
   const legacyRow = mapTaskToLegacyFirestore(task);
   const {
     resumePendingSinceDayKey,
-    markedDoneAtMs,
-    markedDoneUntilMs,
-    nextBestActionSnoozedUntilMs,
-    taskType,
-    onceOffDay,
-    onceOffTargetDate,
     sharedSourceOwnerUid,
     sharedSourceTaskId,
     sharedSourceShareDocId,
@@ -1450,17 +1444,32 @@ function mapTaskToCompatibilityFirestore(task: Task): Record<string, unknown> {
     ...compatibilityRow
   } = legacyRow;
   void resumePendingSinceDayKey;
-  void markedDoneAtMs;
-  void markedDoneUntilMs;
-  void nextBestActionSnoozedUntilMs;
-  void taskType;
-  void onceOffDay;
-  void onceOffTargetDate;
   void sharedSourceOwnerUid;
   void sharedSourceTaskId;
   void sharedSourceShareDocId;
   void sharedSourceImportedAtMs;
+  // Task identity must survive retries: missing taskType reloads as recurring.
   return compatibilityRow;
+}
+
+function mapTaskToMinimalCompatibilityFirestore(task: Task): Record<string, unknown> {
+  const compatibilityRow = mapTaskToCompatibilityFirestore(task);
+  const {
+    plannedStartDate,
+    plannedStartDay,
+    plannedStartTime,
+    plannedStartByDay,
+    plannedStartOpenEnded,
+    plannedStartPushRemindersEnabled,
+    ...minimalCompatibilityRow
+  } = compatibilityRow;
+  void plannedStartDate;
+  void plannedStartDay;
+  void plannedStartTime;
+  void plannedStartByDay;
+  void plannedStartOpenEnded;
+  void plannedStartPushRemindersEnabled;
+  return minimalCompatibilityRow;
 }
 
 export async function saveUserRootPatch(uid: string, patch: Record<string, unknown>): Promise<void> {
@@ -1762,8 +1771,9 @@ export async function saveTask(uid: string, task: Task, context?: ScheduledTimeG
   }
   await upsertUserRoot(uid);
   const taskRow = mapTaskToFirestore(task);
-  const buildSavePayload = async (row: Record<string, unknown>) => {
+  const buildSavePayload = async (row: Record<string, unknown>, opts: { includeMetadata?: boolean } = {}) => {
     const existing = await getDoc(ref);
+    const includeMetadata = opts.includeMetadata !== false;
     const supportsBackgroundPushBookkeeping =
       Object.prototype.hasOwnProperty.call(row, "bgTimeGoalPushEligible") ||
       Object.prototype.hasOwnProperty.call(row, "bgTimeGoalPushDueAtMs");
@@ -1785,9 +1795,13 @@ export async function saveTask(uid: string, task: Task, context?: ScheduledTimeG
                 : null,
           }
         : {}),
-      createdAt: existing.exists() && isTimestampLike(existing.get("createdAt")) ? existing.get("createdAt") : serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      schemaVersion: 1,
+      ...(includeMetadata
+        ? {
+            createdAt: existing.exists() && isTimestampLike(existing.get("createdAt")) ? existing.get("createdAt") : serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            schemaVersion: 1,
+          }
+        : {}),
     };
   };
   let savedRowKeys = Object.keys(taskRow);
@@ -1820,7 +1834,7 @@ export async function saveTask(uid: string, task: Task, context?: ScheduledTimeG
         if (shouldRetryCompatibility) {
           const compatibilityTaskRow = mapTaskToCompatibilityFirestore(task);
           try {
-            await setDoc(ref, await buildSavePayload(compatibilityTaskRow));
+            await setDoc(ref, await buildSavePayload(compatibilityTaskRow, { includeMetadata: false }));
             savedRowKeys = Object.keys(compatibilityTaskRow);
             if (process.env.NODE_ENV !== "production") {
               console.warn("[tasktimer-cloud] Saved task with compatibility fallback", {
@@ -1831,21 +1845,58 @@ export async function saveTask(uid: string, task: Task, context?: ScheduledTimeG
             }
             recoveredWithLegacyFallback = true;
           } catch (compatibilityError) {
-            if (process.env.NODE_ENV !== "production") {
-              const describedCompatibilityError = describeError(compatibilityError);
-              console.error("[tasktimer-cloud] Legacy fallback save failed", {
-                uid,
-                taskId: String(task.id || ""),
-                databaseRowKeys: Object.keys(legacyTaskRow),
-                taskRow: legacyTaskRow,
-                compatibilityRowKeys: Object.keys(compatibilityTaskRow),
-                compatibilityTaskRow,
-                error: describedCompatibilityError,
-                errorMessage: describedCompatibilityError.message ?? null,
-                errorCode: describedCompatibilityError.code ?? null,
-              });
+            const describedCompatibilityError = describeError(compatibilityError);
+            const shouldRetryMinimalCompatibility =
+              describedCompatibilityError.code === "permission-denied" ||
+              String(describedCompatibilityError.message || "").toLowerCase().includes("missing or insufficient permissions");
+            if (shouldRetryMinimalCompatibility) {
+              const minimalCompatibilityTaskRow = mapTaskToMinimalCompatibilityFirestore(task);
+              try {
+                await setDoc(ref, await buildSavePayload(minimalCompatibilityTaskRow, { includeMetadata: false }));
+                savedRowKeys = Object.keys(minimalCompatibilityTaskRow);
+                if (process.env.NODE_ENV !== "production") {
+                  console.warn("[tasktimer-cloud] Saved task with minimal compatibility fallback", {
+                    uid,
+                    taskId: String(task.id || ""),
+                    databaseRowKeys: savedRowKeys,
+                  });
+                }
+                recoveredWithLegacyFallback = true;
+              } catch (minimalCompatibilityError) {
+                if (process.env.NODE_ENV !== "production") {
+                  const describedMinimalCompatibilityError = describeError(minimalCompatibilityError);
+                  console.error("[tasktimer-cloud] Legacy fallback save failed", {
+                    uid,
+                    taskId: String(task.id || ""),
+                    databaseRowKeys: Object.keys(legacyTaskRow),
+                    taskRow: legacyTaskRow,
+                    compatibilityRowKeys: Object.keys(compatibilityTaskRow),
+                    compatibilityTaskRow,
+                    minimalCompatibilityRowKeys: Object.keys(minimalCompatibilityTaskRow),
+                    minimalCompatibilityTaskRow,
+                    error: describedMinimalCompatibilityError,
+                    errorMessage: describedMinimalCompatibilityError.message ?? null,
+                    errorCode: describedMinimalCompatibilityError.code ?? null,
+                  });
+                }
+                throw minimalCompatibilityError;
+              }
+            } else {
+              if (process.env.NODE_ENV !== "production") {
+                console.error("[tasktimer-cloud] Legacy fallback save failed", {
+                  uid,
+                  taskId: String(task.id || ""),
+                  databaseRowKeys: Object.keys(legacyTaskRow),
+                  taskRow: legacyTaskRow,
+                  compatibilityRowKeys: Object.keys(compatibilityTaskRow),
+                  compatibilityTaskRow,
+                  error: describedCompatibilityError,
+                  errorMessage: describedCompatibilityError.message ?? null,
+                  errorCode: describedCompatibilityError.code ?? null,
+                });
+              }
+              throw compatibilityError;
             }
-            throw compatibilityError;
           }
         } else {
           if (process.env.NODE_ENV !== "production") {

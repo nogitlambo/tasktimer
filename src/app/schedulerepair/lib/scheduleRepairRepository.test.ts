@@ -29,4 +29,39 @@ describe("Schedule Repair repository source mapping", () => {
     expect(days.find((day) => day.date === "2026-08-10")?.plannedMinutes).toBe(30);
     expect(days.find((day) => day.date === "2026-08-09")?.plannedMinutes).toBe(0);
   });
+
+  it("marks recurring tasks completed for the local date as completed", () => {
+    const task = mapScheduleRepairFirestoreTask("task-1", {
+      id: "task-1",
+      timeGoalMinutes: 30,
+      taskType: "recurring",
+      plannedStartByDay: { sat: "09:00" },
+      timeGoalCompletedDayKey: "2026-08-08",
+    }, "uid-1", "2026-08-08");
+
+    expect(task).toMatchObject({ plannedDate: "2026-08-08", completed: true });
+  });
+
+  it("keeps recurring tasks completed on another day eligible when scheduled today", () => {
+    const task = mapScheduleRepairFirestoreTask("task-1", {
+      id: "task-1",
+      timeGoalMinutes: 30,
+      taskType: "recurring",
+      plannedStartByDay: { sat: "09:00" },
+      timeGoalCompletedDayKey: "2026-08-07",
+    }, "uid-1", "2026-08-08");
+
+    expect(task).toMatchObject({ plannedDate: "2026-08-08", completed: false });
+  });
+
+  it("does not treat unscheduled recurring work as planned today", () => {
+    const task = mapScheduleRepairFirestoreTask("task-1", {
+      id: "task-1",
+      timeGoalMinutes: 30,
+      taskType: "recurring",
+      plannedStartOpenEnded: true,
+    }, "uid-1", "2026-08-08");
+
+    expect(task.plannedDate).toBeNull();
+  });
 });

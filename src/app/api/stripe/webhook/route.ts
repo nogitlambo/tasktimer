@@ -34,6 +34,25 @@ function resolveSubscriptionPeriodEndAt(subscription: Stripe.Subscription) {
   return Number.isFinite(cancelAt) && cancelAt > 0 ? cancelAt * 1000 : null;
 }
 
+async function resolveSubscriptionUid(subscription: Stripe.Subscription) {
+  const metadataUid = asString(subscription.metadata?.uid);
+  if (metadataUid) return metadataUid;
+
+  const customerId = asString(subscription.customer);
+  const mappedUid = customerId ? await findUidByStripeCustomerId(customerId) : "";
+  if (mappedUid) return mappedUid;
+
+  // Payment Links keep client_reference_id on Checkout, not subscription metadata.
+  // Recover it even when the subscription webhook arrives before checkout completion.
+  const sessions = await getStripeServer().checkout.sessions.list({
+    subscription: subscription.id,
+    limit: 1,
+  });
+  const session = sessions.data[0];
+  if (!session || asString(session.customer) !== customerId) return "";
+  return asString(session.client_reference_id) || asString(session.metadata?.uid);
+}
+
 function logStripeWebhook(message: string, details?: Record<string, unknown>) {
   if (details) {
     console.info(`[stripe-webhook] ${message}`, details);
@@ -140,15 +159,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const currentPeriodEndAt = resolveSubscriptionPeriodEndAt(subscription);
   const offer = asString(subscription.metadata?.offer);
 
-  let resolvedUid = uid;
-  if (!resolvedUid && customerId) {
-    logStripeWebhook("resolving uid from stripe customer id", {
-      customerId,
-      subscriptionId,
-      eventStatus: status,
-    });
-    resolvedUid = await findUidByStripeCustomerId(customerId);
-  }
+  const resolvedUid = await resolveSubscriptionUid(subscription);
   logStripeWebhook("processing subscription create/update", {
     metadataUid: uid,
     resolvedUid,
@@ -195,16 +206,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const priceId = asString(subscription.items.data[0]?.price?.id);
   const status = asString(subscription.status) || "canceled";
   const currentPeriodEndAt = resolveSubscriptionPeriodEndAt(subscription);
-  let resolvedUid = uid;
-
-  if (!resolvedUid && customerId) {
-    logStripeWebhook("resolving uid for deleted subscription from stripe customer id", {
-      customerId,
-      subscriptionId,
-      status,
-    });
-    resolvedUid = await findUidByStripeCustomerId(customerId);
-  }
+  const resolvedUid = await resolveSubscriptionUid(subscription);
   logStripeWebhook("processing customer.subscription.deleted", {
     metadataUid: uid,
     resolvedUid,

@@ -103,6 +103,79 @@ describe("dashboard tasks completed card module", () => {
     expect(model.ariaLabel).toContain("1 of 2");
   });
 
+  it("treats an active manually done recurring task as complete", () => {
+    const nowMs = new Date("2026-05-05T12:00:00Z").getTime();
+    const done = task({
+      id: "manual-done",
+      name: "Manual Done",
+      markedDoneAtMs: nowMs - 1000,
+      markedDoneUntilMs: nowMs + 60 * 60 * 1000,
+    });
+    const model = buildDashboardTasksCompletedModel({
+      opportunities: [opportunity(done)],
+      historyByTaskId: {},
+      nowMs,
+      weekStartMs: nowMs - 86400000,
+      todayKey: "2026-05-05",
+      fallbackColor: "#00ffff",
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.totalCompleted).toBe(1);
+    expect(model.items[0]).toMatchObject({ name: "Manual Done", progress: 1, complete: true, manuallyDone: true });
+  });
+
+  it("does not treat an expired manually done recurring task as complete", () => {
+    const nowMs = new Date("2026-05-05T12:00:00Z").getTime();
+    const expired = task({
+      id: "expired-manual-done",
+      name: "Expired Manual Done",
+      markedDoneAtMs: nowMs - 2 * 60 * 60 * 1000,
+      markedDoneUntilMs: nowMs - 60 * 60 * 1000,
+    });
+    const model = buildDashboardTasksCompletedModel({
+      opportunities: [opportunity(expired)],
+      historyByTaskId: {},
+      nowMs,
+      weekStartMs: nowMs - 86400000,
+      todayKey: "2026-05-05",
+      fallbackColor: "#00ffff",
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.totalCompleted).toBe(0);
+    expect(model.items[0]).toMatchObject({ name: "Expired Manual Done", progress: 0, complete: false, manuallyDone: false });
+  });
+
+  it("treats a manually done once-off task as complete", () => {
+    const nowMs = new Date("2026-05-05T12:00:00Z").getTime();
+    const done = task({
+      id: "once-off-manual-done",
+      name: "Once-off Manual Done",
+      taskType: "once-off",
+      markedDoneAtMs: nowMs - 1000,
+      markedDoneUntilMs: null,
+    });
+    const model = buildDashboardTasksCompletedModel({
+      opportunities: [opportunity(done)],
+      historyByTaskId: {},
+      nowMs,
+      weekStartMs: nowMs - 86400000,
+      todayKey: "2026-05-05",
+      fallbackColor: "#00ffff",
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.totalCompleted).toBe(1);
+    expect(model.items[0]).toMatchObject({ name: "Once-off Manual Done", progress: 1, complete: true, manuallyDone: true });
+  });
+
   it("shows under-goal reset tasks as partial instead of completed", () => {
     const nowMs = new Date("2026-05-05T12:00:00Z").getTime();
     const resetFocus = task({

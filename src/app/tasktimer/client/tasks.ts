@@ -1,6 +1,5 @@
 import { buildTaskStatusMeta, type Task } from "../lib/types";
 import { nowMs } from "../lib/time";
-import { STORAGE_KEY } from "../lib/storage";
 import {
   clearTaskMarkedDone,
   isTaskMarkedDone,
@@ -35,7 +34,6 @@ import {
 const TASK_PRIMARY_ACTION_PRESS_CLASS = "isTaskPrimaryActionPressed";
 const TASK_PRIMARY_ACTION_PRESS_MS = 140;
 const TASK_PRIMARY_ACTION_HOLD_MS = 600;
-const COMPLETED_ONCE_OFF_TASKS_COLLAPSED_KEY = `${STORAGE_KEY}:completedOnceOffTasksCollapsed`;
 const ARCHIVE_TASK_CONFIRM_TEXT =
   "Archiving a task removes it from your active tasks while preserving history. You can restore or permanently delete an archived task and associated history from History Manager. [under Settings > Data]";
 const ARCHIVE_TASK_CONFIRM_TEXT_HTML =
@@ -164,13 +162,6 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     fillBackgroundForPct: ctx.fillBackgroundForPct,
     escapeHtml: ctx.escapeHtmlUI,
     formatMainTaskElapsedHtml: ctx.formatMainTaskElapsedHtml,
-    getCompletedOnceOffTasksCollapsed: () => {
-      try {
-        return localStorage.getItem(COMPLETED_ONCE_OFF_TASKS_COLLAPSED_KEY) === "true";
-      } catch {
-        return false;
-      }
-    },
   });
 
   function renderTasksPage() {
@@ -665,25 +656,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     taskDestructiveActionEffects.resetTask(taskIndex);
   }
 
-  function toggleCompletedOnceOffTasks() {
-    let nextCollapsed = true;
-    try {
-      nextCollapsed = localStorage.getItem(COMPLETED_ONCE_OFF_TASKS_COLLAPSED_KEY) !== "true";
-      localStorage.setItem(COMPLETED_ONCE_OFF_TASKS_COLLAPSED_KEY, String(nextCollapsed));
-    } catch {
-      // The section remains usable for this render even when local storage is unavailable.
-    }
-    ctx.render();
-  }
-
   function handleTaskListClick(e: any) {
-    const completedSectionToggle = findDelegatedElement(e.target, '[data-action="toggleCompletedOnceOffTasks"]');
-    if (completedSectionToggle) {
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-      toggleCompletedOnceOffTasks();
-      return;
-    }
     const taskEl = e.target?.closest?.(".task");
     if (!taskEl) return;
     const i = getTaskIndexFromTaskElement(taskEl);

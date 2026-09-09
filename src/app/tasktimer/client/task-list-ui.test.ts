@@ -170,6 +170,9 @@ function matchesSelector(node: FakeElement, selector: string) {
   if (selector === '[data-task-flip="open"]') return node.getAttribute("data-task-flip") === "open";
   if (selector === '[data-task-flip="close"]') return node.getAttribute("data-task-flip") === "close";
   if (selector === ".task[data-task-id]") return node.classList.contains("task") && !!node.dataset.taskId;
+  if (selector === '.task[data-task-id][draggable="true"]') {
+    return node.classList.contains("task") && !!node.dataset.taskId && node.getAttribute("draggable") === "true";
+  }
   if (selector === ".taskTileColumn:last-child") {
     const parent = node.parentElement;
     return (
@@ -178,6 +181,7 @@ function matchesSelector(node: FakeElement, selector: string) {
       parent.children[parent.children.length - 1] === node
     );
   }
+  if (selector === "[data-task-type-section]") return !!node.dataset.taskTypeSection;
   return false;
 }
 
@@ -282,6 +286,98 @@ function createHarness(taskIdsInOrder = ["a", "b", "c", "d"]) {
   };
 }
 
+function createGroupedHarness() {
+  const list = new FakeElement("section");
+  const recurringSection = new FakeElement("section");
+  const onceOffSection = new FakeElement("section");
+  const recurringCards = new FakeElement("div");
+  const onceOffCards = new FakeElement("div");
+  const handlers = new Map<string, Handler>();
+  const tasks = [
+    { ...buildTask("a", 1), taskType: "recurring" as const },
+    { ...buildTask("b", 2), taskType: "recurring" as const },
+    { ...buildTask("x", 3), taskType: "once-off" as const },
+    { ...buildTask("y", 4), taskType: "once-off" as const },
+  ];
+  let dragEl: FakeElement | null = null;
+  const save = vi.fn();
+  const render = vi.fn();
+
+  recurringSection.classList.add("taskTypeSection");
+  recurringSection.dataset.taskTypeSection = "recurring";
+  onceOffSection.classList.add("taskTypeSection");
+  onceOffSection.dataset.taskTypeSection = "once-off";
+  recurringCards.classList.add("taskTypeSectionCards");
+  onceOffCards.classList.add("taskTypeSectionCards");
+  recurringSection.appendChild(recurringCards);
+  onceOffSection.appendChild(onceOffCards);
+  list.appendChild(recurringSection);
+  list.appendChild(onceOffSection);
+
+  tasks.forEach((task) => {
+    const card = new FakeElement("div");
+    card.classList.add("task");
+    card.dataset.taskId = task.id;
+    card.dataset.taskType = task.taskType;
+    card.setAttribute("data-task-id", task.id);
+    card.setAttribute("draggable", "true");
+    if (task.taskType === "once-off") onceOffCards.appendChild(card);
+    else recurringCards.appendChild(card);
+  });
+
+  const fakeDocument = {
+    activeElement: null,
+    body: new FakeElement("body"),
+    querySelectorAll: vi.fn(() => []),
+  };
+  const fakeWindow = {
+    requestAnimationFrame: (handler: FrameRequestCallback) => {
+      handler(0);
+      return 1;
+    },
+    setTimeout,
+    clearTimeout,
+  };
+
+  vi.stubGlobal("document", fakeDocument);
+  vi.stubGlobal("window", fakeWindow);
+  vi.stubGlobal("HTMLElement", FakeElement);
+
+  const ui = createTaskTimerTaskListUi({
+    els: { taskList: list as unknown as HTMLElement } as never,
+    on: ((target: unknown, eventName: string, handler: Handler) => {
+      void target;
+      handlers.set(eventName, handler);
+    }) as never,
+    runtime: { newTaskHighlightTimer: null } as never,
+    getTasks: () => tasks,
+    setTasks: (nextTasks) => {
+      tasks.splice(0, tasks.length, ...nextTasks);
+    },
+    getCurrentAppPage: () => "tasks",
+    getTaskView: () => "list",
+    getTaskOrderBy: () => "custom",
+    getTaskDragEl: () => dragEl as unknown as HTMLElement | null,
+    setTaskDragEl: (value) => {
+      dragEl = value as unknown as FakeElement | null;
+    },
+    getFlippedTaskIds: () => new Set<string>(),
+    getLastRenderedTaskFlipView: () => null,
+    setLastRenderedTaskFlipView: () => {},
+    save,
+    render,
+  });
+
+  ui.registerTaskListUiEvents();
+
+  return {
+    list,
+    tasks,
+    handlers,
+    cards: Object.fromEntries(list.querySelectorAll(".task").map((child) => [child.dataset.taskId || "", child])),
+  };
+}
+
 function createTaskFlipHarness(initiallyFlipped = false) {
   const list = new FakeElement("section");
   const card = new FakeElement("div");
@@ -290,6 +386,7 @@ function createTaskFlipHarness(initiallyFlipped = false) {
   const openBtn = new FakeElement("button");
   const closeBtn = new FakeElement("button");
   const flippedTaskIds = new Set<string>(initiallyFlipped ? ["a"] : []);
+  const handlers = new Map<string, Handler>();
 
   card.classList.add("task");
   card.dataset.taskId = "a";
@@ -315,7 +412,10 @@ function createTaskFlipHarness(initiallyFlipped = false) {
 
   const ui = createTaskTimerTaskListUi({
     els: { taskList: list as unknown as HTMLElement } as never,
-    on: (() => {}) as never,
+    on: ((target: unknown, eventName: string, handler: Handler) => {
+      void target;
+      handlers.set(eventName, handler);
+    }) as never,
     runtime: { newTaskHighlightTimer: null } as never,
     getTasks: () => [],
     setTasks: () => {},
@@ -331,7 +431,9 @@ function createTaskFlipHarness(initiallyFlipped = false) {
     render: vi.fn(),
   });
 
-  return { ui, card, frontFace, backFace, openBtn, closeBtn };
+  ui.registerTaskListUiEvents();
+
+  return { ui, card, frontFace, backFace, openBtn, closeBtn, flippedTaskIds, handlers };
 }
 
 describe("task list ui drag ordering", () => {
@@ -406,6 +508,31 @@ describe("task list ui drag ordering", () => {
     expect(harness.tasks.map((task) => task.order)).toEqual([1, 2, 3, 4]);
     expect(harness.save).toHaveBeenCalledTimes(1);
     expect(harness.render).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not drag a task into a different task type section", () => {
+    const harness = createGroupedHarness();
+    const dragstart = harness.handlers.get("dragstart");
+    const dragover = harness.handlers.get("dragover");
+    const drop = harness.handlers.get("drop");
+
+    dragstart?.({
+      target: harness.cards.b,
+      clientY: 150,
+      dataTransfer: { effectAllowed: "", setData: vi.fn() },
+    });
+    dragover?.({
+      target: harness.cards.x,
+      clientY: 250,
+      preventDefault: vi.fn(),
+    });
+    drop?.({
+      preventDefault: vi.fn(),
+    });
+
+    expect(taskIds(harness.list)).toEqual(["a", "b", "x", "y"]);
+    expect(harness.tasks.map((task) => task.id)).toEqual(["a", "b", "x", "y"]);
+    expect(harness.tasks.map((task) => task.taskType)).toEqual(["recurring", "recurring", "once-off", "once-off"]);
   });
 
   it("falls back to appending at the end when dragging below all cards", () => {
@@ -536,5 +663,27 @@ describe("task list ui flip accessibility", () => {
     expect(harness.frontFace.getAttribute("inert")).toBe(null);
     expect(harness.backFace.getAttribute("aria-hidden")).toBe("true");
     expect(harness.backFace.getAttribute("inert")).toBe("");
+  });
+
+  it("flips a task card back when the user presses outside it", () => {
+    const harness = createTaskFlipHarness(true);
+    harness.ui.applyTaskFlipDomState("a", harness.card as unknown as HTMLElement);
+
+    harness.handlers.get("pointerdown")?.({ target: new FakeElement("div") });
+
+    expect(harness.flippedTaskIds.has("a")).toBe(false);
+    expect(harness.card.classList.contains("isFlipped")).toBe(false);
+    expect(harness.frontFace.getAttribute("aria-hidden")).toBe("false");
+    expect(harness.backFace.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("keeps a flipped task card open when the user presses inside it", () => {
+    const harness = createTaskFlipHarness(true);
+    harness.ui.applyTaskFlipDomState("a", harness.card as unknown as HTMLElement);
+
+    harness.handlers.get("pointerdown")?.({ target: harness.closeBtn });
+
+    expect(harness.flippedTaskIds.has("a")).toBe(true);
+    expect(harness.card.classList.contains("isFlipped")).toBe(true);
   });
 });

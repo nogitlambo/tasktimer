@@ -71,7 +71,7 @@ describe("Next Best Action recommendation persistence", () => {
     });
   });
 
-  it("excludes current goal completions but allows reset completions and prior days", () => {
+  it("excludes recurring goal completions only on the current local day", () => {
     const currentDay = {
       timeGoalPeriod: "day",
       timeGoalMinutes: 60,
@@ -85,15 +85,17 @@ describe("Next Best Action recommendation persistence", () => {
     expect(isTaskCompletedForRecommendationPeriod({ ...currentDay, timeGoalCompletedDayKey: "2026-08-06" }, Date.parse("2026-08-07T09:00:00.000Z"), "UTC")).toBe(false);
   });
 
-  it("respects Monday and Sunday weekly period boundaries", () => {
-    const weekly = { timeGoalPeriod: "week", timeGoalCompletedWeekKey: "2026-08-03", timeGoalCompletedReason: "goal" };
-    const sundayWeek = { timeGoalPeriod: "week", timeGoalCompletedWeekKey: "2026-08-09", timeGoalCompletedReason: "goal" };
-    const sunday = Date.parse("2026-08-09T12:00:00.000Z");
+  it("does not exclude recurring weekly goal completions solely for the current week", () => {
+    const weekly = {
+      taskType: "recurring",
+      timeGoalPeriod: "week",
+      timeGoalCompletedDayKey: "2026-08-03",
+      timeGoalCompletedWeekKey: "2026-08-03",
+      timeGoalCompletedReason: "goal",
+    };
 
-    expect(isTaskCompletedForRecommendationPeriod(weekly, sunday, "UTC", "mon")).toBe(true);
-    expect(isTaskCompletedForRecommendationPeriod(weekly, sunday, "UTC", "sun")).toBe(false);
-    expect(isTaskCompletedForRecommendationPeriod(sundayWeek, sunday, "UTC", "sun")).toBe(true);
-    expect(isTaskCompletedForRecommendationPeriod(sundayWeek, Date.parse("2026-08-16T12:00:00.000Z"), "UTC", "sun")).toBe(false);
+    expect(isTaskCompletedForRecommendationPeriod(weekly, Date.parse("2026-08-05T09:00:00.000Z"), "UTC")).toBe(false);
+    expect(isTaskCompletedForRecommendationPeriod(weekly, Date.parse("2026-08-03T09:00:00.000Z"), "UTC")).toBe(true);
   });
 
   it("keeps once-off goal completions excluded after their original period until reset", () => {
@@ -206,6 +208,48 @@ describe("Next Best Action recommendation persistence", () => {
       },
     });
     expect(candidates[0]?.taskVersion).toEqual(expect.any(String));
+  });
+
+  it("marks tasks with future planned starts ineligible for recommendation ranking", async () => {
+    const taskDoc = {
+      id: "task-1",
+      data: () => ({
+        id: "task-1",
+        name: "Future task",
+        active: true,
+        actionable: true,
+        plannedStartDate: "2026-08-08",
+        plannedStartTime: "00:00",
+      }),
+      collection: () => ({ get: async () => ({ docs: [] }) }),
+    };
+    const empty = { docs: [] };
+    const db = {
+      collection: (root: string) => ({
+        doc: (uid: string) => ({
+          collection: (collectionName: string) => {
+            if (root !== "users" || uid !== "uid-1") throw new Error("unexpected scope");
+            if (collectionName === "tasks") return { get: async () => ({ docs: [taskDoc] }), doc: () => taskDoc };
+            if (collectionName === "deletedTasks" || collectionName === "historyEntries" || collectionName === "taskRecommendations") return { get: async () => empty };
+            if (collectionName === "preferences") return { doc: () => ({ get: async () => ({ exists: false }) }) };
+            throw new Error(`unexpected collection ${collectionName}`);
+          },
+        }),
+      }),
+    };
+    const repository = createFirestoreNextBestActionRepository(db as never);
+
+    const candidates = await repository.loadCandidates({
+      uid: "uid-1",
+      nowMs: Date.parse("2026-08-07T23:59:00.000Z"),
+      timezone: "UTC",
+    });
+
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]).toMatchObject({
+      task: { id: "task-1", name: "Future task" },
+      hardDateEligible: false,
+    });
   });
 
   it("atomically revalidates the Task and marks an active recommendation started", async () => {
@@ -348,6 +392,28 @@ describe("Next Best Action recommendation persistence", () => {
     } });
 
     await expect(harness.repository.startRecommendation({ uid: "uid-1", recommendationId: "nba-1", nowMs })).resolves.toMatchObject({ kind: "started" });
+  });
+
+  it("allows recurring weekly goal completions from earlier in the week when schedule-eligible", async () => {
+    const harness = startHarness({ task: {
+      id: "task-1",
+      name: "Prepare launch",
+      active: true,
+      actionable: true,
+      taskType: "recurring",
+      plannedStartDate: "2026-08-05",
+      timeGoalPeriod: "week",
+      timeGoalCompletedDayKey: "2026-08-03",
+      timeGoalCompletedWeekKey: "2026-08-03",
+      timeGoalCompletedReason: "goal",
+    } });
+
+    await expect(harness.repository.startRecommendation({
+      uid: "uid-1",
+      recommendationId: "nba-1",
+      nowMs: Date.parse("2026-08-05T09:05:00.000Z"),
+      timezone: "UTC",
+    })).resolves.toMatchObject({ kind: "started" });
   });
 
   it("records alternative requests as skipped and dismissal feedback without mutating the Task", async () => {

@@ -49,7 +49,6 @@ type TaskListRendererOptions = {
   fillBackgroundForPct: (pct: number) => string;
   escapeHtml: (value: unknown) => string;
   formatMainTaskElapsedHtml: (elapsedMs: number, running: boolean) => string;
-  getCompletedOnceOffTasksCollapsed: () => boolean;
 };
 
 function normalizeTaskNameForSort(task: Task | null | undefined) {
@@ -139,6 +138,19 @@ function renderEmptyTaskStateHtml() {
   `;
 }
 
+function getTaskType(task: Task | null | undefined): "recurring" | "once-off" {
+  return task?.taskType === "once-off" ? "once-off" : "recurring";
+}
+
+function renderTaskTypeSectionHeaderHtml(title: string, emptyMessage: string, isEmpty: boolean) {
+  return `
+    <div class="taskTypeSectionHeader">
+      <h2 class="taskTypeSectionTitle">${title}</h2>
+    </div>
+    <div class="taskTypeSectionEmpty"${isEmpty ? "" : " hidden"}>${emptyMessage}</div>
+  `;
+}
+
 export function createTaskListRenderer(options: TaskListRendererOptions) {
   function renderTasksPage() {
     const taskListEl = options.taskListEl;
@@ -152,6 +164,9 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       .filter(isCompletedOnceOffTask)
       .sort((a, b) => Number(b.markedDoneAtMs || 0) - Number(a.markedDoneAtMs || 0));
     const activeTasks = displayedTasks.filter((task) => !isCompletedOnceOffTask(task));
+    const recurringTasks = activeTasks.filter((task) => getTaskType(task) === "recurring");
+    const onceOffTasks = activeTasks.filter((task) => getTaskType(task) === "once-off");
+    const onceOffSectionTasks = onceOffTasks.concat(completedOnceOffTasks);
     const sourceIndexByTask = new Map(tasks.map((task, index) => [task, index] as const));
     taskListEl.innerHTML = "";
     const useTileColumns = options.getTaskView() === "tile";
@@ -188,36 +203,45 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       return;
     }
 
-    const tileColumnEls: HTMLElement[] = [];
-    if (useTileColumns && activeTasks.length) {
-      for (let columnIndex = 0; columnIndex < tileColumnCount; columnIndex += 1) {
-        const columnEl = options.documentRef.createElement("div");
-        columnEl.className = "taskTileColumn";
-        columnEl.dataset.tileColumn = String(columnIndex);
-        taskListEl.appendChild(columnEl);
-        tileColumnEls.push(columnEl);
+    function createTaskTypeSection(
+      taskType: "recurring" | "once-off",
+      title: string,
+      emptyMessage: string,
+      sectionTasks: Task[]
+    ) {
+      const sectionEl = options.documentRef.createElement("section");
+      sectionEl.className = "taskTypeSection";
+      sectionEl.dataset.taskTypeSection = taskType;
+      sectionEl.setAttribute("aria-label", title);
+      sectionEl.innerHTML = renderTaskTypeSectionHeaderHtml(title, emptyMessage, sectionTasks.length === 0);
+
+      const cardsEl = options.documentRef.createElement("div");
+      cardsEl.className = "taskTypeSectionCards";
+      cardsEl.dataset.taskTypeCards = taskType;
+      if (useTileColumns) cardsEl.setAttribute("data-tile-columns", String(tileColumnCount));
+      sectionEl.appendChild(cardsEl);
+      taskListEl.appendChild(sectionEl);
+
+      const columnEls: HTMLElement[] = [];
+      if (useTileColumns) {
+        for (let columnIndex = 0; columnIndex < tileColumnCount; columnIndex += 1) {
+          const columnEl = options.documentRef.createElement("div");
+          columnEl.className = "taskTileColumn";
+          columnEl.dataset.tileColumn = String(columnIndex);
+          cardsEl.appendChild(columnEl);
+          columnEls.push(columnEl);
+        }
       }
+
+      return { sectionEl, cardsEl, columnEls };
     }
 
-    let completedSectionEl: HTMLElement | null = null;
-    let completedCardsEl: HTMLElement | null = null;
-    if (completedOnceOffTasks.length) {
-      completedSectionEl = options.documentRef.createElement("section");
-      completedSectionEl.className = "completedOnceOffTasksSection";
-      completedSectionEl.setAttribute("aria-labelledby", "completedOnceOffTasksTitle");
-      const isCollapsed = options.getCompletedOnceOffTasksCollapsed();
-      completedSectionEl.innerHTML = `
-        <button class="completedOnceOffTasksToggle" type="button" data-action="toggleCompletedOnceOffTasks" aria-expanded="${isCollapsed ? "false" : "true"}" aria-controls="completedOnceOffTasksCards">
-          <span id="completedOnceOffTasksTitle">Completed Once-off Tasks</span>
-          <span class="completedOnceOffTasksChevron" aria-hidden="true">${isCollapsed ? "+" : "-"}</span>
-        </button>
-      `;
-      completedCardsEl = options.documentRef.createElement("div");
-      completedCardsEl.className = "completedOnceOffTasksCards";
-      completedCardsEl.id = "completedOnceOffTasksCards";
-      completedCardsEl.hidden = isCollapsed;
-      completedCardsEl.setAttribute("data-tile-columns", String(tileColumnCount));
-      completedSectionEl.appendChild(completedCardsEl);
+    const recurringSection = createTaskTypeSection("recurring", "Recurring", "No recurring tasks", recurringTasks);
+    const onceOffSection = createTaskTypeSection("once-off", "Once-Off", "No once-off tasks", onceOffSectionTasks);
+
+    function getTaskAppendTarget(section: { cardsEl: HTMLElement; columnEls: HTMLElement[] }, displayIndex: number) {
+      if (!useTileColumns) return section.cardsEl;
+      return section.columnEls[displayIndex % tileColumnCount] || section.cardsEl;
     }
 
     const renderTask = (task: Task, displayIndex: number, isCompletedOnceOff: boolean) => {
@@ -231,6 +255,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       const taskEl = options.documentRef.createElement("div");
       taskEl.dataset.index = String(sourceIndexByTask.get(task) ?? -1);
       taskEl.dataset.taskId = taskId;
+      taskEl.dataset.taskType = getTaskType(task);
       taskEl.setAttribute("draggable", !isCompletedOnceOff && taskOrderBy === "custom" ? "true" : "false");
 
       const historyState = historyViewByTaskId[taskId];
@@ -239,9 +264,10 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       const isHistoryPinned = pinnedHistoryTaskIds.has(taskId);
       const taskHistory = taskId ? historyByTaskId?.[taskId] : null;
       const hasTaskHistory = Array.isArray(taskHistory) && taskHistory.length > 0;
-      const isHeldResetPrimaryAction = getXpAwardButtonLabelOverride(taskId) === "Reset";
+      const hasHeldResetPrimaryAction = getXpAwardButtonLabelOverride(taskId) === "Reset";
       const isRecordedGoalCompleted = hasRecordedTaskGoalCompletion(task);
       const isCompletedForCurrentPeriod = isTaskTimeGoalStartLockedForPeriod(task, Date.now(), options.getWeekStarting?.() || "mon");
+      const isHeldResetPrimaryAction = hasHeldResetPrimaryAction && !isCompletedForCurrentPeriod;
       const renderedCard = renderTaskCardHtml({
         task,
         taskId,
@@ -257,13 +283,14 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
         historyRangeMode: historyState?.rangeMode,
         showHistory,
         isHistoryPinned,
-      canUseAdvancedHistory: options.canUseAdvancedHistory(),
-      canUseExecutiveFunction: options.canUseExecutiveFunction?.() ?? true,
-      executiveFunctionUnavailableMessage: options.getExecutiveFunctionUnavailableMessage?.(),
-      canUseSocialFeatures: options.canUseSocialFeatures(),
+        canUseAdvancedHistory: options.canUseAdvancedHistory(),
+        canUseExecutiveFunction: options.canUseExecutiveFunction?.() ?? true,
+        executiveFunctionUnavailableMessage: options.getExecutiveFunctionUnavailableMessage?.(),
+        canUseSocialFeatures: options.canUseSocialFeatures(),
         hasFriends: options.hasFriends(),
         isSharedByOwner: options.isTaskSharedByOwner(taskId),
         isManuallyDone: isTaskMarkedDone(task, Date.now()),
+        isHeldResetPrimaryAction,
         isStaleRecordedGoalCompleted: isRecordedGoalCompleted && !isCompletedForCurrentPeriod,
         isTimeGoalCompleted:
           isHeldResetPrimaryAction ||
@@ -280,13 +307,13 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       taskEl.innerHTML = renderedCard.html;
       applyXpAwardButtonLabelOverride(taskEl, taskId);
       options.applyTaskFlipDomState(taskId, taskEl);
-      const tileColumnEl = useTileColumns && !isCompletedOnceOff ? tileColumnEls[displayIndex % tileColumnCount] : null;
-      (isCompletedOnceOff ? completedCardsEl : tileColumnEl || taskListEl)?.appendChild(taskEl);
+      const section = getTaskType(task) === "once-off" ? onceOffSection : recurringSection;
+      getTaskAppendTarget(section, displayIndex).appendChild(taskEl);
     };
 
-    activeTasks.forEach((task, displayIndex) => renderTask(task, displayIndex, false));
-    if (completedSectionEl) taskListEl.appendChild(completedSectionEl);
-    completedOnceOffTasks.forEach((task, displayIndex) => renderTask(task, displayIndex, true));
+    recurringTasks.forEach((task, displayIndex) => renderTask(task, displayIndex, false));
+    onceOffTasks.forEach((task, displayIndex) => renderTask(task, displayIndex, false));
+    completedOnceOffTasks.forEach((task, displayIndex) => renderTask(task, onceOffTasks.length + displayIndex, true));
 
     const stableOpenHistoryTaskIds = Array.from(openHistoryTaskIds).filter((taskId) => {
       const revealPhase = historyViewByTaskId[taskId]?.revealPhase;

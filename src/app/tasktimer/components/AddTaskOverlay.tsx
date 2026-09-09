@@ -44,12 +44,7 @@ export default function AddTaskOverlay() {
               </div>
             </div>
 
-            <label className="addTaskPlannedStartCheckboxRow taskScheduleToggleRow" htmlFor="addTaskScheduleToggle">
-              <input id="addTaskScheduleToggle" type="checkbox" />
-              <span>Schedule this task</span>
-            </label>
-
-            <div className="taskScheduleFields isHidden" id="addTaskScheduleFields">
+            <div className="taskScheduleFields" id="addTaskScheduleFields">
               <div className="unitButtons timerTypePills editTaskTypePills taskScreenPillGroup" id="addTaskTypePills" role="group" aria-label="Task type">
                 <button className="btn btn-ghost small unitBtn timerTypePill taskScreenPill taskScreenHeaderBtn isOn" id="addTaskTypeRecurringBtn" type="button" aria-pressed="true">
                   Recurring

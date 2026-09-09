@@ -716,25 +716,21 @@ describe("task card view model", () => {
     expect(css).toContain("isXpAwardReceiving");
   });
 
-  it("renders completed time-goal tasks with a primary reset action while preserving edit hooks", () => {
+  it("renders completed time-goal tasks with a primary Done action while preserving edit hooks", () => {
     const rendered = renderCard({
       isTimeGoalCompleted: true,
       elapsedMs: 60_000,
     });
 
     expect(rendered.className).toBe("task taskCompleted");
-    expect(rendered.html).toContain('data-action="reset" title="Reset" aria-label="Reset"');
-    expect(rendered.html).toContain("btn btn-warn small taskPrimaryAction taskPrimaryActionReset");
-    expect(rendered.html).toContain('<span class="taskPrimaryActionPrimary">Reset</span>');
+    expect(rendered.html).toContain('data-action="reset" title="Done until tomorrow" aria-label="Done until tomorrow" aria-disabled="true"');
+    expect(rendered.html).toContain('type="button" disabled');
+    expect(rendered.html).toContain("btn btn-done small taskPrimaryAction taskPrimaryActionDone");
+    expect(rendered.html).toContain('<span class="taskPrimaryActionPrimary">Done</span>');
     expect(rendered.html).not.toContain("taskPrimaryActionSecondary");
-    expect(rendered.html).not.toContain('<span class="taskPrimaryActionPrimary">Done</span>');
+    expect(rendered.html).not.toContain('<span class="taskPrimaryActionPrimary">Reset</span>');
     expect(rendered.html).not.toContain("taskDoneIcon");
-    expect(rendered.html).not.toContain("taskPrimaryAction taskPrimaryActionDone");
-    expect(rendered.html).not.toContain('aria-label="Done until tomorrow"');
-    expect(rendered.html).not.toContain('data-action="reset" title="Reset" aria-label="Reset" type="button" disabled');
-    expect(rendered.html).toContain('data-action="reset"');
-    expect(rendered.html).toContain('data-action="reset" title="Reset" aria-label="Reset"');
-    expect(rendered.html).not.toContain('data-action="reset" title="Reset" aria-label="Reset" disabled');
+    expect(rendered.html).not.toContain("taskPrimaryAction taskPrimaryActionReset");
     expect(rendered.html).toContain('data-action="edit"');
   });
 

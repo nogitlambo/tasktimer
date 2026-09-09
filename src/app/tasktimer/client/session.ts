@@ -2926,8 +2926,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         const i = parseInt((node as HTMLElement).dataset.index || "0", 10);
         const task = tasks[i];
         if (!task) return;
-        const isHeldResetPrimaryAction = getXpAwardButtonLabelOverride(task.id) === "Reset";
-        const isCompletedForCurrentPeriod = isHeldResetPrimaryAction || isTaskTimeGoalLockedForCurrentPeriod(task);
+        const hasHeldResetPrimaryAction = getXpAwardButtonLabelOverride(task.id) === "Reset";
+        const isCompletedForCurrentPeriod = isTaskTimeGoalLockedForCurrentPeriod(task);
+        const isHeldResetPrimaryAction = hasHeldResetPrimaryAction && !isCompletedForCurrentPeriod;
         const isManuallyDone = isTaskMarkedDone(task, nowMs());
         (node as HTMLElement).classList.toggle("taskRunning", !!task.running);
         (node as HTMLElement).classList.toggle("taskCompleted", isCompletedForCurrentPeriod || isManuallyDone);
@@ -2944,6 +2945,8 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
           if (isManuallyDone) {
             primaryActionState = "done";
           } else if (isCompletedForCurrentPeriod) {
+            primaryActionState = "done";
+          } else if (isHeldResetPrimaryAction) {
             primaryActionState = "reset";
           } else if (task.running) {
             primaryActionState = "stop";

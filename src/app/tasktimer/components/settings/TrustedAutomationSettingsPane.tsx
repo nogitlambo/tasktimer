@@ -47,10 +47,23 @@ const RULE_HELP_TEXT: Record<AutomationRuleType, string> = {
   REFRESH_TASK_CLARIFICATION: "Requests clearer next steps for tasks that appear hard to start, incomplete, or too vague to act on confidently.",
 };
 
-type AutomationHistoryPayload = { success?: boolean; data?: { items?: unknown[] }; error?: { code?: unknown } };
-type AutomationSettingsPayload = { success?: boolean; data?: { settings?: unknown }; error?: { code?: unknown } };
-type TrustRecommendationPayload = { success?: boolean; data?: { recommendations?: unknown[] }; error?: { code?: unknown } };
+type AutomationErrorPayload = { error?: { code?: unknown; message?: unknown } };
+type AutomationHistoryPayload = { success?: boolean; data?: { items?: unknown[] }; error?: { code?: unknown; message?: unknown } };
+type AutomationSettingsPayload = { success?: boolean; data?: { settings?: unknown }; error?: { code?: unknown; message?: unknown } };
+type TrustRecommendationPayload = { success?: boolean; data?: { recommendations?: unknown[] }; error?: { code?: unknown; message?: unknown } };
 const PLUS_REQUIRED_MESSAGE = "Upgrade to PLUS to use executive function features.";
+
+class AutomationResponseError extends Error {
+  code: string;
+  status: number;
+
+  constructor(message: string, code: string, status: number) {
+    super(message);
+    this.name = "AutomationResponseError";
+    this.code = code;
+    this.status = status;
+  }
+}
 
 function getRuleLabel(ruleId: AutomationRuleType) {
   return RULE_LABELS[ruleId];
@@ -69,12 +82,15 @@ function getRuleHelpText(rule: Pick<AutomationRulePolicy, "ruleId" | "enabled" |
   return `${RULE_HELP_TEXT[rule.ruleId]} ${trustText}`;
 }
 
-function getSafeAutomationError(payload: { error?: { code?: unknown } } | null, fallback: string) {
+function getSafeAutomationError(payload: AutomationErrorPayload | null, fallback: string) {
   const code = typeof payload?.error?.code === "string" ? payload.error.code : "";
-  if (code === "AUTH_REQUIRED" || code === "UNAUTHENTICATED") return "Sign in again to manage Trusted Automation.";
+  const message = typeof payload?.error?.message === "string" ? payload.error.message.trim() : "";
+  if (code === "AUTH_REQUIRED" || code === "UNAUTHENTICATED" || code.startsWith("auth/")) return message || "Sign in again to manage Trusted Automation.";
+  if (code === "plan/plus-required") return PLUS_REQUIRED_MESSAGE;
+  if (code === "executive-function/disabled") return message || "Executive Function is turned off in Settings.";
   if (code === "automation/consent-required") return "Grant consent before enabling a Trusted rule.";
   if (code === "INVALID_SCHEMA" || code === "INVALID_ENUM") return "That automation setting was not accepted. Refresh and try again.";
-  return fallback;
+  return message || fallback;
 }
 
 async function getAuthHeaders() {
@@ -92,9 +108,18 @@ async function readAutomationResponse<T>(response: Response, fallback: string) {
   }
   const envelope = payload as T & { success?: boolean; error?: { code?: unknown } };
   if (!response.ok || envelope.success !== true) {
-    throw new Error(getSafeAutomationError(envelope, fallback));
+    const code = typeof envelope.error?.code === "string" ? envelope.error.code : "";
+    throw new AutomationResponseError(getSafeAutomationError(envelope, fallback), code, response.status);
   }
   return payload;
+}
+
+function isAutomationPlanLockError(cause: unknown) {
+  return cause instanceof AutomationResponseError && cause.code === "plan/plus-required";
+}
+
+function isAutomationExecutiveFunctionDisabledError(cause: unknown) {
+  return cause instanceof AutomationResponseError && cause.code === "executive-function/disabled";
 }
 
 function parseSettings(payload: AutomationSettingsPayload) {
@@ -200,6 +225,20 @@ export function TrustedAutomationSettingsPane({ active, exiting = false }: { act
         setTrustRecommendations([]);
       }
     } catch (cause) {
+      if (isAutomationPlanLockError(cause)) {
+        setCanUseExecutiveFunction(false);
+        setSettings(null);
+        setHistory([]);
+        setTrustRecommendations([]);
+        return;
+      }
+      if (isAutomationExecutiveFunctionDisabledError(cause)) {
+        setExecutiveFunctionEnabled(false);
+        setSettings(null);
+        setHistory([]);
+        setTrustRecommendations([]);
+        return;
+      }
       console.error("[TrustedAutomationSettingsPane] load failed", cause);
     } finally {
       setLoading(false);

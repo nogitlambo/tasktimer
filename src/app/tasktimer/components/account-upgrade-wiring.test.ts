@@ -39,4 +39,15 @@ describe("account upgrade wiring", () => {
     expect(source).not.toContain('window.location.assign("/pricing")');
     expect(upsellSource).not.toContain('window.location.assign("/pricing")');
   });
+
+  it("loads subscription renewal dates for every renewing paid plan", () => {
+    const source = readSource("./settings/useSettingsAccountState.ts");
+
+    expect(source).toContain('function isRenewingSubscriptionPlan(plan: SettingsAccountViewModel["authPlan"])');
+    expect(source).toContain('plan === "plus" || plan === "plus_monthly" || plan === "plus_yearly" || plan === "pro"');
+    expect(source).toContain("if (isRenewingSubscriptionPlan(nextPlan))");
+    expect(source).toContain("void loadUserSubscriptionRenewalAtMs(uid)");
+    expect(source).not.toContain('if (nextPlan === "plus")');
+    expect(source).not.toContain('if (authPlan === "plus")');
+  });
 });

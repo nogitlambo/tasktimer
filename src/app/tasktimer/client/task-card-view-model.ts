@@ -80,6 +80,7 @@ type RenderTaskCardOptions = {
   isSharedByOwner: boolean;
   isTimeGoalCompleted: boolean;
   isManuallyDone?: boolean;
+  isHeldResetPrimaryAction?: boolean;
   isStaleRecordedGoalCompleted?: boolean;
   hasTaskHistory: boolean;
   dynamicColorsEnabled: boolean;
@@ -472,6 +473,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     isSharedByOwner,
     isTimeGoalCompleted,
     isManuallyDone = false,
+    isHeldResetPrimaryAction = false,
     isStaleRecordedGoalCompleted,
     hasTaskHistory,
     dynamicColorsEnabled,
@@ -525,10 +527,10 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     : "";
   const primaryActionState: TaskPrimaryActionState = isManuallyDone
     ? "done"
+    : isHeldResetPrimaryAction
+    ? "reset"
     : isTimeGoalCompleted
-    ? isStaleRecordedGoalCompleted
-      ? "done"
-      : "reset"
+    ? "done"
     : task.running
       ? "stop"
       : elapsedMs > 0
@@ -549,7 +551,10 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
           holdMenuId,
         }
       : primaryActionState === "done"
-        ? { doneTitle: "Completed", doneLabel: "Completed" }
+        ? {
+            doneTitle: isStaleRecordedGoalCompleted ? "Completed" : "Done until tomorrow",
+            doneLabel: isStaleRecordedGoalCompleted ? "Completed" : "Done",
+          }
         : undefined,
   });
   const hasResettableTime = elapsedMs > 0;

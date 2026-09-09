@@ -15,7 +15,6 @@ import {
   timeOfDayToMinutes,
 } from "@/app/tasktimer/lib/productivityPeriod";
 import type { NextBestActionProductivityWindowExplanation } from "./nextBestActionExplanation";
-import { normalizeDashboardWeekStart } from "@/app/tasktimer/lib/historyChart";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 
 import { RECOMMENDATION_COLLECTION } from "@/app/recommendations/lib/recommendationContract";
@@ -116,26 +115,12 @@ export function localDateTimeForRecommendationTimezone(timezone: string, nowMs: 
   };
 }
 
-export function localWeekStartDateForRecommendationTimezone(timezone: string, nowMs: number, weekStarting: unknown = "mon") {
-  const localDate = localDateForRecommendationTimezone(timezone, nowMs);
-  const localDateMs = Date.parse(`${localDate}T00:00:00.000Z`);
-  if (!Number.isFinite(localDateMs)) return localDate;
-  const weekStartIndex = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 }[normalizeDashboardWeekStart(weekStarting)];
-  const localWeekdayIndex = new Date(localDateMs).getUTCDay();
-  const daysSinceWeekStart = (localWeekdayIndex - weekStartIndex + 7) % 7;
-  return new Date(localDateMs - daysSinceWeekStart * 86400000).toISOString().slice(0, 10);
-}
-
-export function isTaskCompletedForRecommendationPeriod(raw: RawRow, nowMs: number, timezone = "UTC", weekStarting: unknown = "mon") {
+export function isTaskCompletedForRecommendationPeriod(raw: RawRow, nowMs: number, timezone = "UTC") {
   if (raw.timeGoalCompletedReason !== "goal") return false;
   if (raw.taskType === "once-off") return true;
-  const period = raw.timeGoalPeriod === "week" ? "week" : "day";
-  const completionKey = asString(period === "week" ? raw.timeGoalCompletedWeekKey : raw.timeGoalCompletedDayKey, 40);
+  const completionKey = asString(raw.timeGoalCompletedDayKey, 40);
   if (!completionKey) return false;
-  const currentPeriodKey = period === "week"
-    ? localWeekStartDateForRecommendationTimezone(timezone, nowMs, weekStarting)
-    : localDateForRecommendationTimezone(timezone, nowMs);
-  return completionKey === currentPeriodKey;
+  return completionKey === localDateForRecommendationTimezone(timezone, nowMs);
 }
 
 function readHistoryRows(taskId: string, taskRows: Array<{ id: string; data: () => RawRow }>, canonicalRows: Array<{ data: () => RawRow }>) {
@@ -264,7 +249,6 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
       const canonicalRows = canonicalHistorySnapshot.docs.map((doc) => ({ data: () => doc.data() as RawRow }));
       const clarifications = clarificationSignals(recommendationSnapshot.docs.map((doc) => ({ data: () => doc.data() as RawRow })), nowMs);
       const preferences = preferencesSnapshot.exists ? (preferencesSnapshot.data() as RawRow) : null;
-      const weekStarting = normalizeDashboardWeekStart(preferences?.weekStarting);
       const recommendationTimezone = normalizeTimezone(timezone);
       const recommendationLocalDateTime = localDateTimeForRecommendationTimezone(recommendationTimezone, nowMs);
       const candidates = await Promise.all(
@@ -287,7 +271,7 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
               manuallyDone ||
               raw.completed === true ||
               raw.status === "completed" ||
-              isTaskCompletedForRecommendationPeriod(raw, nowMs, recommendationTimezone, weekStarting),
+              isTaskCompletedForRecommendationPeriod(raw, nowMs, recommendationTimezone),
             blocked: raw.blocked === true || raw.isBlocked === true,
             actionable: raw.actionable !== false && !snoozedForToday,
             hardDateEligible:
@@ -444,7 +428,6 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
       if (!safeUid || !safeRecommendationId) return { kind: "not-found" };
       const recommendationRef = userCollection(safeUid, RECOMMENDATION_COLLECTION).doc(safeRecommendationId);
       const taskRefFor = (taskId: string) => userCollection(safeUid, "tasks").doc(taskId);
-      const preferencesRef = userCollection(safeUid, "preferences").doc("v1");
       return db.runTransaction(async (transaction) => {
         const recommendationSnapshot = await transaction.get(recommendationRef);
         if (!recommendationSnapshot.exists) return { kind: "not-found" } as const;
@@ -452,7 +435,6 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
         if (!recommendation || recommendation.userId !== safeUid) return { kind: "not-found" } as const;
         const taskSnapshot = await transaction.get(taskRefFor(recommendation.taskId));
         if (!taskSnapshot.exists) return { kind: "not-found" } as const;
-        const preferencesSnapshot = await transaction.get(preferencesRef);
         if (recommendation.status === "STARTED") return { kind: "idempotent", recommendation } as const;
         if (recommendation.status !== "ACTIVE") return recommendation.status === "EXPIRED" ? ({ kind: "expired" } as const) : ({ kind: "not-found" } as const);
         if (Date.parse(String(recommendation.expiresAt)) <= nowMs) {
@@ -461,11 +443,9 @@ export function createFirestoreNextBestActionRepository(db: Firestore = getFireb
         }
         const taskData = taskSnapshot.data() as RawRow;
         const task = mapTask(recommendation.taskId, taskData);
-        const preferences = preferencesSnapshot.exists ? (preferencesSnapshot.data() as RawRow) : null;
-        const weekStarting = normalizeDashboardWeekStart(preferences?.weekStarting);
         const currentTaskVersion = computeTaskClarificationSourceVersion(recommendation.taskId, taskData);
         if (currentTaskVersion !== recommendation.sourceTaskVersion) return { kind: "stale" } as const;
-        const completedForPeriod = isTaskCompletedForRecommendationPeriod(taskData, nowMs, timezone, weekStarting);
+        const completedForPeriod = isTaskCompletedForRecommendationPeriod(taskData, nowMs, timezone);
         const plannedStartEligible = isTaskPlannedActivationEligible(
           task,
           localDateTimeForRecommendationTimezone(timezone, nowMs)

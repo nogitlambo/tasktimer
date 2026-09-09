@@ -290,8 +290,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   let editOverlayHideTimer: number | null = null;
   let editOverlayOpeningTimer: number | null = null;
   let editOverlayOriginRect: { left: number; top: number; width: number; height: number } | null = null;
-  let editTaskScheduleEnabled = true;
-  let editTaskScheduleRestoreSnapshot: Task | null = null;
+  const editTaskScheduleEnabled = true;
   let editSplitAcrossProductivityDaysTouched = false;
   let editWeeklyBlockDayTouched = false;
 
@@ -429,20 +428,8 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     });
   }
 
-  function discardStaleRestoredScheduleForOpenEndedSource(task: Task, sourceTask: Task | null | undefined) {
-    if (!sourceTask?.plannedStartOpenEnded) return;
-    const restoredTime = normalizeScheduleStoredTime(task.plannedStartTime) || getEditPlannedStartTimeForDisplay(task) || "09:00";
-    task.plannedStartDay = null;
-    task.plannedStartByDay = null;
-    task.plannedStartTime = restoredTime;
-    task.plannedStartOpenEnded = false;
-  }
-
   function syncEditTaskScheduleToggleUi() {
-    if (els.editTaskScheduleToggle) {
-      els.editTaskScheduleToggle.checked = editTaskScheduleEnabled;
-    }
-    els.editTaskScheduleFields?.classList.toggle("isHidden", !editTaskScheduleEnabled);
+    els.editTaskScheduleFields?.classList.remove("isHidden");
     syncEditSplitAcrossProductivityDaysUi(getCurrentEditTask());
     syncEditTaskScheduleSummary();
   }
@@ -603,6 +590,18 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       els.editTaskOnceOffDaySelect.value = String(currentTask?.onceOffDay || currentTask?.plannedStartDay || "mon");
     }
     syncEditTaskScheduleSummary(currentTask);
+  }
+
+  function getSelectedEditTaskTypeFromUi(): "recurring" | "once-off" | null {
+    const onceOffSelected =
+      els.editTaskTypeOnceOffBtn?.getAttribute?.("aria-pressed") === "true" ||
+      els.editTaskTypeOnceOffBtn?.classList?.contains?.("isOn") === true;
+    const recurringSelected =
+      els.editTaskTypeRecurringBtn?.getAttribute?.("aria-pressed") === "true" ||
+      els.editTaskTypeRecurringBtn?.classList?.contains?.("isOn") === true;
+    if (onceOffSelected && !recurringSelected) return "once-off";
+    if (recurringSelected && !onceOffSelected) return "recurring";
+    return null;
   }
 
   function isOnceOffTaskType(task?: Task | null) {
@@ -1123,6 +1122,8 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
 
   function finalizeEditSave(sourceTask: Task, t: Task) {
     const timeGoalEnabledForSave = true;
+    const selectedTaskType = getSelectedEditTaskTypeFromUi();
+    if (selectedTaskType) t.taskType = selectedTaskType;
     t.color = normalizeTaskColor(t.color);
     const checkpointingEnabledForSave = timeGoalEnabledForSave && !!t.milestonesEnabled;
     const hasEnabledMilestoneAlerts = checkpointingEnabledForSave && hasAnyMilestoneAlertsEnabled(t);
@@ -1232,7 +1233,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.setEditIndex(null);
     ctx.setEditTaskDraft(null);
     ctx.setEditDraftSnapshot("");
-    editTaskScheduleRestoreSnapshot = null;
   }
 
   function openEditScheduleConflictModal(
@@ -1317,18 +1317,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       onAlt: canChange && canContinue ? handleMove : null,
       onCancel: () => ctx.closeConfirm(),
     });
-  }
-
-  function finalizeUnscheduledEditSave(sourceTask: Task, t: Task) {
-    t.name = (els.editName?.value || "").trim() || t.name;
-    t.color = normalizeTaskColor(t.color);
-    clearTaskScheduleConfig(t);
-    delete (t as Task & { mode?: string }).mode;
-    Object.assign(sourceTask, ctx.cloneTaskForEdit(t));
-    ctx.save();
-    void ctx.syncSharedTaskSummariesForTask(String(sourceTask.id || "")).catch(() => {});
-    ctx.render();
-    return true;
   }
 
   function syncEditCheckpointAlertUi(t: Task) {
@@ -1596,19 +1584,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const sourceTask = ctx.getTasks()[i];
     if (!sourceTask) return;
     const t = ctx.cloneTaskForEdit(sourceTask);
-    editTaskScheduleRestoreSnapshot = ctx.cloneTaskForEdit(sourceTask);
-    editTaskScheduleEnabled = taskHasMeaningfulScheduleConfig(sourceTask);
-    if (editTaskScheduleEnabled) {
-      const plannedStartDate =
-        normalizeLocalDateValue(t.plannedStartDate) ||
-        (t.taskType === "once-off" ? normalizeLocalDateValue(t.onceOffTargetDate) : null) ||
-        getCurrentLocalDate();
-      t.plannedStartDate = plannedStartDate;
-      if (editTaskScheduleRestoreSnapshot) editTaskScheduleRestoreSnapshot.plannedStartDate = plannedStartDate;
-    } else {
-      t.plannedStartDate = null;
-      if (editTaskScheduleRestoreSnapshot) editTaskScheduleRestoreSnapshot.plannedStartDate = null;
-    }
+    t.plannedStartDate =
+      normalizeLocalDateValue(t.plannedStartDate) ||
+      (t.taskType === "once-off" ? normalizeLocalDateValue(t.onceOffTargetDate) : null) ||
+      getCurrentLocalDate();
     editSplitAcrossProductivityDaysTouched = false;
     editWeeklyBlockDayTouched = false;
     t.plannedStartPushRemindersEnabled = t.plannedStartPushRemindersEnabled !== false;
@@ -1638,53 +1617,12 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     showEditOverlay(sourceEl);
   }
 
-  function finishUnscheduledEditSave(sourceTask: Task, t: Task) {
-    if (!finalizeUnscheduledEditSave(sourceTask, t)) return false;
-    hideEditOverlay();
-    setEditTaskColorPopoverOpen(false);
-    ctx.clearEditValidationState();
-    closeElapsedPad(false);
-    ctx.setEditIndex(null);
-    ctx.setEditTaskDraft(null);
-    ctx.setEditDraftSnapshot("");
-    editTaskScheduleRestoreSnapshot = null;
-    ctx.showActionConfirmation("Task saved.");
-    return true;
-  }
-
-  function confirmClearTaskSchedule(sourceTask: Task, t: Task, onCancel?: () => void) {
-    els.confirmOverlay?.classList.add("isClearTaskScheduleConfirm");
-    return void ctx.confirm(
-      "Clear Task Schedule",
-      "This will clear the time goal, schedule(s) and checkpoints for this task.",
-      {
-        okLabel: "Save & Close",
-        cancelLabel: "Cancel",
-        onOk: () => {
-          ctx.closeConfirm();
-          finishUnscheduledEditSave(sourceTask, t);
-        },
-        onCancel: () => {
-          ctx.closeConfirm();
-          onCancel?.();
-        },
-      }
-    );
-  }
-
   function closeEdit(saveChanges: boolean) {
     const editIndex = ctx.getEditIndex();
     const sourceTask = editIndex != null ? ctx.getTasks()[editIndex] : null;
     const t = getCurrentEditTask();
     let didSave = false;
     if (saveChanges && t && sourceTask) {
-      if (!editTaskScheduleEnabled) {
-        if (taskHasMeaningfulScheduleConfig(sourceTask)) {
-          return confirmClearTaskSchedule(sourceTask, t);
-        }
-        finishUnscheduledEditSave(sourceTask, t);
-        return;
-      }
       els.editTaskDurationValueInput?.classList.remove("isInvalid");
       const aggregateValidation = getEditAggregateTimeGoalValidation(t);
       if (!validateEditOnceOffDay(t)) {
@@ -1812,56 +1750,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       closeEdit(true);
     });
     ctx.on(els.editName, "input", handleEditNameInput);
-    ctx.on(els.editTaskScheduleToggle, "change", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      const editIndex = ctx.getEditIndex();
-      const sourceTask = editIndex != null ? ctx.getTasks()[editIndex] : null;
-      editTaskScheduleEnabled = !!els.editTaskScheduleToggle?.checked;
-      if (editTaskScheduleEnabled && editTaskScheduleRestoreSnapshot) {
-        restoreEditScheduleFieldsFromSnapshot(t, editTaskScheduleRestoreSnapshot);
-        if (!normalizeLocalDateValue(t.plannedStartDate)) t.plannedStartDate = getCurrentLocalDate();
-        discardStaleRestoredScheduleForOpenEndedSource(t, sourceTask);
-        if (els.editTaskOnceOffDaySelect) els.editTaskOnceOffDaySelect.value = String(t.onceOffDay || t.plannedStartDay || "mon");
-        if (els.editTaskDurationValueInput) els.editTaskDurationValueInput.value = String(Math.max(0, Number(t.timeGoalValue) || 0) || 0);
-        ctx.setEditTaskDurationUnit(t.timeGoalUnit === "minute" ? "minute" : "hour");
-        ctx.setEditTaskDurationPeriod(t.timeGoalPeriod === "day" ? "day" : "week");
-        syncEditTaskTypeUi(t);
-        syncEditPlannedStartSelectors(t);
-        ctx.setMilestoneUnitUi(t.milestoneTimeUnit === "minute" ? "minute" : "hour");
-        ctx.renderMilestoneEditor(t);
-      }
-      syncEditTaskScheduleToggleUi();
-      if (editTaskScheduleEnabled) {
-        ctx.syncEditTaskTimeGoalUi(t);
-        ctx.syncEditCheckpointAlertUi(t);
-        ctx.syncEditMilestoneSectionUi(t);
-      }
-      ctx.syncEditSaveAvailability(t);
-      if (!editTaskScheduleEnabled && sourceTask) {
-        confirmClearTaskSchedule(sourceTask, t, () => {
-          editTaskScheduleEnabled = true;
-          if (editTaskScheduleRestoreSnapshot) {
-            restoreEditScheduleFieldsFromSnapshot(t, editTaskScheduleRestoreSnapshot);
-            if (!normalizeLocalDateValue(t.plannedStartDate)) t.plannedStartDate = getCurrentLocalDate();
-            discardStaleRestoredScheduleForOpenEndedSource(t, sourceTask);
-            if (els.editTaskOnceOffDaySelect) els.editTaskOnceOffDaySelect.value = String(t.onceOffDay || t.plannedStartDay || "mon");
-            if (els.editTaskDurationValueInput) els.editTaskDurationValueInput.value = String(Math.max(0, Number(t.timeGoalValue) || 0) || 0);
-            ctx.setEditTaskDurationUnit(t.timeGoalUnit === "minute" ? "minute" : "hour");
-            ctx.setEditTaskDurationPeriod(t.timeGoalPeriod === "day" ? "day" : "week");
-            syncEditTaskTypeUi(t);
-            syncEditPlannedStartSelectors(t);
-            ctx.setMilestoneUnitUi(t.milestoneTimeUnit === "minute" ? "minute" : "hour");
-            ctx.renderMilestoneEditor(t);
-          }
-          syncEditTaskScheduleToggleUi();
-          ctx.syncEditTaskTimeGoalUi(t);
-          ctx.syncEditCheckpointAlertUi(t);
-          ctx.syncEditMilestoneSectionUi(t);
-          ctx.syncEditSaveAvailability(t);
-        });
-      }
-    });
     ctx.on(els.editTaskColorTrigger, "click", (event: any) => {
       event?.preventDefault?.();
       const isOpen = els.editTaskColorPopover instanceof HTMLElement && els.editTaskColorPopover.style.display === "flex";

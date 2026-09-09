@@ -1858,6 +1858,46 @@ describe("dashboard completed card", () => {
     }
   });
 
+  it("shows manually done scheduled tasks as Complete in the task overview donut", () => {
+    const nowValue = Date.now();
+    const tasks = [
+      task({
+        id: "manual-done-task",
+        name: "Manual Done Task",
+        order: 1,
+        timeGoalEnabled: true,
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartByDay: todaySchedule(),
+        markedDoneAtMs: nowValue - 1000,
+        markedDoneUntilMs: nowValue + 60 * 60 * 1000,
+      }),
+      task({
+        id: "open-task",
+        name: "Open Task",
+        order: 2,
+        timeGoalEnabled: true,
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartByDay: todaySchedule(),
+      }),
+    ];
+    const harness = createRenderHarness(tasks);
+
+    try {
+      harness.render();
+      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
+      const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
+      const doneLabel = labelsEl?.children.find((child) => child.innerHTML.includes("Manual Done Task"));
+
+      expect(labelsEl?.children).toHaveLength(2);
+      expect(doneLabel?.innerHTML).toContain('<span class="dashboardTasksCompletedLabelStatus">Complete</span>');
+      expect(centerEl?.innerHTML).toContain("50%");
+    } finally {
+      harness.restore();
+    }
+  });
+
   it("fills progress slice visuals across the radial ring band while preserving slice gaps", () => {
     const nowValue = Date.now();
     const today = todaySchedule();

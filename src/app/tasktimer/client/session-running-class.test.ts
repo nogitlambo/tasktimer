@@ -2077,7 +2077,7 @@ describe("task timer session tick", () => {
     }
   });
 
-  it("keeps current-period goal completion metadata resettable during live updates", () => {
+  it("keeps current-period goal completion metadata done during live updates despite a held reset override", () => {
     const staleCompletedTask = task({
       timeGoalEnabled: true,
       timeGoalMinutes: 60,
@@ -2220,22 +2220,28 @@ describe("task timer session tick", () => {
       getWeekStarting: () => "mon",
     } as unknown as TaskTimerSessionContext);
 
-    session.tick();
+    try {
+      setXpAwardButtonLabelOverride("task-1", "Reset");
 
-    expect(taskNode.classList.contains("taskCompleted")).toBe(true);
-    expect(primaryActionBtn.className).toBe("btn btn-warn small taskPrimaryAction taskPrimaryActionReset");
-    expect(primaryActionBtn.dataset.action).toBe("reset");
-    expect(primaryActionBtn.title).toBe("Reset");
-    expect(primaryActionBtn.disabled).toBe(false);
-    expect(primaryActionBtn.innerHTML).toContain('<span class="taskPrimaryActionPrimary">Reset</span>');
-    expect(primaryActionBtn.innerHTML).not.toContain("taskPrimaryActionSecondary");
-    expect(resetBtn.disabled).toBe(true);
-    expect(resetBtn.title).toBe("No time to reset");
+      session.tick();
 
-    (globalThis as { window?: unknown }).window = previousWindow;
+      expect(taskNode.classList.contains("taskCompleted")).toBe(true);
+      expect(primaryActionBtn.className).toBe("btn btn-done small taskPrimaryAction taskPrimaryActionDone");
+      expect(primaryActionBtn.dataset.action).toBe("reset");
+      expect(primaryActionBtn.title).toBe("Done until tomorrow");
+      expect(primaryActionBtn.disabled).toBe(true);
+      expect(primaryActionBtn.innerHTML).toContain('<span class="taskPrimaryActionPrimary">Done</span>');
+      expect(primaryActionBtn.innerHTML).not.toContain('<span class="taskPrimaryActionPrimary">Reset</span>');
+      expect(primaryActionBtn.innerHTML).not.toContain("taskPrimaryActionSecondary");
+      expect(resetBtn.disabled).toBe(true);
+      expect(resetBtn.title).toBe("No time to reset");
+    } finally {
+      clearXpAwardButtonLabelOverride("task-1");
+      (globalThis as { window?: unknown }).window = previousWindow;
+    }
   });
 
-  it("renders an August 1, 2026 completed goal task as Completed during live updates on Sunday, August 2, 2026", () => {
+  it("renders an August 1, 2026 completed goal task as launchable during live updates on Sunday, August 2, 2026", () => {
     const originalDateNow = Date.now;
     Date.now = () => new Date(2026, 7, 2, 8, 0, 0).getTime();
     const staleCompletedTask = task({
@@ -2385,15 +2391,15 @@ describe("task timer session tick", () => {
     try {
       session.tick();
 
-      expect(taskNode.classList.contains("taskCompleted")).toBe(true);
-      expect(primaryActionBtn.className).toBe("btn btn-done small taskPrimaryAction taskPrimaryActionDone");
-      expect(primaryActionBtn.dataset.action).toBe("reset");
-      expect(primaryActionBtn.title).toBe("Completed");
-      expect(primaryActionBtn.disabled).toBe(true);
-      expect(primaryActionBtn.innerHTML).toContain('<span class="taskPrimaryActionPrimary">Completed</span>');
-      expect(primaryActionBtn.innerHTML).not.toContain('<span class="taskPrimaryActionPrimary">Resume</span>');
-      expect(resetBtn.disabled).toBe(false);
-      expect(resetBtn.title).toBe("Reset");
+      expect(taskNode.classList.contains("taskCompleted")).toBe(false);
+      expect(primaryActionBtn.className).toBe("btn btn-accent small taskPrimaryAction taskPrimaryActionLaunch");
+      expect(primaryActionBtn.dataset.action).toBe("start");
+      expect(primaryActionBtn.title).toBe("Launch");
+      expect(primaryActionBtn.disabled).toBe(false);
+      expect(primaryActionBtn.innerHTML).toContain('<span class="taskPrimaryActionPrimary">Launch</span>');
+      expect(primaryActionBtn.innerHTML).not.toContain('<span class="taskPrimaryActionPrimary">Completed</span>');
+      expect(resetBtn.disabled).toBe(true);
+      expect(resetBtn.title).toBe("No time to reset");
     } finally {
       Date.now = originalDateNow;
       (globalThis as { window?: unknown }).window = previousWindow;

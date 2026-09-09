@@ -76,6 +76,56 @@ describe("Schedule Repair candidate generation", () => {
     expect(result.actions).toMatchObject([{ type: "REMOVE_FROM_TODAY", taskId: "flexible", toDate: null }]);
   });
 
+  it("excludes completed today tasks from overload minutes and repair actions", () => {
+    const result = generateScheduleRepairCandidates({
+      localDate: "2026-08-08",
+      tasks: [
+        task("completed-today", { estimatedMinutes: 80, completed: true }),
+        task("remaining", { estimatedMinutes: 40, priority: "low" }),
+      ],
+      remainingCapacity: capacity,
+      futureDays,
+    });
+
+    expect(result.evaluation.outcome).toBe("NO_REPAIR_NEEDED");
+    expect(result.evaluation.remainingPlannedMinutesBefore).toBe(40);
+    expect(result.actions).toEqual([]);
+  });
+
+  it("excludes incomplete future-dated tasks from today's repair", () => {
+    const result = generateScheduleRepairCandidates({
+      localDate: "2026-08-08",
+      tasks: [
+        task("future", { estimatedMinutes: 80, plannedDate: "2026-08-09" }),
+        task("today", { estimatedMinutes: 40, priority: "low" }),
+      ],
+      remainingCapacity: capacity,
+      futureDays,
+    });
+
+    expect(result.evaluation.outcome).toBe("NO_REPAIR_NEEDED");
+    expect(result.evaluation.remainingPlannedMinutesBefore).toBe(40);
+    expect(result.actions).toEqual([]);
+  });
+
+  it("only proposes actions for incomplete tasks scheduled today", () => {
+    const result = generateScheduleRepairCandidates({
+      localDate: "2026-08-08",
+      tasks: [
+        task("today-a", { estimatedMinutes: 50, priority: "low" }),
+        task("today-b", { estimatedMinutes: 50, priority: "low" }),
+        task("unscheduled", { estimatedMinutes: 90, plannedDate: null, priority: "low" }),
+      ],
+      remainingCapacity: capacity,
+      futureDays,
+    });
+
+    expect(result.evaluation.outcome).toBe("REPAIR_REQUIRED");
+    expect(result.evaluation.remainingPlannedMinutesBefore).toBe(100);
+    expect(result.actions.map((action) => action.taskId)).not.toContain("unscheduled");
+    expect(result.actions.every((action) => action.taskId.startsWith("today-"))).toBe(true);
+  });
+
   it("is deterministic for identical inputs", () => {
     const input = { localDate: "2026-08-08", tasks: [task("a", { estimatedMinutes: 50 }), task("b", { estimatedMinutes: 40, priority: "low" })], remainingCapacity: capacity, futureDays };
     expect(generateScheduleRepairCandidates(input)).toEqual(generateScheduleRepairCandidates(input));

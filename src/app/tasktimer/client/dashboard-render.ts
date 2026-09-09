@@ -1686,6 +1686,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       progress: number;
       complete: boolean;
       running: boolean;
+      manuallyDone?: boolean;
       color: string;
     };
 
@@ -1704,6 +1705,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
           progress,
           complete: item.complete === true,
           running: item.running === true,
+          manuallyDone: item.manuallyDone === true,
           color: normalizeTaskColor(item.color) || DASHBOARD_COMPLETED_FALLBACK_COLOR,
         };
       });
@@ -1741,12 +1743,16 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         const statusLabel =
           item.goalMinutes > 0
             ? item.complete
-              ? "Completed"
+              ? item.manuallyDone
+                ? "Complete"
+                : "Completed"
               : item.progress > 0
                 ? `${Math.round(item.progress * 100)}% complete`
                 : "Not complete"
             : item.complete
-              ? "Active today"
+              ? item.manuallyDone
+                ? "Complete"
+                : "Active today"
               : "No activity yet";
         return {
           item,

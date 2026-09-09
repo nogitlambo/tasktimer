@@ -38,6 +38,10 @@ function resolveNativeCheckoutReturnPath(value: string | undefined) {
   return normalized.startsWith("/") ? normalized : `/${normalized}`;
 }
 
+function isRenewingSubscriptionPlan(plan: SettingsAccountViewModel["authPlan"]) {
+  return plan === "plus" || plan === "plus_monthly" || plan === "plus_yearly" || plan === "pro";
+}
+
 export function useSettingsAccountState(options: UseSettingsAccountStateOptions = {}): {
   account: SettingsAccountViewModel;
   authUserUid: string | null;
@@ -94,7 +98,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
     setAuthPlan(plan);
     setAuthPlanStatus("confirmed");
     setAuthPlanIsProvisional(false);
-    if (plan !== "plus") setAuthPlanRenewalAtMs(null);
+    if (!isRenewingSubscriptionPlan(plan)) setAuthPlanRenewalAtMs(null);
   }, []);
 
   const markPlanRenewal = useCallback((renewalAtMs: number | null, uid: string) => {
@@ -109,7 +113,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       setAuthPlan(fallbackPlan);
       setAuthPlanStatus("refreshing");
       setAuthPlanIsProvisional(provisional);
-      if (fallbackPlan !== "plus") setAuthPlanRenewalAtMs(null);
+      if (!isRenewingSubscriptionPlan(fallbackPlan)) setAuthPlanRenewalAtMs(null);
       const refreshId = ++planRefreshIdRef.current;
       void loadUserRootPlan(uid)
         .then((nextPlan) => {
@@ -117,7 +121,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
           if (planRefreshIdRef.current !== refreshId || activeUid !== uid) return;
           writeTaskTimerPlanToStorage(nextPlan, { uid });
           markPlanConfirmed(nextPlan, uid);
-          if (nextPlan === "plus") {
+          if (isRenewingSubscriptionPlan(nextPlan)) {
             void loadUserSubscriptionRenewalAtMs(uid)
               .then((renewalAtMs) => markPlanRenewal(renewalAtMs, uid))
               .catch(() => markPlanRenewal(null, uid));
@@ -132,7 +136,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
           if (planRefreshIdRef.current !== refreshId || activeUid !== uid) return;
           if (nextPlan) {
             markPlanConfirmed(nextPlan, uid);
-            if (nextPlan === "plus") {
+            if (isRenewingSubscriptionPlan(nextPlan)) {
               void loadUserSubscriptionRenewalAtMs(uid)
                 .then((renewalAtMs) => markPlanRenewal(renewalAtMs, uid))
                 .catch(() => markPlanRenewal(null, uid));
@@ -396,7 +400,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
   const onOpenPlanAction = useCallback(async () => {
     if (typeof window === "undefined") return;
 
-    if (authPlan === "plus") {
+    if (isRenewingSubscriptionPlan(authPlan)) {
       setAuthError("");
       setAuthStatus("");
       const auth = getFirebaseAuthClient();

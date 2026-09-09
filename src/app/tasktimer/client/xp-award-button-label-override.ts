@@ -28,6 +28,7 @@ export function applyXpAwardButtonLabelOverride(taskEl: HTMLElement | null | und
   const button = taskEl.querySelector(".taskPrimaryAction") as HTMLElement | null;
   const labelEl = taskEl.querySelector(".taskPrimaryActionPrimary") as HTMLElement | null;
   if (!button || !labelEl) return;
+  if (label === "Reset" && button.classList.contains("taskPrimaryActionDone")) return;
   labelEl.textContent = label;
   if (label === "Reset") {
     button.classList.remove("isXpAwardReceiving");

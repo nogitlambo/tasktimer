@@ -113,11 +113,21 @@ function taskAllowedDates(raw: RawRow, localDate: string) {
   });
 }
 
+function isRecurringScheduledForDate(raw: RawRow, date: string) {
+  if (raw.taskType && raw.taskType !== "recurring") return false;
+  const byDay = raw.plannedStartByDay && typeof raw.plannedStartByDay === "object" ? raw.plannedStartByDay as RawRow : null;
+  if (!byDay) return false;
+  const time = asString(byDay[weekdayToken(date)], 8);
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(time);
+}
+
 export function mapScheduleRepairFirestoreTask(taskId: string, raw: RawRow, uid: string, localDate: string): ScheduleRepairTask {
   const id = asString(raw.id, 160) || taskId;
   const allowedTargetDates = taskAllowedDates(raw, localDate);
   const onceOffTargetDate = dateValue(raw.onceOffTargetDate);
-  const plannedDate = onceOffTargetDate || (allowedTargetDates.includes(localDate) ? localDate : null);
+  const completedToday = asString(raw.timeGoalCompletedDayKey, 10) === localDate;
+  const completed = raw.completed === true || raw.status === "completed" || completedToday;
+  const plannedDate = onceOffTargetDate || (isRecurringScheduledForDate(raw, localDate) ? localDate : null);
   const version = createHash("sha256").update(JSON.stringify({
     id,
     updatedAt: asMillis(raw.updatedAt),
@@ -131,8 +141,9 @@ export function mapScheduleRepairFirestoreTask(taskId: string, raw: RawRow, uid:
     priority: asString(raw.priority, 20),
     hardDeadline: raw.hardDeadline === true,
     pinned: raw.pinned === true,
-    completed: raw.completed === true,
+    completed,
     status: asString(raw.status, 40),
+    timeGoalCompletedDayKey: asString(raw.timeGoalCompletedDayKey, 10),
   })).digest("hex");
   return {
     id,
@@ -156,7 +167,7 @@ export function mapScheduleRepairFirestoreTask(taskId: string, raw: RawRow, uid:
     ownerUid: uid,
     editable: raw.editable !== false,
     active: raw.active !== false && raw.status !== "inactive",
-    completed: raw.completed === true || raw.status === "completed",
+    completed,
   };
 }
 

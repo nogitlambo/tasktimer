@@ -17,6 +17,7 @@ import { useSearchParams } from "next/navigation";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import AppImg from "@/components/AppImg";
+import AddTaskChoiceOverlay from "./components/AddTaskChoiceOverlay";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { trackEvent, trackScreen } from "@/lib/firebaseTelemetry";
@@ -2417,6 +2418,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         </div>
 
         <EditTaskOverlay />
+        <AddTaskChoiceOverlay />
         <AddTaskOverlay />
       </TaskTimerAppFrame>
 

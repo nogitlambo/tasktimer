@@ -1,4 +1,5 @@
 import type { TaskTimerTaskListUiContext } from "./context";
+import { isCompletedOnceOffTask } from "../lib/taskManualCompletion";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -98,12 +99,36 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
     applyTaskFlipDomState(normalizedTaskId, taskEl);
   }
 
+  function findTaskCardById(taskId: string) {
+    const list = els.taskList as HTMLElement | null;
+    if (!list) return null;
+    return (
+      Array.from(list.querySelectorAll<HTMLElement>(".task"))
+        .find((taskEl) => String(taskEl.dataset.taskId || "").trim() === taskId) || null
+    );
+  }
+
+  function closeFlippedTaskCardsOutsideTarget(target: Node | null) {
+    const flippedTaskIds = ctx.getFlippedTaskIds();
+    if (!flippedTaskIds.size) return;
+    Array.from(flippedTaskIds).forEach((taskId) => {
+      const taskEl = findTaskCardById(taskId);
+      if (taskEl && target && taskEl.contains(target)) return;
+      setTaskFlipped(taskId, false, taskEl);
+    });
+  }
+
   function persistTaskOrderFromTaskListDom() {
     if (ctx.getTaskOrderBy() !== "custom") return;
     const list = els.taskList;
     if (!list) return;
-    const taskEls = Array.from(list.querySelectorAll(".task[data-task-id]")).filter(
-      (taskEl): taskEl is HTMLElement => taskEl instanceof HTMLElement
+    const dragging = ctx.getTaskDragEl();
+    const draggingTaskType = dragging?.dataset.taskType === "once-off" ? "once-off" : "recurring";
+    const section = dragging?.closest?.("[data-task-type-section]") as HTMLElement | null;
+    const taskRoot = section || list;
+    const taskEls = Array.from(taskRoot.querySelectorAll('.task[data-task-id][draggable="true"]')).filter(
+      (taskEl): taskEl is HTMLElement =>
+        taskEl instanceof HTMLElement && (!dragging?.dataset.taskType || taskEl.dataset.taskType === dragging.dataset.taskType)
     );
     const draggedModeTaskIds = taskEls
       .sort((a, b) => {
@@ -122,10 +147,16 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
       .filter((task): task is NonNullable<typeof task> => !!task);
     if (!reorderedModeTasks.length) return;
 
+    const targetTaskType = dragging?.dataset.taskType
+      ? draggingTaskType
+      : reorderedModeTasks[0]?.taskType === "once-off"
+        ? "once-off"
+        : "recurring";
     const nextTasks = ctx.getTasks().slice();
     const modeIndexes: number[] = [];
-    nextTasks.forEach((_, index) => {
-      modeIndexes.push(index);
+    nextTasks.forEach((task, index) => {
+      const taskType = task?.taskType === "once-off" ? "once-off" : "recurring";
+      if (taskType === targetTaskType && !isCompletedOnceOffTask(task)) modeIndexes.push(index);
     });
     if (!modeIndexes.length) return;
 
@@ -195,6 +226,10 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
         (taskMenuEl as HTMLDetailsElement).open = false;
       });
     }
+  }
+
+  function handleTaskFlipDocumentPointerDown(event: any) {
+    closeFlippedTaskCardsOutsideTarget((event?.target as Node | null) || null);
   }
 
   function handleTaskMenuSummaryClick(event: any) {
@@ -293,11 +328,13 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
     const list = els.taskList;
     const dragging = ctx.getTaskDragEl();
     if (!list || !dragging) return;
+    const currentParent = dragging.parentElement;
+    const currentSection = dragging.closest?.("[data-task-type-section]") as HTMLElement | null;
     const targetParent =
       nextTask?.parentElement ||
-      (list.querySelector(".taskTileColumn:last-child") as HTMLElement | null) ||
+      (currentSection?.querySelector(".taskTileColumn:last-child") as HTMLElement | null) ||
+      currentParent ||
       list;
-    const currentParent = dragging.parentElement;
     const samePosition =
       currentParent === targetParent &&
       (nextTask ? dragging.nextElementSibling === nextTask : dragging === targetParent.lastElementChild);
@@ -312,6 +349,8 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
     const targetEl = target as HTMLElement | null;
     const taskEl = targetEl?.closest?.(".task") as HTMLElement | null;
     if (!taskEl || taskEl === ctx.getTaskDragEl() || !els.taskList?.contains(taskEl)) return null;
+    const draggingTaskType = ctx.getTaskDragEl()?.dataset.taskType || "";
+    if (draggingTaskType && taskEl.dataset.taskType !== draggingTaskType) return null;
     return taskEl;
   }
 
@@ -347,7 +386,12 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
       return;
     }
     const candidateTasks = Array.from(list.querySelectorAll(".task")).filter(
-      (child): child is HTMLElement => child instanceof HTMLElement && child !== dragging && child.classList.contains("task")
+      (child): child is HTMLElement =>
+        child instanceof HTMLElement &&
+        child !== dragging &&
+        child.classList.contains("task") &&
+        child.dataset.taskType === dragging.dataset.taskType &&
+        child.getAttribute("draggable") === "true"
     );
     const nextTask =
       candidateTasks.find((child) => {
@@ -387,6 +431,7 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
 
   function registerTaskListUiEvents() {
     ctx.on(document, "click", handleTaskMenuDocumentClick);
+    ctx.on(document, "pointerdown", handleTaskFlipDocumentPointerDown);
     ctx.on(els.taskList, "click", handleTaskMenuSummaryClick);
     ctx.on(els.taskList, "dragstart", handleTaskListDragStart);
     ctx.on(els.taskList, "dragover", handleTaskListDragOver);

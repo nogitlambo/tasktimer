@@ -8,6 +8,8 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
   const shellCss = readFileSync(resolve(__dirname, "styles/01-shell.css"), "utf8");
   const overlaysCss = readFileSync(resolve(__dirname, "styles/04-overlays.css"), "utf8");
   const friendsCss = readFileSync(resolve(__dirname, "styles/08-friends.css"), "utf8");
+  const addTaskOverlaySource = readFileSync(resolve(__dirname, "components/AddTaskOverlay.tsx"), "utf8");
+  const editTaskOverlaySource = readFileSync(resolve(__dirname, "components/EditTaskOverlay.tsx"), "utf8");
 
   it("renders the leaderboard user summary overlay outside the app page scroller", () => {
     const frameCloseIndex = source.indexOf("</TaskTimerAppFrame>");
@@ -37,6 +39,15 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain('aria-label="Add Task"');
     expect(source).toContain('title="Add Task"');
     expect(source).toContain("Add Task");
+  });
+
+  it("keeps Add/Edit task schedule fields visible without the schedule checkbox", () => {
+    expect(addTaskOverlaySource).toContain('id="addTaskScheduleFields"');
+    expect(editTaskOverlaySource).toContain('id="editTaskScheduleFields"');
+    expect(addTaskOverlaySource).not.toContain("addTaskScheduleToggle");
+    expect(editTaskOverlaySource).not.toContain("editTaskScheduleToggle");
+    expect(addTaskOverlaySource).not.toContain("Schedule this task");
+    expect(editTaskOverlaySource).not.toContain("Schedule This Task");
   });
 
   it("does not render duplicate Brain Dump entries on the Tasks page", () => {
