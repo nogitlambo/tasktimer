@@ -28,6 +28,7 @@ vi.mock("@/app/brain-dump/lib/brainDumpSessionStore", () => ({
 }));
 
 import { GET, PATCH } from "./route";
+import * as route from "./route";
 
 function reviewDate(overrides: Partial<BrainDumpReviewDate> = {}): BrainDumpReviewDate {
   return {
@@ -336,5 +337,23 @@ describe("GET /api/brain-dump/sessions/[sessionId]", () => {
       selected: false,
       sourceEvidence: [],
     });
+  });
+});
+
+
+describe("native session CORS preflight", () => {
+  it.each(["https://localhost", "capacitor://localhost"])("allows authenticated requests from %s", (origin) => {
+    vi.clearAllMocks();
+    const options = (route as unknown as { OPTIONS: (req: Request) => Response }).OPTIONS;
+    expect(options).toBeTypeOf("function");
+    const response = options(new Request("https://tasklaunch.app/api/brain-dump/sessions/session-1/", {
+      method: "OPTIONS",
+      headers: { origin, "access-control-request-method": "PATCH", "access-control-request-headers": "content-type,x-firebase-auth" },
+    }));
+    expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-origin")).toBe(origin);
+    expect(response.headers.get("access-control-allow-methods")).toContain("PATCH");
+    expect(response.headers.get("access-control-allow-headers")).toContain("X-Firebase-Auth");
+    expect(mocks.verifyFirebaseRequestUser).not.toHaveBeenCalled();
   });
 });

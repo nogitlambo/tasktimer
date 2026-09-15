@@ -293,7 +293,7 @@ function createGroupedHarness() {
   const recurringCards = new FakeElement("div");
   const onceOffCards = new FakeElement("div");
   const handlers = new Map<string, Handler>();
-  const tasks = [
+  const tasks: Task[] = [
     { ...buildTask("a", 1), taskType: "recurring" as const },
     { ...buildTask("b", 2), taskType: "recurring" as const },
     { ...buildTask("x", 3), taskType: "once-off" as const },
@@ -318,7 +318,7 @@ function createGroupedHarness() {
     const card = new FakeElement("div");
     card.classList.add("task");
     card.dataset.taskId = task.id;
-    card.dataset.taskType = task.taskType;
+    card.dataset.taskType = task.taskType || "recurring";
     card.setAttribute("data-task-id", task.id);
     card.setAttribute("draggable", "true");
     if (task.taskType === "once-off") onceOffCards.appendChild(card);

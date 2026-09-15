@@ -37,6 +37,7 @@ vi.mock("@/app/brain-dump/lib/brainDumpWorkspaceStore", () => ({
 }));
 
 import { POST } from "./route";
+import * as route from "./route";
 
 function reviewDate(overrides: Partial<BrainDumpReviewDate> = {}): BrainDumpReviewDate {
   return {
@@ -190,5 +191,23 @@ describe("POST /api/brain-dump/sessions/[sessionId]/confirm", () => {
     });
     expect(expiredSession.review.items[0].sourceEvidence).toEqual([]);
     expect(JSON.stringify(expiredSession)).not.toContain("private stale typed source");
+  });
+});
+
+
+describe("native session CORS preflight", () => {
+  it.each(["https://localhost", "capacitor://localhost"])("allows authenticated requests from %s", (origin) => {
+    vi.clearAllMocks();
+    const options = (route as unknown as { OPTIONS: (req: Request) => Response }).OPTIONS;
+    expect(options).toBeTypeOf("function");
+    const response = options(new Request("https://tasklaunch.app/api/brain-dump/sessions/session-1/confirm/", {
+      method: "OPTIONS",
+      headers: { origin, "access-control-request-method": "POST", "access-control-request-headers": "content-type,x-firebase-auth" },
+    }));
+    expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-origin")).toBe(origin);
+    expect(response.headers.get("access-control-allow-methods")).toContain("POST");
+    expect(response.headers.get("access-control-allow-headers")).toContain("X-Firebase-Auth");
+    expect(mocks.verifyFirebaseRequestUser).not.toHaveBeenCalled();
   });
 });

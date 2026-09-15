@@ -119,7 +119,6 @@ describe("createTaskTimerRuntimeComposition", () => {
     expect(composition.runtime).toBe(runtime);
     expect(composition.workspaceRepository).toBe(workspaceRepository);
     expect(composition.stores.appRuntimeState.get("currentAppPage")).toBe("dashboard");
-    expect(composition.stores.scheduleState.get("selectedDay")).toBe("mon");
     expect(composition.stores.cloudSyncState.get("deferredCloudRefreshTimer")).toBeNull();
   });
 

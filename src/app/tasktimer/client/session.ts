@@ -2902,8 +2902,15 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (label) label.textContent = `${Math.round(progressModel.pct)}%`;
   }
 
+  let lastTaskCardDayKey = localDayKey(nowMs());
+
   function tick() {
     if (runtime.destroyed) return;
+    const taskCardDayKey = localDayKey(nowMs());
+    if (taskCardDayKey !== lastTaskCardDayKey) {
+      lastTaskCardDayKey = taskCardDayKey;
+      ctx.render();
+    }
     const tasks = ctx.getTasks();
     void syncNativeCheckpointAlarms(buildNativeCheckpointSchedule({
       tasks,

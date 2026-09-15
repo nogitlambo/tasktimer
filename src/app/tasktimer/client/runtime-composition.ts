@@ -8,7 +8,6 @@ import {
 import { createTaskTimerMutableStore } from "./mutable-store";
 import { createTaskTimerRootBootstrap } from "./root-state";
 import { createTaskTimerRuntime, type TaskTimerRuntime } from "./runtime";
-import type { TaskTimerScheduleState } from "./schedule-runtime";
 import type { AppPage, TaskTimerMutableState } from "./types";
 import {
   createFocusSessionDrafts,
@@ -63,14 +62,6 @@ export function createTaskTimerRuntimeComposition(
     confirmActionCancel: initialState.confirmActionCancel,
     timeGoalModalTaskId: initialState.timeGoalModalTaskId,
     timeGoalModalFrozenElapsedMs: initialState.timeGoalModalFrozenElapsedMs,
-  });
-  const scheduleState = createTaskTimerMutableStore<TaskTimerScheduleState>({
-    selectedDay: "mon",
-    dragTaskId: null,
-    dragSourceDay: null,
-    dragPreviewDay: null,
-    dragPreviewStartMinutes: null,
-    dragPointerOffsetMinutes: 0,
   });
   const workingIndicatorState = createTaskTimerMutableStore({
     stack: initialState.workingIndicatorStack,
@@ -293,7 +284,6 @@ export function createTaskTimerRuntimeComposition(
       cloudSyncState,
       dashboardBusyState,
       modalState,
-      scheduleState,
       workingIndicatorState,
       appRuntimeState,
       taskDataState,

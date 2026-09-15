@@ -4,6 +4,16 @@ import type { TaskTimerImportExportContext } from "./context";
 import { createTaskTimerImportExport } from "./import-export";
 import { createTaskTimerSharedTask } from "./task-shared";
 
+const nativeExport = vi.hoisted(() => ({
+  isNativePlatform: vi.fn(() => false),
+  saveJson: vi.fn<(options: { filename: string; text: string }) => Promise<{ cancelled: boolean }>>()
+    .mockResolvedValue({ cancelled: false }),
+}));
+vi.mock("@capacitor/core", () => ({
+  Capacitor: { isNativePlatform: nativeExport.isNativePlatform, getPlatform: () => "android" },
+  registerPlugin: () => ({ saveJson: nativeExport.saveJson }),
+}));
+
 type ImportExportHarness = {
   api: ReturnType<typeof createTaskTimerImportExport>;
   getTasks: () => Task[];
@@ -347,5 +357,46 @@ describe("createTaskTimerImportExport task settings round-trip", () => {
       running: false,
       startMs: null,
     });
+  });
+});
+
+
+describe("native JSON export", () => {
+  beforeEach(() => {
+    installBrowserDownloadStubs();
+    vi.stubGlobal("alert", vi.fn());
+    nativeExport.isNativePlatform.mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    nativeExport.isNativePlatform.mockReturnValue(false);
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it("passes the task JSON and suggested filename to the native save picker", async () => {
+    const harness = makeHarness([makeConfiguredTask()]);
+    await harness.api.exportTask(0, { includeHistory: false });
+    expect(nativeExport.saveJson).toHaveBeenCalledOnce();
+    const [saved] = nativeExport.saveJson.mock.calls[0];
+    expect(saved.filename).toMatch(/\.json$/);
+    expect(JSON.parse(saved.text)).toMatchObject({ schema: "taskticka_backup_v1", tasks: [{ name: harness.getTasks()[0].name }], history: {} });
+    expect(harness.getDownloads()).toHaveLength(0);
+  });
+
+  it("treats cancelling the save picker as cancellation without a fallback download", async () => {
+    nativeExport.saveJson.mockResolvedValueOnce({ cancelled: true });
+    const harness = makeHarness([makeConfiguredTask()]);
+    expect(await harness.api.exportTask(0)).toBe(false);
+    expect(alert).not.toHaveBeenCalled();
+    expect(harness.getDownloads()).toHaveLength(0);
+  });
+
+  it("reports save failures instead of silently using a WebView download", async () => {
+    nativeExport.saveJson.mockRejectedValueOnce(new Error("Provider failed"));
+    const harness = makeHarness([makeConfiguredTask()]);
+    expect(await harness.api.exportTask(0)).toBe(false);
+    expect(alert).toHaveBeenCalledWith(expect.stringContaining("Could not save the JSON file"));
+    expect(harness.getDownloads()).toHaveLength(0);
   });
 });

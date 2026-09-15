@@ -1,4 +1,5 @@
 import type { HistoryByTaskId, Task } from "../lib/types";
+import { saveJsonFile } from "../lib/jsonFileExport";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import {
   getCurrentLocalDate,
@@ -20,18 +21,13 @@ function padTwo(value: number) {
   return String(Math.max(0, Math.floor(Number(value) || 0))).padStart(2, "0");
 }
 
-function downloadTextFile(filename: string, text: string) {
-  const blob = new Blob([text], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  window.setTimeout(() => {
-    URL.revokeObjectURL(url);
-    anchor.remove();
-  }, 0);
+async function downloadTextFile(filename: string, text: string) {
+  try {
+    return await saveJsonFile(filename, text);
+  } catch {
+    alert("Could not save the JSON file. Please try again and choose another location.");
+    return false;
+  }
 }
 
 function safeJsonParse(input: string) {
@@ -172,7 +168,7 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
     const now = new Date();
     const filename = `taskticka-backup-${now.getFullYear()}${padTwo(now.getMonth() + 1)}${padTwo(now.getDate())}-${padTwo(now.getHours())}${padTwo(now.getMinutes())}${padTwo(now.getSeconds())}.json`;
     const payload = makeBackupPayload();
-    downloadTextFile(filename, JSON.stringify(payload, null, 2));
+    return downloadTextFile(filename, JSON.stringify(payload, null, 2));
   }
 
   function exportTask(index: number, opts?: { includeHistory?: boolean }) {
@@ -187,7 +183,7 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
         .replace(/^-+|-+$/g, "") || "task";
     const filename = `tasktimer-export-${safeTaskName}${padTwo(now.getDate())}${padTwo(now.getMonth() + 1)}${now.getFullYear()}.json`;
     const payload = makeSingleTaskExportPayload(task, opts);
-    downloadTextFile(filename, JSON.stringify(payload, null, 2));
+    return downloadTextFile(filename, JSON.stringify(payload, null, 2));
   }
 
   function normalizeImportedTask(rawTask: any): Task {
@@ -448,12 +444,12 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
     ctx.closeOverlay(els.exportTaskOverlay as HTMLElement | null);
   }
 
-  function submitTaskExportModal() {
+  async function submitTaskExportModal() {
     const exportTaskIndex = ctx.getExportTaskIndex();
     if (exportTaskIndex == null) return;
     const includeHistory = canUseAdvancedBackup() && !!els.exportTaskIncludeHistory?.checked;
-    exportTask(exportTaskIndex, { includeHistory });
-    closeTaskExportModal();
+    const saved = await exportTask(exportTaskIndex, { includeHistory });
+    if (saved && ctx.getExportTaskIndex() === exportTaskIndex) closeTaskExportModal();
   }
 
   function maybeOpenImportFromQuery() {

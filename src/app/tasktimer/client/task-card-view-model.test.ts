@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Task } from "../lib/types";
-import { dispatchTaskCardAction, renderTaskCardHtml } from "./task-card-view-model";
+import { dispatchTaskCardAction, renderTaskCardHtml, resolveTaskCardScheduleLabel } from "./task-card-view-model";
 
 function baseTask(overrides: Partial<Task> = {}): Task {
   return {
@@ -48,6 +48,58 @@ function renderCard(overrides: Partial<Parameters<typeof renderTaskCardHtml>[0]>
     ...overrides,
   });
 }
+
+describe("task card scheduled start", () => {
+  const now = new Date(2026, 8, 16, 15);
+  const label = (overrides: Partial<Task>, date = now) => resolveTaskCardScheduleLabel(baseTask(overrides), date);
+
+  it("keeps today's time before and after it passes, using the day's own time", () => {
+    const schedule = { plannedStartByDay: { wed: "09:00", thu: "14:30" } };
+    expect(label(schedule, new Date(2026, 8, 16, 8))).toBe("Scheduled for 9:00 AM");
+    expect(label(schedule)).toBe("Scheduled for 9:00 AM");
+    expect(label(schedule, new Date(2026, 8, 17, 0))).toBe("Scheduled for 2:30 PM");
+  });
+
+  it("uses the next scheduled day across the week boundary", () => {
+    expect(label({ plannedStartByDay: { mon: "12:00" } })).toBe("Scheduled for Mon 12:00 PM");
+    expect(label({ plannedStartByDay: { thu: "00:00" } })).toBe("Scheduled for Thu 12:00 AM");
+  });
+
+  it("respects activation dates and the seven-day date formatting boundary", () => {
+    expect(label({ plannedStartDate: "2026-09-23", plannedStartByDay: { wed: "09:00" } })).toBe("Scheduled for Wed 9:00 AM");
+    expect(label({ plannedStartDate: "2026-09-24", plannedStartByDay: { wed: "09:00" } })).toBe("Scheduled for 30 Sep 2026, 9:00 AM");
+  });
+
+  it("keeps once-off dates instead of repeating them weekly", () => {
+    expect(label({ taskType: "once-off", plannedStartDate: "2026-09-15", plannedStartTime: "09:00" })).toBe("Scheduled for 15 Sep 2026, 9:00 AM");
+    expect(label({ taskType: "once-off", onceOffTargetDate: "2026-09-17", plannedStartByDay: { thu: "09:00" } })).toBe("Scheduled for Thu 9:00 AM");
+    expect(label({ taskType: "once-off", plannedStartDate: "2026-10-01", plannedStartTime: "09:00" })).toBe("Scheduled for 1 Oct 2026, 9:00 AM");
+  });
+
+  it.each([
+    {},
+    { plannedStartDate: "2026-09-17" },
+    { plannedStartTime: "25:00" },
+    { plannedStartDate: "2026-02-30", plannedStartTime: "09:00" },
+    { plannedStartOpenEnded: true, plannedStartByDay: { wed: "09:00" } },
+  ] as Partial<Task>[])("hides absent, invalid or open-ended schedules: %j", (schedule) => {
+    expect(label(schedule)).toBe("");
+    expect(renderCard({ task: baseTask(schedule), nowDate: now }).html).not.toContain('class="taskScheduledStart"');
+  });
+
+  it("renders below the name in every card state and reflects edits/removal", () => {
+    for (const state of [{}, { running: true }, { collapsed: true }]) {
+      const task = baseTask({ ...state, plannedStartTime: "09:00" });
+      const rendered = renderCard({ task, nowDate: now, isTimeGoalCompleted: true });
+      expect(rendered.html).toContain('title="Open focus mode">Write &lt;docs&gt;</div><div class="taskScheduledStart">Scheduled for 9:00 AM</div>');
+      expect(rendered.html).toContain('data-action="editName"');
+      task.plannedStartTime = "14:30";
+      expect(renderCard({ task, nowDate: now }).html).toContain("Scheduled for 2:30 PM");
+      task.plannedStartTime = null;
+      expect(renderCard({ task, nowDate: now }).html).not.toContain('class="taskScheduledStart"');
+    }
+  });
+});
 
 describe("task card view model", () => {
   function expectTaskMenuLabel(html: string, label: string) {
@@ -507,14 +559,6 @@ describe("task card view model", () => {
     expect(css).toContain("padding-right:0 !important;");
   });
 
-  it("keeps task cards hidden behind the active Schedule view", () => {
-    const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
-
-    expect(css).toMatch(
-      /body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks #taskList\{\n\s*display:none !important;\n\}/
-    );
-  });
-
   it("dims only non-running task cards when the Tasks list has an active running task", () => {
     const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
 
@@ -526,19 +570,19 @@ describe("task card view model", () => {
 
   it("defines mock-style static recess and interactive inner button styles", () => {
     const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
-    const launchRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionLaunch,[\s\S]*?body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionLaunch\{[\s\S]*?\n\}/)?.[0] ?? "";
-    const resumeRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionResume,[\s\S]*?body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionResume\{[\s\S]*?\n\}/)?.[0] ?? "";
-    const stopRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionStop,[\s\S]*?body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionStop\{[\s\S]*?\n\}/)?.[0] ?? "";
-    const resetRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionReset,[\s\S]*?body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionReset\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const launchRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionLaunch(?:,[^{]+)?\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const resumeRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionResume(?:,[^{]+)?\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const stopRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionStop(?:,[^{]+)?\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const resetRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionReset(?:,[^{]+)?\{[\s\S]*?\n\}/)?.[0] ?? "";
     const doneRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionDone\{[\s\S]*?\n\}/)?.[0] ?? "";
     const primaryActionRule =
       css.match(
-        /#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction,[\s\S]*?body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction\{[\s\S]*?\n\}/
+        /#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction(?:,[^{]+)?\{[\s\S]*?\n\}/
       )?.[0] ??
       "";
     const rewindGroupRule =
       css.match(
-        /#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.taskCheckpointRewindGroup,[\s\S]*?body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.taskCheckpointRewindGroup\{[\s\S]*?\n\}/
+        /#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.taskCheckpointRewindGroup(?:,[^{]+)?\{[\s\S]*?\n\}/
       )?.[0] ??
       "";
     const rewindButtonRule =
@@ -629,7 +673,6 @@ describe("task card view model", () => {
     expect(css).not.toContain(".taskPrimaryActionSecondary");
     expect(launchRule).toContain(".btn.taskPrimaryAction.taskPrimaryActionLaunch");
     expect(launchRule).toContain('body[data-app-page="tasks"]');
-    expect(launchRule).toContain('body[data-app-page="schedule"]');
     expect(launchRule).toContain("--task-primary-accent: #aeb6c0;");
     expect(launchRule).toContain("--task-primary-ring-top: #26272b;");
     expect(launchRule).toContain("--task-primary-ring: #1d1e21;");
@@ -641,7 +684,6 @@ describe("task card view model", () => {
     expect(launchRule).toContain("--task-primary-face-bottom: #0c0f13;");
     expect(resumeRule).toContain(".btn.taskPrimaryAction.taskPrimaryActionResume");
     expect(resumeRule).toContain('body[data-app-page="tasks"]');
-    expect(resumeRule).toContain('body[data-app-page="schedule"]');
     expect(resumeRule).toContain("--task-primary-accent: #ff7070;");
     expect(resumeRule).toContain("--task-primary-ring: #ff3b3b;");
     expect(resumeRule).toContain("--task-primary-label: #ffc7c7;");
@@ -650,7 +692,6 @@ describe("task card view model", () => {
     expect(resumeRule).toContain("--task-primary-face-bottom: #100708;");
     expect(stopRule).toContain(".btn.taskPrimaryAction.taskPrimaryActionStop");
     expect(stopRule).toContain('body[data-app-page="tasks"]');
-    expect(stopRule).toContain('body[data-app-page="schedule"]');
     expect(stopRule).toContain("--task-primary-accent: #9dfcff;");
     expect(stopRule).toContain("--task-primary-ring: #00e5ff;");
     expect(stopRule).toContain("--task-primary-label: #d7feff;");
@@ -659,7 +700,6 @@ describe("task card view model", () => {
     expect(stopRule).toContain("--task-primary-face-bottom: #090d10;");
     expect(resetRule).toContain(".btn.taskPrimaryAction.taskPrimaryActionReset");
     expect(resetRule).toContain('body[data-app-page="tasks"]');
-    expect(resetRule).toContain('body[data-app-page="schedule"]');
     expect(resetRule).toContain("--task-primary-accent: #ffd66b;");
     expect(resetRule).toContain("--task-primary-ring: #ffd23f;");
     expect(resetRule).toContain("--task-primary-label: #ffe9a8;");
@@ -705,12 +745,7 @@ describe("task card view model", () => {
     expect(css).toMatch(
       /@media \(max-width: 420px\)\{[\s\S]*?body\[data-app-page="tasks"\][\s\S]*?--task-primary-action-size: 90px;/
     );
-    expect(css).toMatch(
-      /body\[data-app-page="schedule"\][\s\S]*?\.btn\.taskPrimaryAction\{[\s\S]*?--task-primary-action-size: 96px;/
-    );
-    expect(css).toMatch(
-      /@media \(max-width: 420px\)\{[\s\S]*?body\[data-app-page="schedule"\][\s\S]*?--task-primary-action-size: 82px;/
-    );
+    expect(css).not.toContain('body[data-app-page="schedule"]');
     expect(css).not.toContain("isXpAwardImpact");
     expect(css).not.toContain("taskPrimaryActionXpImpact");
     expect(css).toContain("isXpAwardReceiving");

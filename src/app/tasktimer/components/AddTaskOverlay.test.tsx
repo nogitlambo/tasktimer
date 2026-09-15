@@ -9,12 +9,12 @@ function renderAddTaskOverlayMarkup() {
 }
 
 describe("AddTaskOverlay", () => {
-  it("renders a Brain Dump entry without replacing Cancel or Create", () => {
+  it("renders Cancel and Create without a Brain Dump button", () => {
     const html = renderAddTaskOverlayMarkup();
 
-    expect(html).toContain('href="/executive?view=brain-dump"');
-    expect(html).toContain('aria-label="Brain Dump"');
-    expect(html).toContain('data-brain-dump-entry="add-task-overlay"');
+    expect(html).not.toContain('href="/executive?view=brain-dump"');
+    expect(html).not.toContain('aria-label="Brain Dump"');
+    expect(html).not.toContain('data-brain-dump-entry="add-task-overlay"');
     expect(html).toContain('id="addTaskCancelBtn"');
     expect(html).toContain('id="addTaskConfirmBtn"');
   });

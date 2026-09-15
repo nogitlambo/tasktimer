@@ -41,6 +41,16 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain("Add Task");
   });
 
+  it("renders Tasks without the retired Schedule planner switch or hooks", () => {
+    expect(source).not.toContain("SchedulePageContent");
+    expect(source).not.toContain('id="openScheduleBtn"');
+    expect(source).not.toContain('id="closeScheduleBtn"');
+    expect(source).not.toContain('id="appPageSchedule"');
+    expect(source).not.toContain('data-screen-pill="schedule"');
+    expect(source).toContain('id="openAddTaskBtn"');
+    expect(source).toContain('id="taskOrderByMenu"');
+  });
+
   it("keeps Add/Edit task schedule fields visible without the schedule checkbox", () => {
     expect(addTaskOverlaySource).toContain('id="addTaskScheduleFields"');
     expect(editTaskOverlaySource).toContain('id="editTaskScheduleFields"');

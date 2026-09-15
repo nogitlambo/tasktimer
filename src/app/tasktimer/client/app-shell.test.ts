@@ -58,6 +58,22 @@ describe("createTaskTimerAppShell routing", () => {
     expect(createShell().getInitialAppPageFromLocation()).toBe("notes");
   });
 
+  it("normalizes the retired Schedule query and navigation token to Tasks", () => {
+    stubLocation("/tasklaunch", "?page=schedule");
+    const shell = createShell();
+
+    expect(shell.getInitialAppPageFromLocation()).toBe("tasks");
+    expect(shell.appPathForPage("tasks")).toBe("/tasklaunch");
+    expect(shell.parseAppPageFromToken("app:tasktimer|page=schedule")).toBe("tasks");
+    expect(
+      shell.normalizeNavStack([
+        "app:tasktimer|page=tasks",
+        "app:tasktimer|page=schedule",
+        "app:tasktimer|page=dashboard",
+      ])
+    ).toEqual(["app:tasktimer|page=tasks", "app:tasktimer|page=dashboard"]);
+  });
+
   it("does not treat /session-notes as a TaskTimer main app route", () => {
     const shell = createShell();
 

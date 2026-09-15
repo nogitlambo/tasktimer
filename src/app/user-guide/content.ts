@@ -19,7 +19,6 @@ export type UserGuideModule = {
 export const REQUIRED_USER_GUIDE_MODULE_IDS = [
   "navigation",
   "tasks",
-  "schedule",
   "dashboard",
   "history-manager",
   "friends",
@@ -85,7 +84,7 @@ export const USER_GUIDE_MODULES: UserGuideModule[] = [
         steps: [
           "Open Tasks.",
           "Use Add Task and enter a clear task name.",
-          "Choose Schedule this task only if you want it placed on the Schedule view.",
+          "Set a planned start date, time, and time goal for when you intend to work on it.",
           "Start the task when you begin working.",
           "Stop the task when the session ends so elapsed time and XP can be recorded.",
         ],
@@ -97,6 +96,15 @@ export const USER_GUIDE_MODULES: UserGuideModule[] = [
           "Choose Edit.",
           "Update the task name, milestone, checkpoint alerts, schedule details, or color.",
           "Save and confirm the task card still shows the expected setup.",
+        ],
+      },
+      {
+        title: "Plan and sort task starts",
+        steps: [
+          "Open Tasks and use Add Task or Edit on an existing task.",
+          "Choose the planned start, duration, and recurrence options.",
+          "Save the task.",
+          "Open the task ordering menu and choose Schedule/Time to list scheduled work first.",
         ],
       },
       {
@@ -129,55 +137,6 @@ export const USER_GUIDE_MODULES: UserGuideModule[] = [
     tips: [
       "Short, concrete task names make dashboard and history summaries easier to scan.",
       "Use manual entries when you forgot to start a timer but still want an accurate history.",
-    ],
-  },
-  {
-    id: "schedule",
-    title: "Schedule",
-    category: "Planning",
-    summary: "Plan tasks across the week using scheduled placement, optimal productivity days, and drag previews.",
-    routeHref: "/tasklaunch?page=schedule",
-    screenshot: "/user-guide/schedule.webp",
-    screenshotAlt: "Sanitized TaskLaunch Schedule screenshot showing a weekly task planning board.",
-    details: [
-      "Schedule gives Tasks a calendar-style planning view without replacing the single task list.",
-      "Tasks can be arranged by day and time, with visual placement previews while moving scheduled items.",
-      "Settings can highlight optimal productivity days so recurring planning fits your preferred work rhythm.",
-    ],
-    howTos: [
-      {
-        title: "Place a task on the schedule",
-        steps: [
-          "Open Tasks.",
-          "Choose Schedule from the Tasks and Schedule switch.",
-          "Drag the scheduled task to the intended day and time block.",
-          "Use the preview position to check timing before you release the task.",
-          "If a conflict appears, choose whether to change the placement or keep the current plan.",
-        ],
-      },
-      {
-        title: "Create a scheduled task",
-        steps: [
-          "Open Tasks.",
-          "Use Add Task.",
-          "Turn on Schedule this task.",
-          "Choose the planned start, duration, and recurrence options.",
-          "Save the task and open Schedule to confirm the block appears where expected.",
-        ],
-      },
-      {
-        title: "Sort Tasks by schedule",
-        steps: [
-          "Open Tasks.",
-          "Open the task ordering menu.",
-          "Choose Schedule/Time.",
-          "Use the ordered task list to start the next scheduled item.",
-        ],
-      },
-    ],
-    tips: [
-      "Use Schedule for intention, not punishment. Move work when your day changes.",
-      "Set optimal productivity days in Settings when you want scheduled work to prefer your strongest days.",
     ],
   },
   {

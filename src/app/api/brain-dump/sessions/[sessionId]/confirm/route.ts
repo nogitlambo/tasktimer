@@ -5,7 +5,11 @@ import { confirmBrainDumpReviewSession } from "@/app/brain-dump/lib/brainDumpTas
 import { createFirestoreBrainDumpWorkspaceRepository } from "@/app/brain-dump/lib/brainDumpWorkspaceStore";
 import { verifyFirebaseRequestUser } from "../../../../shared/auth";
 import { assertExecutiveFunctionAvailableForUser } from "@/app/api/shared/plusEntitlement";
-import { withAuthenticatedApiCors } from "../../../../shared/cors";
+import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../../../shared/cors";
+
+export function OPTIONS(req: Request) {
+  return authenticatedApiOptions(req);
+}
 
 type RouteContext = {
   params: Promise<{ sessionId?: string }>;

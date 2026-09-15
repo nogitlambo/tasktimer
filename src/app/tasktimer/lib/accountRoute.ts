@@ -26,6 +26,9 @@ export function getAccountBackRoute(referrer: string, currentHref: string) {
     if (!routePath) return ACCOUNT_BACK_FALLBACK_ROUTE;
 
     const params = referrerUrl.searchParams;
+    if (routePath === "/tasklaunch" && String(params.get("page") || "").toLowerCase() === "schedule") {
+      return "/tasklaunch";
+    }
     if (routePath === "/settings" && params.get("pane") === "general") {
       return ACCOUNT_BACK_FALLBACK_ROUTE;
     }

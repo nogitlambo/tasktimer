@@ -7,7 +7,7 @@ describe("account route helpers", () => {
 
   it("returns the same-origin TaskTimer referrer route", () => {
     expect(getAccountBackRoute("https://tasklaunch.test/tasklaunch?page=schedule", currentHref)).toBe(
-      "/tasklaunch?page=schedule"
+      "/tasklaunch"
     );
     expect(getAccountBackRoute("https://tasklaunch.test/dashboard/", currentHref)).toBe("/dashboard");
   });

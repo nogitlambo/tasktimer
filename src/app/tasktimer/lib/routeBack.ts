@@ -13,7 +13,11 @@ function normalizeKnownRoute(pathRaw: string) {
   normalizedPath = normalizedPath.replace(/\/index\.html$/i, "");
 
   if (/^\/$/.test(normalizedPath)) return `/${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
-  if (/\/tasklaunch$/i.test(normalizedPath)) return `/tasklaunch${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
+  if (/\/tasklaunch$/i.test(normalizedPath)) {
+    const params = new URLSearchParams(query);
+    if (String(params.get("page") || "").toLowerCase() === "schedule") return "/tasklaunch";
+    return `/tasklaunch${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
+  }
   if (/\/dashboard$/i.test(normalizedPath)) return `/dashboard${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   if (/\/notes$/i.test(normalizedPath)) return `/notes${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   if (/\/executive$/i.test(normalizedPath)) return `/executive${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
@@ -37,7 +41,6 @@ function pathForAppToken(token: string) {
   if (page === "friends") return "/friends";
   if (page === "leaderboard") return "/leaderboards";
   if (page === "history") return "/history-manager";
-  if (page === "schedule") return "/tasklaunch?page=schedule";
   return "/tasklaunch";
 }
 

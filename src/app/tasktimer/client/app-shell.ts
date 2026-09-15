@@ -16,14 +16,13 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   let userSelectedAppPageBeforeStartupResolution = false;
 
   function appPageOrder(page: AppPage) {
-    const normalized = page === "schedule" ? "tasks" : page;
-    if (normalized === "dashboard") return 0;
-    if (normalized === "notes") return 1;
-    if (normalized === "tasks") return 2;
-    if (normalized === "executive") return 3;
-    if (normalized === "friends") return 4;
-    if (normalized === "leaderboard") return 5;
-    if (normalized === "history") return 6;
+    if (page === "dashboard") return 0;
+    if (page === "notes") return 1;
+    if (page === "tasks") return 2;
+    if (page === "executive") return 3;
+    if (page === "friends") return 4;
+    if (page === "leaderboard") return 5;
+    if (page === "history") return 6;
     return -1;
   }
 
@@ -44,7 +43,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
 
   function requestSettledTasksPageRender() {
     const run = () => {
-      if (ctx.runtime.destroyed || (ctx.getCurrentAppPage() !== "tasks" && ctx.getCurrentAppPage() !== "schedule")) return;
+      if (ctx.runtime.destroyed || ctx.getCurrentAppPage() !== "tasks") return;
       ctx.render();
     };
     window.requestAnimationFrame(() => {
@@ -152,7 +151,6 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     if (page === "friends") return appRoute("/friends");
     if (page === "leaderboard") return appRoute("/leaderboards");
     if (page === "history") return appRoute("/history-manager");
-    if (page === "schedule") return appRoute("/tasklaunch?page=schedule");
     return appRoute("/tasklaunch");
   }
 
@@ -183,7 +181,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       const params = new URLSearchParams(window.location.search || "");
       const page = String(params.get("page") || "").toLowerCase();
       if (page === "dashboard") return "dashboard";
-      if (page === "schedule") return "schedule";
+      if (page === "schedule") return "tasks";
       if (page === "notes") return "notes";
       if (page === "executive") return "executive";
       if (page === "friends") return "friends";
@@ -253,16 +251,19 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     const m = String(token || "").match(/\|page=(tasks|schedule|dashboard|notes|executive|friends|leaderboard|history)$/);
     if (!m) return null;
     const p = m[1];
-    if (p === "tasks" || p === "schedule" || p === "dashboard" || p === "notes" || p === "executive" || p === "friends" || p === "leaderboard" || p === "history") return p;
+    if (p === "schedule") return "tasks";
+    if (p === "tasks" || p === "dashboard" || p === "notes" || p === "executive" || p === "friends" || p === "leaderboard" || p === "history") return p;
     return null;
   }
 
   function normalizeNavStack(raw: unknown): string[] {
     if (!Array.isArray(raw)) return [];
-    return raw
+    const normalized = raw
       .map((entry) => String(entry || "").trim())
+      .map((entry) => entry.replace(/\|page=schedule$/, "|page=tasks"))
       .filter((entry) => !!entry)
       .slice(-ctx.navStackMax);
+    return normalized.filter((entry, index) => index === 0 || entry !== normalized[index - 1]);
   }
 
   function loadNavStack(): string[] {
@@ -272,6 +273,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
         const parsed = JSON.parse(raw);
         const next = normalizeNavStack(parsed);
         ctx.setNavStackMemory(next.slice());
+        if (JSON.stringify(parsed) !== JSON.stringify(next)) saveNavStack(next);
         return next;
       }
     } catch {
@@ -307,7 +309,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   }
 
   function navigateToAppRoute(path: string) {
-    if (ctx.getCurrentAppPage() === "tasks" || ctx.getCurrentAppPage() === "schedule") {
+    if (ctx.getCurrentAppPage() === "tasks") {
       ctx.resetAllOpenHistoryChartSelections();
       ctx.closeUnpinnedOpenHistoryCharts();
     }
@@ -416,7 +418,6 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
 
     const targetPageMissing =
       (page === "tasks" && !hasTasksPage) ||
-      (page === "schedule" && !ctx.els.appPageSchedule) ||
       (page === "dashboard" && !hasDashboardPage) ||
       (page === "notes" && !hasSessionNotesPage) ||
       (page === "executive" && !hasExecutivePage) ||
@@ -437,11 +438,11 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
 
     applyAppPageSlideDirection(nextPage);
 
-    if ((ctx.getCurrentAppPage() === "tasks" || ctx.getCurrentAppPage() === "schedule") && nextPage !== "tasks" && nextPage !== "schedule") {
+    if (ctx.getCurrentAppPage() === "tasks" && nextPage !== "tasks") {
       ctx.resetAllOpenHistoryChartSelections();
       ctx.closeUnpinnedOpenHistoryCharts();
     }
-    if (nextPage !== "tasks" && nextPage !== "schedule") ctx.clearTaskFlipStates();
+    if (nextPage !== "tasks") ctx.clearTaskFlipStates();
     if (nextPage !== "dashboard" && ctx.getDashboardMenuFlipped()) {
       ctx.setDashboardMenuFlipped(false);
       ctx.syncDashboardMenuFlipUi();
@@ -450,34 +451,25 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     void trackScreen(nextPage === "history" ? "history_manager" : nextPage);
     if (opts?.pushNavStack) pushCurrentScreenToNavStack(nextPage);
     document.body.setAttribute("data-app-page", nextPage);
-    ctx.els.appPageTasks?.classList.toggle("appPageOn", nextPage === "tasks" || nextPage === "schedule");
-    ctx.els.appPageSchedule?.classList.toggle("isOpen", nextPage === "schedule");
-    ctx.els.appPageSchedule?.setAttribute("aria-hidden", nextPage === "schedule" ? "false" : "true");
+    ctx.els.appPageTasks?.classList.toggle("appPageOn", nextPage === "tasks");
     ctx.els.appPageDashboard?.classList.toggle("appPageOn", nextPage === "dashboard");
     ctx.els.appPageSessionNotes?.classList.toggle("appPageOn", nextPage === "notes");
     ctx.els.appPageExecutive?.classList.toggle("appPageOn", nextPage === "executive");
     ctx.els.appPageFriends?.classList.toggle("appPageOn", nextPage === "friends");
     ctx.els.appPageLeaderboard?.classList.toggle("appPageOn", nextPage === "leaderboard");
     ctx.els.appPageHistory?.classList.toggle("appPageOn", nextPage === "history");
-    ctx.els.footerTasksBtn?.classList.toggle("isOn", nextPage === "tasks" || nextPage === "schedule");
+    ctx.els.footerTasksBtn?.classList.toggle("isOn", nextPage === "tasks");
     ctx.els.footerDashboardBtn?.classList.toggle("isOn", nextPage === "dashboard");
     ctx.els.footerExecutiveBtn?.classList.toggle("isOn", nextPage === "executive");
     ctx.els.footerTest2Btn?.classList.toggle("isOn", nextPage === "friends");
     ctx.els.footerLeaderboardBtn?.classList.toggle("isOn", nextPage === "leaderboard");
-    ctx.els.commandCenterTasksBtn?.classList.toggle("isOn", nextPage === "tasks" || nextPage === "schedule");
+    ctx.els.commandCenterTasksBtn?.classList.toggle("isOn", nextPage === "tasks");
     ctx.els.commandCenterDashboardBtn?.classList.toggle("isOn", nextPage === "dashboard");
     ctx.els.commandCenterSessionNotesBtn?.classList.toggle("isOn", nextPage === "notes");
     ctx.els.commandCenterExecutiveBtn?.classList.toggle("isOn", nextPage === "executive");
     ctx.els.commandCenterGroupsBtn?.classList.toggle("isOn", nextPage === "friends");
     ctx.els.commandCenterLeaderboardBtn?.classList.toggle("isOn", nextPage === "leaderboard");
     ctx.els.commandCenterHistoryBtn?.classList.toggle("isOn", nextPage === "history");
-    document.querySelectorAll<HTMLElement>("[data-screen-pill]").forEach((pill) => {
-      const pillPage = String(pill.dataset.screenPill || "").trim();
-      const isOn = pillPage === nextPage;
-      pill.classList.toggle("isOn", isOn);
-      if (isOn) pill.setAttribute("aria-current", "page");
-      else pill.removeAttribute("aria-current");
-    });
     if (ctx.els.commandCenterDashboardBtn) {
       if (nextPage === "dashboard") ctx.els.commandCenterDashboardBtn.setAttribute("aria-current", "page");
       else ctx.els.commandCenterDashboardBtn.removeAttribute("aria-current");
@@ -513,24 +505,17 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     }
     ctx.closeFriendProfileModal();
     ctx.closeFriendRequestModal();
-    if (nextPage === "tasks" || nextPage === "schedule") {
-      const shouldSnapScheduleOnOpen =
-        nextPage === "schedule" && (previousPage !== "schedule" || opts?.syncUrl === "replace");
-      if (shouldSnapScheduleOnOpen) {
-        ctx.requestScheduleEntryScroll("open");
-      }
+    if (nextPage === "tasks") {
       ctx.render();
       requestSettledTasksPageRender();
-      if (nextPage === "tasks") {
+      window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => {
-          window.requestAnimationFrame(() => {
-            if (ctx.runtime.destroyed || (ctx.getCurrentAppPage() !== "tasks" && ctx.getCurrentAppPage() !== "schedule")) return;
-            for (const taskId of ctx.getOpenHistoryTaskIds()) {
-              ctx.renderHistory(taskId);
-            }
-          });
+          if (ctx.runtime.destroyed || ctx.getCurrentAppPage() !== "tasks") return;
+          for (const taskId of ctx.getOpenHistoryTaskIds()) {
+            ctx.renderHistory(taskId);
+          }
         });
-      }
+      });
       return;
     }
     if (nextPage === "dashboard" && !opts?.skipDashboardRender) {
@@ -730,18 +715,6 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
 
     ctx.on(document as any, "click", (e: any) => {
       if (e?.defaultPrevented) return;
-      const openScheduleBtn = e?.target?.closest?.("#openScheduleBtn");
-      if (openScheduleBtn) {
-        e?.preventDefault?.();
-        applyAppPage("schedule", { pushNavStack: true, syncUrl: "push" });
-        return;
-      }
-      const closeScheduleBtn = e?.target?.closest?.("#closeScheduleBtn");
-      if (closeScheduleBtn) {
-        e?.preventDefault?.();
-        applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" });
-        return;
-      }
       const badge = e?.target?.closest?.("#signedInHeaderBadge");
       if (!badge) return;
       e?.preventDefault?.();

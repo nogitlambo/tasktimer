@@ -141,7 +141,8 @@
   backdrop-filter: none;
 }
 
-#signOutConfirmOverlay{
+#signOutConfirmOverlay,
+#rankLadderOverlay{
   z-index: 1400;
 }
 
@@ -703,7 +704,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay{
     align-items: flex-end !important;
     padding: 0 !important;
-    z-index: 1200 !important;
+    z-index: 1400 !important;
   }
 
 body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveModal{
@@ -1039,11 +1040,6 @@ body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntry
 #addTaskOverlay .editTaskModalFrame,
 #addTaskOverlay .addTaskFooterBtns{
   transform: translateX(-10px);
-}
-
-#addTaskOverlay .addTaskBrainDumpEntry{
-  min-height:44px;
-  text-decoration:none;
 }
 
 #addTaskOverlay .editTaskColorPopover{
@@ -9679,7 +9675,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #rankLadderOverlay{
     align-items: flex-end !important;
     padding: 0 !important;
-    z-index: 1200 !important;
+    z-index: 1400 !important;
   }
 
   #rankLadderOverlay .modal{
@@ -14717,6 +14713,8 @@ body[data-tasktimer-native-runtime="true"] #signOutConfirmOverlay.signOutPrimiti
 }
 
 body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay{
+  /* Above the mobile footer sheet (1300), including its expanded backdrop. */
+  z-index: 1400 !important;
   align-items: flex-end !important;
   justify-content: center !important;
   padding:

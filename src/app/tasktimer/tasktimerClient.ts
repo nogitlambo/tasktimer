@@ -90,15 +90,6 @@ import {
   DEFAULT_MODE_COLORS,
 } from "./client/state";
 import {
-  createTaskTimerScheduleRuntime,
-  formatScheduleDayLabel,
-  isScheduleMobileLayout,
-  isScheduleRenderableTask,
-  isRecurringDailyScheduleTask,
-  normalizeScheduleDay,
-  SCHEDULE_MINUTE_PX,
-} from "./client/schedule-runtime";
-import {
   broadcastTaskTimerCheckpointAlertMute,
   getCurrentTaskTimerEmail,
   getCurrentTaskTimerUserIsAnonymous,
@@ -278,7 +269,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       cloudSyncState,
       dashboardBusyState,
       modalState,
-      scheduleState,
       workingIndicatorState,
       appRuntimeState,
       taskDataState,
@@ -435,13 +425,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       locationProtocol: window.location.protocol || "",
     },
   };
-  const scheduleRuntime = createTaskTimerScheduleRuntime({
-    state: scheduleState,
-    getTasks: () => taskDataState.get("tasks"),
-    getOptimalProductivityDays: () => preferencesState.get("optimalProductivityDays"),
-    save: () => runtimeActions.save(),
-    render: () => render(),
-  });
   const rewardSessionBridge = createTaskTimerRewardSessionBridge({
     getRewardsHistoryApi: () => rewardsHistoryApi,
     getTaskElapsedMs: (task) => getTaskElapsedMs(task),
@@ -550,10 +533,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let escapeHtmlUI: (str: unknown) => string = (str) => String(str ?? "");
   let getElapsedMs: (task: Task) => number = () => 0;
   let getTaskElapsedMs: (task: Task) => number = () => 0;
-  let renderSchedulePage = () => {};
-  let requestScheduleEntryScroll = (mode?: "open" | "firstScheduled") => {
-    void mode;
-  };
   let render = () => {};
   let resetAllOpenHistoryChartSelections = () => {};
   let closeUnpinnedOpenHistoryCharts = () => {};
@@ -1452,7 +1431,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       closeFriendProfileModal,
       closeFriendRequestModal,
       openHistoryManager: () => openHistoryManagerFromShell(),
-      requestScheduleEntryScroll: (mode) => requestScheduleEntryScroll(mode),
       render: () => render(),
       renderHistory: (taskId) => renderHistory(taskId),
       applyDashboardCardSizes: () => applyDashboardCardSizesApi(),
@@ -1526,14 +1504,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   const runtimeCoordinator = createTaskTimerRuntimeCoordinator({
       els,
-      scheduleState,
-      scheduleRuntime,
-      escapeHtmlUI,
-      getWeekStarting: () => preferencesState.get("weekStarting"),
-      getOptimalProductivityStartTime: () => preferencesState.get("optimalProductivityStartTime"),
-      getOptimalProductivityEndTime: () => preferencesState.get("optimalProductivityEndTime"),
-      getOptimalProductivityDays: () => preferencesState.get("optimalProductivityDays"),
-      getFullColorTaskCardsEnabled: () => preferencesState.get("fullColorTaskCardsEnabled") === true,
       renderTasksPage,
       getHistoryByTaskId: taskCollectionBindings.getHistoryByTaskId,
       getLiveSessionsByTaskId: taskCollectionBindings.getLiveSessionsByTaskId,
@@ -1571,8 +1541,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   escapeHtmlUI = runtimeFacade.escapeHtmlUI;
   getElapsedMs = runtimeFacade.getElapsedMs;
   getTaskElapsedMs = runtimeFacade.getTaskElapsedMs;
-  renderSchedulePage = runtimeFacade.renderSchedulePage;
-  requestScheduleEntryScroll = runtimeFacade.requestScheduleEntryScroll;
   render = () => {
     runtimeFacade.render();
     plannedStartActivationScheduler?.sync();
@@ -1990,43 +1958,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       documentRef: document,
       windowRef: window,
       planChangedEvent: TASKTIMER_PLAN_CHANGED_EVENT,
-      scheduleMinutePx: SCHEDULE_MINUTE_PX,
-      isScheduleMobileLayout,
-      normalizeScheduleDay,
-      tasks: taskCollectionBindings.getTasks,
-      isScheduleRenderableTask,
-      isRecurringDailyScheduleTask,
-      formatScheduleDayLabel,
-      save: () => runtimeActions.save(),
       render,
-      renderSchedulePage,
-      setScheduleSelectedDay: (day) => {
-        scheduleState.set("selectedDay", day);
-      },
-      setScheduleDragTaskId: (taskId) => {
-        scheduleState.set("dragTaskId", taskId);
-      },
-      setScheduleDragSourceDay: (day) => {
-        scheduleState.set("dragSourceDay", day);
-      },
-      getScheduleDragTaskId: () => scheduleState.get("dragTaskId"),
-      getScheduleDragSourceDay: () => scheduleState.get("dragSourceDay"),
-      clearScheduleDragPreview: () => scheduleRuntime.clearDragPreview(),
-      setScheduleDragPointerOffsetMinutes: (value) => {
-        scheduleState.set("dragPointerOffsetMinutes", value);
-      },
-      resolveScheduleDropStartMinutes: (dropZone, clientY) => scheduleRuntime.resolveDropStartMinutes(dropZone, clientY),
-      getScheduleDragPreviewDay: () => scheduleState.get("dragPreviewDay"),
-      getScheduleDragPreviewStartMinutes: () => scheduleState.get("dragPreviewStartMinutes"),
-      setScheduleDragPreview: (day, startMinutes) => {
-        if (!day) return;
-        scheduleState.set("dragPreviewDay", day);
-        scheduleState.set("dragPreviewStartMinutes", startMinutes);
-      },
       currentAppPage: () => appRuntimeState.get("currentAppPage"),
-      moveTaskOnSchedule: (taskId, day, startMinutes, sourceDay) => scheduleRuntime.moveTaskOnSchedule(taskId, day, startMinutes, sourceDay),
-      confirm: overlayBindings.confirm,
-      toggleTaskScheduleFlexible: (taskId) => scheduleRuntime.toggleTaskScheduleFlexible(taskId),
       openOverlay,
       getTaskView: () => "tile",
       hasTaskList: () => !!els.taskList,

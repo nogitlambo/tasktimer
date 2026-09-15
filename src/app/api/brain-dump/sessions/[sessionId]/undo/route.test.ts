@@ -39,6 +39,7 @@ vi.mock("@/app/brain-dump/lib/brainDumpWorkspaceStore", () => ({
 }));
 
 import { POST } from "./route";
+import * as route from "./route";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -141,5 +142,23 @@ describe("POST /api/brain-dump/sessions/[sessionId]/undo", () => {
     expect(response.status).toBe(404);
     expect(payload).toEqual({ error: "Brain Dump session was not found.", code: "brain-dump/not-found" });
     expect(mocks.workspace.deleteTasks).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("native session CORS preflight", () => {
+  it.each(["https://localhost", "capacitor://localhost"])("allows authenticated requests from %s", (origin) => {
+    vi.clearAllMocks();
+    const options = (route as unknown as { OPTIONS: (req: Request) => Response }).OPTIONS;
+    expect(options).toBeTypeOf("function");
+    const response = options(new Request("https://tasklaunch.app/api/brain-dump/sessions/session-1/undo/", {
+      method: "OPTIONS",
+      headers: { origin, "access-control-request-method": "POST", "access-control-request-headers": "content-type,x-firebase-auth" },
+    }));
+    expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-origin")).toBe(origin);
+    expect(response.headers.get("access-control-allow-methods")).toContain("POST");
+    expect(response.headers.get("access-control-allow-headers")).toContain("X-Firebase-Auth");
+    expect(mocks.verifyFirebaseRequestUser).not.toHaveBeenCalled();
   });
 });

@@ -15,7 +15,7 @@ import {
 } from "../lib/rewards";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 
-type MainAppPage = "tasks" | "schedule" | "dashboard" | "notes" | "executive" | "friends" | "leaderboard" | "history";
+type MainAppPage = "tasks" | "dashboard" | "notes" | "executive" | "friends" | "leaderboard" | "history";
 
 type TaskTimerAppFrameProps = {
   activePage: MainAppPage;
@@ -153,7 +153,6 @@ export default function TaskTimerAppFrame({
   const initialAuthBusyHeading = isLeaderboardPage ? "Loading leaderboard standings" : "Loading your workspace";
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
   const [activeDesktopInsigniaUpgradeSeq, setActiveDesktopInsigniaUpgradeSeq] = useState<number | null>(null);
-  const railPage = activePage === "schedule" ? "tasks" : activePage;
   const currentRankIndex = useMemo(
     () => Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === currentRankId)),
     [currentRankId]
@@ -266,7 +265,7 @@ export default function TaskTimerAppFrame({
       </div>
       {mobileToolbar ? <div className="taskLaunchMobileToolbar">{mobileToolbar}</div> : null}
       <div className="desktopAppShell">
-        <DesktopAppRail activePage={railPage} useClientNavButtons={useClientNavButtons} showMobileFooter={false} />
+        <DesktopAppRail activePage={activePage} useClientNavButtons={useClientNavButtons} showMobileFooter={false} />
         <div className="desktopAppMain">
           <div className="appShellHeader">
             <div className="appShellHeaderSpacer" aria-hidden="true" />
@@ -362,7 +361,7 @@ export default function TaskTimerAppFrame({
           onTestRankPromotion?.(rankId);
         }}
       />
-      <DesktopAppRail activePage={railPage} useClientNavButtons={useClientNavButtons} showDesktopRail={false} showMobileFooter />
+      <DesktopAppRail activePage={activePage} useClientNavButtons={useClientNavButtons} showDesktopRail={false} showMobileFooter />
       <ModuleIntroTour />
       <div
         className={`initialAuthBusyOverlay${isLeaderboardPage ? "" : " isOn"}`}

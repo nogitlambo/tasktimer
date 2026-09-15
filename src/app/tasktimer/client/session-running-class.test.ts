@@ -455,6 +455,7 @@ function createCompletionHarness(options?: {
 
   return {
     session,
+    render,
     completedTask,
     liveTaskNode,
     checkpointFlashUntilMsByTaskId,
@@ -550,6 +551,26 @@ function runAllScheduledTimeoutsByDelay(harness: ReturnType<typeof createComplet
 describe("task timer session tick", () => {
   beforeEach(() => {
     clearXpAwardButtonLabelOverride("task-1");
+  });
+
+  it("refreshes card dates once at midnight and after resuming on a later day", () => {
+    const clock = vi.spyOn(Date, "now").mockReturnValue(new Date(2026, 8, 16, 23, 59).getTime());
+    const harness = createCompletionHarness({ taskOverrides: { running: false, accumulatedMs: 0, timeGoalEnabled: false } });
+    try {
+      harness.session.tick();
+      harness.render.mockClear();
+      clock.mockReturnValue(new Date(2026, 8, 17, 0, 0).getTime());
+      harness.session.tick();
+      expect(harness.render).toHaveBeenCalledTimes(1);
+      harness.session.tick();
+      expect(harness.render).toHaveBeenCalledTimes(1);
+      clock.mockReturnValue(new Date(2026, 8, 19, 10).getTime());
+      harness.session.tick();
+      expect(harness.render).toHaveBeenCalledTimes(2);
+    } finally {
+      harness.restoreWindow();
+      clock.mockRestore();
+    }
   });
 
   it("plays the once-only checkpoint alert once", () => {

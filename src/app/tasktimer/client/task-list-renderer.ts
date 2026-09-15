@@ -153,11 +153,11 @@ function renderTaskTypeSectionHeaderHtml(title: string, emptyMessage: string, is
 
 export function createTaskListRenderer(options: TaskListRendererOptions) {
   function renderTasksPage() {
-    const taskListEl = options.taskListEl;
-    if (!taskListEl) return;
+    if (!options.taskListEl) return;
+    const taskListRootEl = options.taskListEl as HTMLElement;
 
     const tasks = options.getTasks();
-    taskListEl.classList.toggle("hasRunningTask", tasks.some((task) => !!task?.running));
+    taskListRootEl.classList.toggle("hasRunningTask", tasks.some((task) => !!task?.running));
     const taskOrderBy = options.getTaskOrderBy();
     const displayedTasks = buildDisplayedTasks(tasks, taskOrderBy);
     const completedOnceOffTasks = displayedTasks
@@ -168,12 +168,12 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
     const onceOffTasks = activeTasks.filter((task) => getTaskType(task) === "once-off");
     const onceOffSectionTasks = onceOffTasks.concat(completedOnceOffTasks);
     const sourceIndexByTask = new Map(tasks.map((task, index) => [task, index] as const));
-    taskListEl.innerHTML = "";
+    taskListRootEl.innerHTML = "";
     const useTileColumns = options.getTaskView() === "tile";
     const tileColumnCount = useTileColumns ? options.getTileColumnCount() : 1;
     options.setCurrentTileColumnCount(tileColumnCount);
-    if (useTileColumns) taskListEl.setAttribute("data-tile-columns", String(tileColumnCount));
-    else taskListEl.removeAttribute("data-tile-columns");
+    if (useTileColumns) taskListRootEl.setAttribute("data-tile-columns", String(tileColumnCount));
+    else taskListRootEl.removeAttribute("data-tile-columns");
 
     const openHistoryTaskIds = options.getOpenHistoryTaskIds();
     const pinnedHistoryTaskIds = options.getPinnedHistoryTaskIds();
@@ -196,7 +196,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
     }
 
     if (!displayedTasks.length) {
-      taskListEl.innerHTML = renderEmptyTaskStateHtml();
+      taskListRootEl.innerHTML = renderEmptyTaskStateHtml();
       if (options.getCurrentAppPage() === "dashboard") options.renderDashboardWidgets();
       options.syncTimeGoalModalWithTaskState();
       options.maybeRestorePendingTimeGoalFlow();
@@ -220,7 +220,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       cardsEl.dataset.taskTypeCards = taskType;
       if (useTileColumns) cardsEl.setAttribute("data-tile-columns", String(tileColumnCount));
       sectionEl.appendChild(cardsEl);
-      taskListEl.appendChild(sectionEl);
+      taskListRootEl.appendChild(sectionEl);
 
       const columnEls: HTMLElement[] = [];
       if (useTileColumns) {

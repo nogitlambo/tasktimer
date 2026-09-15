@@ -38,7 +38,6 @@ import HistoryEntryNoteOverlay from "./components/HistoryEntryNoteOverlay";
 import InfoOverlays from "./components/InfoOverlays";
 import RankPromotionOverlay from "./components/RankPromotionOverlay";
 import RankThumbnail from "./components/RankThumbnail";
-import SchedulePageContent from "./components/SchedulePageContent";
 import TaskManualEntryOverlay from "./components/TaskManualEntryOverlay";
 import TaskClarificationOverlay from "./components/TaskClarificationOverlay";
 import TaskLaunchOnboarding from "./components/TaskLaunchOnboarding";
@@ -2206,34 +2205,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         xpAwardFx={xpAwardFx}
       >
         <div className="appPages">
-          <section className={`appPage appPageTasks${initialPage === "tasks" || initialPage === "schedule" ? " appPageOn" : ""}`} id="appPageTasks" aria-label="Tasks page">
+          <section className={`appPage appPageTasks${initialPage === "tasks" ? " appPageOn" : ""}`} id="appPageTasks" aria-label="Tasks page">
             <div className="tasksTopRow">
               <div className="taskPageHeaderActions">
-                <div className="taskScreenPillGroup" role="tablist" aria-label="Tasks and schedule view switch">
-                  <button
-                    className="iconBtn taskScreenPill taskScreenHeaderBtn isOn"
-                    id="closeScheduleBtn"
-                    data-screen-pill="tasks"
-                    aria-current="page"
-                    aria-label="Tasks"
-                    title="Tasks"
-                    role="tab"
-                    type="button"
-                  >
-                    <span className="taskScreenTabLabel">Tasks</span>
-                  </button>
-                  <button
-                    className="iconBtn taskScreenPill taskScreenHeaderBtn"
-                    id="openScheduleBtn"
-                    data-screen-pill="schedule"
-                    aria-label="Schedule"
-                    title="Schedule"
-                    role="tab"
-                    type="button"
-                  >
-                    <span className="taskScreenTabLabel">Schedule</span>
-                  </button>
-                </div>
                 <button
                   className="btn btn-accent small pageHeaderAccentBtn"
                   id="openAddTaskBtn"
@@ -2276,7 +2250,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
               <div className="list" id="taskList" />
               <HistoryScreen />
               <FocusModeScreen />
-              <SchedulePageContent active={initialPage === "schedule"} />
             </section>
           </section>
 

@@ -1448,12 +1448,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
     box-sizing: border-box;
   }
 
-  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks{
-    padding-left: 18px;
-    padding-right: 18px;
-    box-sizing: border-box;
-  }
-
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard{
     padding-left: 0;
     padding-right: 0;

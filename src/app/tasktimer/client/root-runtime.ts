@@ -1,10 +1,6 @@
-import type { Task } from "../lib/types";
-import type { TaskTimerConfirmOptions } from "./context";
 import type { TaskTimerElements } from "./elements";
-import type { MoveTaskScheduleResult } from "./schedule-runtime";
 import {
   registerTaskTimerDashboardShellEvents,
-  registerTaskTimerScheduleEvents,
   registerTaskTimerWindowRuntimeEvents,
 } from "./global-events";
 import type { TaskTimerRuntime } from "./runtime";
@@ -19,9 +15,6 @@ import { registerInteractionHaptics } from "./interaction-haptics";
 import type { InteractionHapticsIntensity } from "../lib/interactionHapticsIntensity";
 import type { AppPage } from "./types";
 
-type ScheduleDay = Task["plannedStartDay"];
-type NonNullScheduleDay = NonNullable<ScheduleDay>;
-
 type RegisterRootEventsOptions = {
   on: TaskTimerRuntime["on"];
   runtime: TaskTimerRuntime;
@@ -29,31 +22,8 @@ type RegisterRootEventsOptions = {
   documentRef: Document;
   windowRef: Window;
   planChangedEvent: string;
-  scheduleMinutePx: number;
-  isScheduleMobileLayout: () => boolean;
-  normalizeScheduleDay: (value: unknown) => ScheduleDay;
-  tasks: () => Task[];
-  isScheduleRenderableTask: (task: Task) => boolean;
-  isRecurringDailyScheduleTask: (task: Task) => boolean;
-  formatScheduleDayLabel: (day: NonNullScheduleDay) => string;
-  save: () => void;
   render: () => void;
-  renderSchedulePage: () => void;
-  setScheduleSelectedDay: (day: NonNullScheduleDay) => void;
-  setScheduleDragTaskId: (taskId: string | null) => void;
-  setScheduleDragSourceDay: (day: NonNullScheduleDay | null) => void;
-  getScheduleDragTaskId: () => string | null;
-  getScheduleDragSourceDay: () => NonNullScheduleDay | null;
-  clearScheduleDragPreview: () => void;
-  setScheduleDragPointerOffsetMinutes: (value: number) => void;
-  resolveScheduleDropStartMinutes: (dropZone: HTMLElement, clientY: unknown) => number;
-  getScheduleDragPreviewDay: () => NonNullScheduleDay | null;
-  getScheduleDragPreviewStartMinutes: () => number | null;
-  setScheduleDragPreview: (day: NonNullScheduleDay, startMinutes: number) => void;
   currentAppPage: () => AppPage;
-  moveTaskOnSchedule: (taskId: string, day: NonNullScheduleDay, startMinutes: number, sourceDay?: NonNullScheduleDay | null) => MoveTaskScheduleResult;
-  confirm: (title: string, text: string, opts?: TaskTimerConfirmOptions) => void;
-  toggleTaskScheduleFlexible: (taskId: string) => { status: "missing" | "noop" | "updated"; flexible?: boolean };
   openOverlay: (overlay: HTMLElement | null) => void;
   getTaskView: () => "list" | "tile";
   hasTaskList: () => boolean;
@@ -145,36 +115,6 @@ export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) 
 
   options.registerAppShellEvents();
 
-  registerTaskTimerScheduleEvents({
-    on,
-    documentRef,
-    scheduleMinutePx: options.scheduleMinutePx,
-    isScheduleMobileLayout: options.isScheduleMobileLayout,
-    normalizeScheduleDay: options.normalizeScheduleDay,
-    tasks: options.tasks,
-    isScheduleRenderableTask: options.isScheduleRenderableTask,
-    isRecurringDailyScheduleTask: options.isRecurringDailyScheduleTask,
-    formatScheduleDayLabel: options.formatScheduleDayLabel,
-    save: options.save,
-    render: options.render,
-    setScheduleSelectedDay: options.setScheduleSelectedDay,
-    renderSchedulePage: options.renderSchedulePage,
-    setScheduleDragTaskId: options.setScheduleDragTaskId,
-    setScheduleDragSourceDay: options.setScheduleDragSourceDay,
-    getScheduleDragTaskId: options.getScheduleDragTaskId,
-    getScheduleDragSourceDay: options.getScheduleDragSourceDay,
-    clearScheduleDragPreview: options.clearScheduleDragPreview,
-    setScheduleDragPointerOffsetMinutes: options.setScheduleDragPointerOffsetMinutes,
-    resolveScheduleDropStartMinutes: options.resolveScheduleDropStartMinutes,
-    getScheduleDragPreviewDay: options.getScheduleDragPreviewDay,
-    getScheduleDragPreviewStartMinutes: options.getScheduleDragPreviewStartMinutes,
-    setScheduleDragPreview: options.setScheduleDragPreview,
-    currentAppPage: options.currentAppPage,
-    moveTaskOnSchedule: options.moveTaskOnSchedule,
-    confirm: options.confirm,
-    toggleTaskScheduleFlexible: options.toggleTaskScheduleFlexible,
-  });
-
   on(els.rewardsInfoOpenBtn, "click", (event: unknown) => {
     const e = event as { preventDefault?: () => void };
     e.preventDefault?.();
@@ -182,7 +122,6 @@ export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) 
   });
 
   on(windowRef, "resize", () => {
-    if (options.currentAppPage() === "schedule") options.renderSchedulePage();
     if (options.getTaskView() !== "tile" || !options.hasTaskList()) return;
     const nextCount = options.getTileColumnCount();
     if (nextCount !== options.getCurrentTileColumnCount()) options.render();

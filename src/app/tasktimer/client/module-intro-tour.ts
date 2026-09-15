@@ -8,7 +8,7 @@ export const TASKTIMER_MODULE_INTRO_TOUR_START_EVENT = "tasktimer:moduleIntroTou
 export const TASKTIMER_MODULE_INTRO_TOUR_APPLY_PAGE_EVENT = "tasktimer:moduleIntroTourApplyPage";
 export const MODULE_INTRO_TOUR_VERSION = 1;
 
-export type ModuleIntroTourPage = Exclude<AppPage, "schedule">;
+export type ModuleIntroTourPage = AppPage;
 
 export type ModuleIntroTourStep = {
   page: ModuleIntroTourPage;

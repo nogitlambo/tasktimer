@@ -600,7 +600,6 @@ type CreateAppShellOptionsArgs = {
   closeFriendProfileModal: () => void;
   closeFriendRequestModal: () => void;
   openHistoryManager: () => void;
-  requestScheduleEntryScroll: (mode?: "open" | "firstScheduled") => void;
   render: () => void;
   renderHistory: (taskId: string) => void;
   applyDashboardCardSizes: () => void;
@@ -1548,7 +1547,6 @@ export function createTaskTimerAppShellContext(args: CreateAppShellOptionsArgs):
     closeFriendProfileModal: args.closeFriendProfileModal,
     closeFriendRequestModal: args.closeFriendRequestModal,
     openHistoryManager: args.openHistoryManager,
-    requestScheduleEntryScroll: args.requestScheduleEntryScroll,
     render: args.render,
     renderHistory: args.renderHistory,
     applyDashboardCardSizes: args.applyDashboardCardSizes,

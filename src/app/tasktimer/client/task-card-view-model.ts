@@ -1,5 +1,14 @@
 import type { Milestone, Task } from "../lib/types";
 import { normalizeTaskColor } from "../lib/taskColors";
+import {
+  formatLocalDate,
+  formatScheduleDayLabel,
+  formatScheduleSlotTime,
+  getLocalScheduleDay,
+  getTaskPlannedStartByDay,
+  normalizeLocalDateValue,
+  parseScheduleTimeMinutes,
+} from "../lib/schedule-placement";
 import { formatCompactCheckpointDuration } from "./checkpoint-duration-format";
 
 type TaskProgressMarkerModel =
@@ -58,6 +67,7 @@ type TaskPrimaryActionOptions = {
 };
 
 type RenderTaskCardOptions = {
+  nowDate?: Date;
   task: Task;
   taskId: string;
   elapsedMs: number;
@@ -451,6 +461,40 @@ function renderTaskHistoryInlineHtml({
         `;
 }
 
+export function resolveTaskCardScheduleLabel(task: Task, nowDate = new Date()): string {
+  if (task.plannedStartOpenEnded) return "";
+  const byDay = getTaskPlannedStartByDay(task);
+  const rawDate = task.plannedStartDate || (task.taskType === "once-off" ? task.onceOffTargetDate : null);
+  const plannedDate = normalizeLocalDateValue(rawDate);
+  if (rawDate && !plannedDate) return "";
+  const today = formatLocalDate(nowDate);
+  let date = new Date(`${today}T12:00:00`);
+  let minutes: number | null = null;
+  if (task.taskType === "once-off" && plannedDate) {
+    date = new Date(`${plannedDate}T12:00:00`);
+    minutes = parseScheduleTimeMinutes(task.plannedStartTime) ?? parseScheduleTimeMinutes(byDay?.[getLocalScheduleDay(date)]);
+  } else {
+    if (plannedDate && plannedDate > today) date = new Date(`${plannedDate}T12:00:00`);
+    for (let offset = 0; offset < 7; offset += 1) {
+      minutes = parseScheduleTimeMinutes(byDay?.[getLocalScheduleDay(date)]);
+      if (minutes != null) break;
+      date.setDate(date.getDate() + 1);
+    }
+  }
+  if (minutes == null) return "";
+  const dateKey = formatLocalDate(date);
+  const weekAhead = new Date(`${today}T12:00:00`);
+  weekAhead.setDate(weekAhead.getDate() + 7);
+  let prefix = "";
+  if (dateKey < today || dateKey > formatLocalDate(weekAhead)) {
+    const month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][date.getMonth()];
+    prefix = `${date.getDate()} ${month} ${date.getFullYear()}, `;
+  } else if (dateKey !== today) {
+    prefix = `${formatScheduleDayLabel(getLocalScheduleDay(date))} `;
+  }
+  return `Scheduled for ${prefix}${formatScheduleSlotTime(minutes)}`;
+}
+
 export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTaskCard {
   const {
     task,
@@ -484,6 +528,8 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     formatMainTaskElapsedHtml,
   } = options;
   const elapsedSec = elapsedMs / 1000;
+  const scheduleLabel = resolveTaskCardScheduleLabel(task, options.nowDate);
+  const scheduleHtml = scheduleLabel ? `<div class="taskScheduledStart">${escapeHtml(scheduleLabel)}</div>` : "";
   const hasCheckpointRepeatForTask = !!checkpointRepeatActiveTaskId && String(checkpointRepeatActiveTaskId) === taskId;
   const className =
     "task" +
@@ -613,7 +659,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
             ${taskColorPillHtml}
             <button class="iconBtn taskFlipBtn" type="button" data-task-flip="open" title="More actions" aria-label="More actions" aria-expanded="false">&#9776;</button>
             <div class="row">
-              <div class="taskHeadMain"><div class="name" data-action="editName" title="Open focus mode">${escapeHtml(task.name)}</div></div>
+              <div class="taskHeadMain"><div class="name" data-action="editName" title="Open focus mode">${escapeHtml(task.name)}</div>${scheduleHtml}</div>
               <div class="time" data-action="focus" title="Open focus mode">${formatMainTaskElapsedHtml(elapsedMs, !!task.running)}</div>
               <div class="actions">
                 ${startStopHtml}

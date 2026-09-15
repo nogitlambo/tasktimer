@@ -183,6 +183,7 @@ This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `d
 - `CHECKPOINT_ALERT_VIBRATION_KEY = `${storageKey}:checkpointAlertVibrationEnabled``
 - `DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY = `${storageKey}:dashboardPreviousWeekVisible``
 - `DYNAMIC_COLORS_KEY = `${storageKey}:dynamicColorsEnabled``
+- `EXECUTIVE_FUNCTION_ENABLED_KEY = `${storageKey}:executiveFunctionEnabled``
 - `FOCUS_SESSION_NOTES_KEY = `${storageKey}:focusSessionNotes``
 - `FULL_COLOR_TASK_CARDS_KEY = `${storageKey}:fullColorTaskCardsEnabled``
 - `INTERACTION_CLICK_SOUND_KEY = `${storageKey}:interactionClickSoundEnabled``
@@ -204,6 +205,7 @@ This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `d
 
 ### Data hooks (derived from client/components)
 - `data-action="archive"`
+- `data-action="clarify"`
 - `data-action="copyCloudSyncLogId"`
 - `data-action="delete"`
 - `data-action="dismissCloudSyncNotice"`
