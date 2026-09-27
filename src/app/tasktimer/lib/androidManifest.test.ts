@@ -21,6 +21,12 @@ describe("Android push notification manifest", () => {
     expect(readFileSync(mainActivityPath, "utf8")).toContain("registerPlugin(TaskLaunchMicrophonePermissionPlugin.class)");
   });
 
+  it("declares the companion audio permission required by Capacitor WebView capture", () => {
+    // BridgeWebChromeClient requests both permissions and denies getUserMedia
+    // if either is missing, even when the user has allowed microphone access.
+    expect(readManifest()).toContain('android.permission.MODIFY_AUDIO_SETTINGS');
+  });
+
   it("declares the Android 13+ notification permission required for native push display", () => {
     expect(readManifest()).toContain('android.permission.POST_NOTIFICATIONS');
   });

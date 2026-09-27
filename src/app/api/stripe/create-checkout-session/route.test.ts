@@ -57,17 +57,19 @@ describe("POST /api/stripe/create-checkout-session", () => {
     checkoutSessionsCreate.mockResolvedValue({ url: "https://checkout.stripe.com/session" });
   });
 
-  it.each([undefined, "plus_monthly"])("returns the monthly payment link for offer %s with account attribution", async (offer) => {
-    delete process.env.STRIPE_PRICE_ID_PLUS_MONTHLY;
+  it.each([undefined, "plus_monthly"])("creates monthly checkout with a web return URL for offer %s", async (offer) => {
     const response = await POST(checkoutRequest({ offer }));
 
     expect(response.status).toBe(200);
     const { url } = await response.json();
-    const paymentLink = new URL(url);
-    expect(paymentLink.origin + paymentLink.pathname).toBe("https://buy.stripe.com/5kQaEZ2QT2WsfJTfNHenS02");
-    expect(paymentLink.searchParams.get("client_reference_id")).toBe("uid-123");
-    expect(paymentLink.searchParams.get("prefilled_email")).toBe("user@example.com");
-    expect(checkoutSessionsCreate).not.toHaveBeenCalled();
+    expect(url).toBe("https://checkout.stripe.com/session");
+    expect(checkoutSessionsCreate).toHaveBeenCalledWith(expect.objectContaining({
+      line_items: [{ price: "price_live_no_trial", quantity: 1 }],
+      client_reference_id: "uid-123",
+      customer_email: "user@example.com",
+      success_url: "https://tasklaunch.app/dashboard?checkout=success&session_id={CHECKOUT_SESSION_ID}",
+      cancel_url: "https://tasklaunch.app/login?checkout=cancelled",
+    }));
   });
 
   it("creates a subscription checkout session for the yearly offer", async () => {
@@ -85,11 +87,11 @@ describe("POST /api/stripe/create-checkout-session", () => {
     );
   });
 
-  it("creates native account return URLs when the caller requests native checkout routing", async () => {
+  it.each(["plus_monthly", "plus_yearly"])("creates native account return URLs for %s", async (offer) => {
     await POST(
       checkoutRequest({
         idToken: "token",
-        offer: "plus_yearly",
+        offer,
         returnTarget: "native",
         successReturnPath: "/account",
         cancelReturnPath: "/settings?page=general",

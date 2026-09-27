@@ -30,7 +30,6 @@ import {
   buildDashboardTasksCompletedModel,
   shouldIncludeTaskOverviewForPlannedActivation,
 } from "./dashboard-card-tasks-completed";
-import { buildDashboardTasksCompletedLabelLayout } from "./dashboard-card-tasks-completed-layout";
 import { buildDashboardTodayHoursModel, formatDashboardTodayHoursDeltaText } from "./dashboard-card-today-hours";
 import {
   buildDashboardActivityOverviewModel,
@@ -73,80 +72,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   const DASHBOARD_COMPLETED_TRACK_STROKE_WIDTH = 24;
   const DASHBOARD_COMPLETED_SEGMENT_STROKE_WIDTH = 36;
   const DASHBOARD_COMPLETED_RING_EDGE_STROKE_WIDTH = 5;
-  const DASHBOARD_COMPLETED_LABEL_MAX_WIDTH = 96;
-  const DASHBOARD_COMPLETED_LABEL_COMPACT_WIDTH = 72;
-  const DASHBOARD_COMPLETED_LABEL_MICRO_WIDTH = 54;
-  const DASHBOARD_COMPLETED_LABEL_ORBIT_RADIUS = 146;
-  const DASHBOARD_COMPLETED_LABEL_COMPACT_ORBIT_RADIUS = 136;
-  const DASHBOARD_COMPLETED_LABEL_MICRO_ORBIT_RADIUS = 126;
-
   function formatDashboardCompletedDashPct(value: number) {
     const rounded = Number(value.toFixed(3));
     return Object.is(rounded, -0) ? "0" : String(rounded);
   }
 
-  function estimateDashboardCompletedLabelWidth(name: string, statusLabel: string, maxWidth = DASHBOARD_COMPLETED_LABEL_MAX_WIDTH) {
-    const nameWidth = name.length * 6.5;
-    const statusWidth = statusLabel.length * 6.1;
-    return Math.max(28, Math.min(maxWidth, Math.ceil(Math.max(nameWidth, statusWidth) + 4)));
-  }
-  function shortenDashboardCompletedLabel(value: string, maxChars: number) {
-    const safeValue = String(value || "").trim();
-    if (safeValue.length <= maxChars) return safeValue;
-    if (maxChars <= 3) return safeValue.slice(0, Math.max(1, maxChars));
-    return `${safeValue.slice(0, maxChars - 3).trimEnd()}...`;
-  }
-  function compactDashboardCompletedStatusLabel(statusLabel: string) {
-    if (statusLabel === "Completed") return "Done";
-    if (statusLabel === "Not complete") return "Open";
-    if (statusLabel === "Active today") return "Active";
-    if (statusLabel === "No activity yet") return "Idle";
-    const pctMatch = statusLabel.match(/^(\d+)% complete$/);
-    return pctMatch ? `${pctMatch[1]}%` : statusLabel;
-  }
-  function microDashboardCompletedStatusLabel(statusLabel: string) {
-    if (statusLabel === "Completed") return "Done";
-    if (statusLabel === "Not complete") return "Open";
-    if (statusLabel === "Active today") return "On";
-    if (statusLabel === "No activity yet") return "Idle";
-    const pctMatch = statusLabel.match(/^(\d+)% complete$/);
-    return pctMatch ? `${pctMatch[1]}%` : statusLabel;
-  }
-  function getDashboardCompletedSafeRect(element: HTMLElement) {
-    if (typeof element.getBoundingClientRect !== "function") return null;
-    const rect = element.getBoundingClientRect();
-    if (!(Number(rect.width) > 0 && Number(rect.height) > 0)) return null;
-    return rect;
-  }
-
-  function dashboardCompletedRectIntersectsCircle(rect: DOMRect, centerX: number, centerY: number, radius: number) {
-    const closestX = Math.max(rect.left, Math.min(centerX, rect.right));
-    const closestY = Math.max(rect.top, Math.min(centerY, rect.bottom));
-    return Math.hypot(closestX - centerX, closestY - centerY) < radius;
-  }
-
-  function areDashboardCompletedRenderedLabelsSafe(labelsEl: HTMLElement, chartEl: HTMLElement) {
-    const bounds = getDashboardCompletedSafeRect(labelsEl) || getDashboardCompletedSafeRect(chartEl);
-    if (!bounds) return true;
-    const labels = Array.from(labelsEl.querySelectorAll?.(".dashboardTasksCompletedLabel") || []) as HTMLElement[];
-    if (!labels.length) return true;
-    const scaleX = bounds.width / DASHBOARD_COMPLETED_CHART_SIZE;
-    const scaleY = bounds.height / DASHBOARD_COMPLETED_CHART_SIZE;
-    const centerX = bounds.left + DASHBOARD_COMPLETED_CHART_CENTER * scaleX;
-    const centerY = bounds.top + DASHBOARD_COMPLETED_CHART_CENTER * scaleY;
-    const protectedRadius = Math.min(scaleX, scaleY) * DASHBOARD_COMPLETED_RING_RADIUS;
-    const padding = 1;
-
-    return labels.every((label) => {
-      const rect = getDashboardCompletedSafeRect(label);
-      if (!rect) return true;
-      const isClipped = rect.left < bounds.left - padding ||
-        rect.top < bounds.top - padding ||
-        rect.right > bounds.right + padding ||
-        rect.bottom > bounds.bottom + padding;
-      return !isClipped && !dashboardCompletedRectIntersectsCircle(rect, centerX, centerY, protectedRadius);
-    });
-  }
   type DashboardHeatHistoryEntry = {
     ts: number;
     ms: number;
@@ -1722,7 +1652,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       svgEl.setAttribute("viewBox", `0 0 ${DASHBOARD_COMPLETED_CHART_SIZE} ${DASHBOARD_COMPLETED_CHART_SIZE}`);
       svgEl.innerHTML = `<circle class="dashboardTasksCompletedTrack" cx="${DASHBOARD_COMPLETED_CHART_CENTER}" cy="${DASHBOARD_COMPLETED_CHART_CENTER}" r="${DASHBOARD_COMPLETED_RING_RADIUS}" pathLength="100"></circle><line class="dashboardTasksCompletedNeedle" id="dashboardTasksCompletedNeedle" x1="${DASHBOARD_COMPLETED_CHART_CENTER}" y1="${DASHBOARD_COMPLETED_CHART_CENTER - 54}" x2="${DASHBOARD_COMPLETED_CHART_CENTER}" y2="${DASHBOARD_COMPLETED_CHART_CENTER - 78}"></line>`;
       labelsEl.innerHTML = "";
-      labelsEl.classList.remove("isHiddenForLayout");
 
       if (totalCount <= 0) {
         centerEl.innerHTML = '<span class="dashboardTasksCompletedCenterLabel">No scheduled tasks</span>';
@@ -1898,73 +1827,15 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         appendProgressSegmentOverlay(sliceStartPct, progressPct, color, className);
       });
 
-      type DashboardCompletedLabelMode = "full" | "compact" | "micro";
-      const labelModes: DashboardCompletedLabelMode[] = ["full", "compact", "micro"];
-      let finalLabelLayoutByKey = new Map<string, ReturnType<typeof buildDashboardTasksCompletedLabelLayout>[number]>();
-
-      for (const labelMode of labelModes) {
-        const labelOrbitRadius = labelMode === "full"
-          ? DASHBOARD_COMPLETED_LABEL_ORBIT_RADIUS
-          : labelMode === "compact"
-            ? DASHBOARD_COMPLETED_LABEL_COMPACT_ORBIT_RADIUS
-            : DASHBOARD_COMPLETED_LABEL_MICRO_ORBIT_RADIUS;
-        const labelEntries = positionedSliceEntries.map((entry) => {
-          const maxWidth = labelMode === "full"
-            ? DASHBOARD_COMPLETED_LABEL_MAX_WIDTH
-            : labelMode === "compact"
-              ? DASHBOARD_COMPLETED_LABEL_COMPACT_WIDTH
-              : DASHBOARD_COMPLETED_LABEL_MICRO_WIDTH;
-          const displayName = labelMode === "full"
-            ? entry.item.name
-            : shortenDashboardCompletedLabel(entry.item.name, labelMode === "compact" ? 12 : 8);
-          const displayStatus = labelMode === "full"
-            ? entry.statusLabel
-            : labelMode === "compact"
-              ? compactDashboardCompletedStatusLabel(entry.statusLabel)
-              : microDashboardCompletedStatusLabel(entry.statusLabel);
-          return {
-            ...entry,
-            displayName,
-            displayStatus,
-            labelMode,
-            maxWidth,
-            labelWidth: estimateDashboardCompletedLabelWidth(displayName, displayStatus, maxWidth),
-            labelHeight: labelMode === "micro" ? 26 : 32,
-          };
-        });
-        const labelLayouts = buildDashboardTasksCompletedLabelLayout(labelEntries.map((entry) => ({
-          key: entry.key,
-          sliceStartPct: entry.sliceStartPct,
-          slicePct: entry.slicePct,
-          labelWidth: entry.labelWidth,
-          labelHeight: entry.labelHeight,
-        })), { labelOrbitRadius });
-        const labelLayoutByKey = new Map(labelLayouts.map((layout) => [layout.key, layout]));
-
-        labelsEl.innerHTML = "";
-        labelsEl.classList.remove("isHiddenForLayout");
-        labelEntries.forEach(({ item, statusLabel, key, displayName, displayStatus, maxWidth }) => {
-          const layout = labelLayoutByKey.get(key);
-          if (!layout) return;
-
-          const linkEl = document.createElement("span");
-          linkEl.className = `dashboardTasksCompletedLabel${layout.isRightSide ? " isRight" : " isLeft"}${layout.isExternal ? " isExternal" : ""}${item.complete ? " isComplete" : ""}${item.progress > 0 && item.progress < 1 ? " isPartial" : ""}${item.running ? " isRunning" : ""}${labelMode === "compact" ? " isCompact" : ""}${labelMode === "micro" ? " isMicro" : ""}`;
-          linkEl.setAttribute("role", "listitem");
-          linkEl.setAttribute("title", `${item.name}: ${statusLabel}`);
-          linkEl.setAttribute("aria-label", `${item.name}: ${statusLabel}`);
-          linkEl.style.left = `${layout.labelX}px`;
-          linkEl.style.top = `${layout.labelY}px`;
-          linkEl.style.setProperty("--dashboard-task-label-color", item.color);
-          linkEl.style.setProperty("--dashboard-task-progress-color", fillBackgroundForPct(item.progress * 100));
-          linkEl.style.setProperty("--dashboard-task-label-width", `${maxWidth}px`);
-          linkEl.innerHTML = `<span class="dashboardTasksCompletedLabelName">${ctx.escapeHtmlUI(displayName)}</span><span class="dashboardTasksCompletedLabelStatus">${ctx.escapeHtmlUI(displayStatus)}</span>`;
-          labelsEl.appendChild(linkEl);
-        });
-
-        finalLabelLayoutByKey = labelLayoutByKey;
-        const labelsAreSafe = areDashboardCompletedRenderedLabelsSafe(labelsEl, ticksEl);
-        if (labelsAreSafe || labelMode === "micro") break;
-      }
+      positionedSliceEntries.forEach(({ item, statusLabel }) => {
+        const rowEl = document.createElement("li");
+        rowEl.className = `dashboardTasksCompletedLabel${item.complete ? " isComplete" : ""}${item.progress > 0 && item.progress < 1 ? " isPartial" : ""}${item.running ? " isRunning" : ""}`;
+        rowEl.setAttribute("title", `${item.name}: ${statusLabel}`);
+        rowEl.style.setProperty("--dashboard-task-label-color", item.color);
+        rowEl.style.setProperty("--dashboard-task-progress-color", fillBackgroundForPct(item.progress * 100));
+        rowEl.innerHTML = `<span class="dashboardTasksCompletedLabelDot" aria-hidden="true"></span><span class="dashboardTasksCompletedLabelName">${ctx.escapeHtmlUI(item.name)}</span><span class="dashboardTasksCompletedLabelStatus">${ctx.escapeHtmlUI(statusLabel)}</span>`;
+        labelsEl.appendChild(rowEl);
+      });
       const needle = (document.getElementById("dashboardTasksCompletedNeedle") as SVGLineElement | null) || needleEl;
       if (needle) {
         needle.classList.toggle("isRunning", hasRunningItem);
@@ -2010,10 +1881,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         if (!plannedStartVisible) return null;
         const scheduledOpportunity = getTaskOverviewOpportunity(task, nowValue);
         if (scheduledOpportunity) return scheduledOpportunity;
-        const nowDate = new Date(nowValue);
         const activationEligible = isTaskPlannedActivationEligible(task, {
           localDate: formatLocalDateForToday(nowValue),
-          localTime: `${String(nowDate.getHours()).padStart(2, "0")}:${String(nowDate.getMinutes()).padStart(2, "0")}`,
+          localTime: "23:59",
         });
         if (activationEligible) return null;
         const historyScope = task.taskType !== "once-off" && task.timeGoalPeriod === "week" ? "week" as const : "day" as const;

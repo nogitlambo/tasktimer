@@ -10,11 +10,9 @@ import {
 import {
   buildWeeklyPlannedStartByDay,
   findClosestAvailableSchedulePlacementSlot,
-  findClosestAvailableScheduleSlot,
   findNextAvailableScheduleSlot,
   findScheduleOverlap,
   formatScheduleSlotSuggestion,
-  formatScheduleSlotTime,
   formatScheduleStoredTimeFromMinutes,
   formatScheduleTimeRange,
   getCurrentLocalDate,
@@ -842,16 +840,13 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   function formatScheduleConflictMessageHtml(
     conflictingTaskName: string,
     conflictingRangeText: string,
-    candidateTaskName: string,
-    plannedStartText: string
+    candidateTaskName: string
   ) {
     return `${ctx.escapeHtmlUI(conflictingTaskName)} - ${ctx.escapeHtmlUI(
       conflictingRangeText
     )}.\n\nDo you want to <strong>change</strong> ${ctx.escapeHtmlUI(
       candidateTaskName
-    )} to the closest available timeslot or <strong>continue</strong> with ${ctx.escapeHtmlUI(
-      plannedStartText
-    )} and move ${ctx.escapeHtmlUI(conflictingTaskName)} to the closest available timeslot?`;
+    )} to the closest available timeslot?`;
   }
 
   function formatScheduleConflictNoSlotMessage(conflictingTaskName: string, candidateTaskName: string) {
@@ -1215,8 +1210,14 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   }
 
   function persistResolvedEditSave(sourceTask: Task, resolvedTask: Task) {
+    const currentSourceTask = ctx.getTasks().find((task) => task.id === sourceTask.id);
+    if (!currentSourceTask) {
+      ctx.closeConfirm();
+      finishEditOverlayClose();
+      return;
+    }
     delete (resolvedTask as Task & { mode?: string }).mode;
-    Object.assign(sourceTask, ctx.cloneTaskForEdit(resolvedTask));
+    Object.assign(currentSourceTask, ctx.cloneTaskForEdit(resolvedTask));
     ctx.closeConfirm();
     ctx.save();
     void ctx.syncSharedTaskSummariesForTask(String(sourceTask.id || "")).catch(() => {});
@@ -1246,18 +1247,11 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       ctx.showEditValidationError(draftTask, formatPlannedStartOverlapMessage(ctx.getTasks(), draftTask, sourceTaskId));
       return;
     }
-    const candidateStartMinutes = overlap.candidateStartMinutes;
     const conflictingStartMinutes = overlap.conflictingStartMinutes;
     const conflictingEndMinutes = overlap.conflictingEndMinutes;
     const candidateTaskName = String(draftTask.name || "Task") || "Task";
     const conflictingTaskName = String(conflictingTask.name || "Task") || "Task";
     const candidateSlot = findClosestAvailableSchedulePlacementSlot(ctx.getTasks(), draftTask, { excludeTaskId: sourceTaskId });
-    const tasksWithDraft = ctx.getTasks().map((task) => (String(task.id || "") === sourceTaskId ? draftTask : task));
-    const conflictingTaskSlot = findClosestAvailableScheduleSlot(tasksWithDraft, conflictingTask, {
-      day: overlap.day,
-      targetStartMinutes: conflictingStartMinutes,
-      excludeTaskIds: [conflictingTask.id],
-    });
 
     const openNoSlotMessage = () => {
       ctx.confirm("Schedule conflict", formatScheduleConflictNoSlotMessage(conflictingTaskName, candidateTaskName), {
@@ -1282,16 +1276,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       persistResolvedEditSave(sourceTask, draftTask);
     };
 
-    const handleContinue = () => {
-      if (!conflictingTaskSlot) {
-        openNoSlotMessage();
-        return;
-      }
-      setTaskScheduledTimeForDay(conflictingTask, conflictingTaskSlot.day, formatScheduleStoredTimeFromMinutes(conflictingTaskSlot.startMinutes));
-      persistResolvedEditSave(sourceTask, draftTask);
-    };
-
-    if ((!candidateSlot && !conflictingTaskSlot) || conflictingEndMinutes == null) {
+    if (!candidateSlot || conflictingEndMinutes == null) {
       openNoSlotMessage();
       return;
     }
@@ -1299,22 +1284,19 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const messageHtml = formatScheduleConflictMessageHtml(
       conflictingTaskName,
       formatScheduleTimeRange(conflictingStartMinutes, conflictingEndMinutes),
-      candidateTaskName,
-      formatScheduleSlotTime(candidateStartMinutes)
+      candidateTaskName
     );
 
-    const canChange = !!candidateSlot;
-    const canContinue = !!conflictingTaskSlot;
     ctx.confirm("Schedule conflict", "", {
       cancelLabel: "Cancel",
-      altLabel: canChange && canContinue ? "Change" : null,
-      okLabel: canContinue ? "Continue" : "Change",
+      altLabel: null,
+      okLabel: "Change",
       altButtonClassName: "btn btn-ghost",
-      okButtonClassName: canContinue ? "btn btn-accent" : "btn btn-ghost",
+      okButtonClassName: "btn btn-accent",
       textHtml: messageHtml,
       overlayClassName: "isScheduleConflictConfirm",
-      onOk: canContinue ? handleContinue : handleMove,
-      onAlt: canChange && canContinue ? handleMove : null,
+      onOk: handleMove,
+      onAlt: null,
       onCancel: () => ctx.closeConfirm(),
     });
   }

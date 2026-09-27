@@ -88,12 +88,14 @@ describe("ExecutivePageContent", () => {
     );
 
     expect(html).toContain('id="appPageExecutive"');
-    expect(html).toContain("<h1>Executive Function</h1>");
+    expect(html).not.toContain("<h1>Executive Function</h1>");
     expect(html).not.toContain('<p class="executiveEyebrow">Executive</p>');
     expect(html).toContain("Next best action");
-    expect(html).toContain("Today");
-    expect(html).toContain('id="executiveTodayLocalTime"');
-    expect(html).toContain("Local time");
+
+    expect(html).not.toContain('id="executiveTodayLocalTime"');
+    expect(html).not.toContain("Local time");
+    expect(html).not.toContain("Current plan");
+    expect(html).toMatch(/id="executiveTodayDate"[^>]*>[A-Z][a-z]+ \d{1,2}(st|nd|rd|th) [A-Z][a-z]+, \d{4}</);
     expect(html).toContain('id="executivePageRefreshBtn"');
     expect(html).toContain("Refresh");
     expect(html).toContain("Remaining capacity");
@@ -159,19 +161,6 @@ describe("ExecutivePageContent", () => {
     expect(html).toContain('id="brainDumpTitle"');
     expect(html).toContain('class="executiveUpgradeGate"');
     expect(html).toContain(">Upgrade to PLUS</button>");
-  });
-
-  it("isolates the local clock from the imperatively rendered Next Best Action card", () => {
-    const source = readFileSync(
-      resolve(process.cwd(), "src/app/tasktimer/components/ExecutivePageContent.tsx"),
-      "utf8",
-    );
-
-    expect(source).toContain("function ExecutiveTodayLocalTime()");
-    expect(source).toContain("<ExecutiveTodayLocalTime />");
-    expect(source.slice(source.indexOf("export default function ExecutivePageContent"))).not.toContain(
-      "const [currentLocalTime, setCurrentLocalTime]",
-    );
   });
 
   it("resets native Brain Dump openings to the top of the page", () => {

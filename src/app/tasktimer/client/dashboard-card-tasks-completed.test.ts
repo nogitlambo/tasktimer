@@ -36,7 +36,7 @@ function opportunity(taskRow: Task, overrides: Partial<DashboardTasksCompletedOp
 }
 
 describe("dashboard tasks completed card module", () => {
-  it("hides future planned tasks until activation", () => {
+  it("includes today's planned tasks before their start time but hides later dates", () => {
     const nowMs = new Date(2026, 4, 5, 10, 29).getTime();
     const future = task({ plannedStartDate: "2026-05-05", plannedStartTime: "10:30" });
     const options = {
@@ -49,8 +49,9 @@ describe("dashboard tasks completed card module", () => {
       normalizeHistoryTimestampMs: (value: unknown) => Number(value) || 0,
     };
 
-    expect(shouldIncludeTaskOverviewForPlannedActivation(options)).toBe(false);
+    expect(shouldIncludeTaskOverviewForPlannedActivation(options)).toBe(true);
     expect(shouldIncludeTaskOverviewForPlannedActivation({ ...options, nowMs: new Date(2026, 4, 5, 10, 30).getTime() })).toBe(true);
+    expect(shouldIncludeTaskOverviewForPlannedActivation({ ...options, task: { ...future, plannedStartDate: "2026-05-06" } })).toBe(false);
   });
 
   it("shows early current-period work without changing recommendation eligibility", () => {

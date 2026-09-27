@@ -983,7 +983,7 @@ describe("createTaskTimerAddTask", () => {
     await expect(resultPromise).resolves.toEqual({ ok: true });
     expect(harness.ctx.setTasks).toHaveBeenCalledWith([
       expect.objectContaining({ id: "busy-1" }),
-      expect.objectContaining({ name: "Review plan", plannedStartByDay: { mon: "09:00" } }),
+      expect.objectContaining({ name: "Review plan", plannedStartByDay: { mon: "08:45" } }),
     ]);
   });
 
@@ -1305,16 +1305,16 @@ describe("createTaskTimerAddTask", () => {
       "Schedule conflict",
       "",
       expect.objectContaining({
-        altLabel: "Change",
-        okLabel: "Continue",
+        altLabel: null,
+        okLabel: "Change",
         textHtml:
-          "Deep Work - 9:00 AM - 10:00 AM.\n\nDo you want to <strong>change</strong> New Task to the closest available timeslot or <strong>continue</strong> with 9:00 AM and move Deep Work to the closest available timeslot?",
+          "Deep Work - 9:00 AM - 10:00 AM.\n\nDo you want to <strong>change</strong> New Task to the closest available timeslot?",
         altButtonClassName: "btn btn-ghost",
         okButtonClassName: "btn btn-accent",
       })
     );
     const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as Record<string, unknown> | undefined;
-    expect(confirmOpts).toHaveProperty("onAlt");
+    expect(confirmOpts).toHaveProperty("onAlt", null);
     expect(harness.ctx.setTasks).not.toHaveBeenCalled();
   });
 
@@ -1400,7 +1400,7 @@ describe("createTaskTimerAddTask", () => {
     harness.submit();
 
     const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2];
-    confirmOpts?.onAlt?.();
+    confirmOpts?.onOk?.();
 
     expect(harness.ctx.setTasks).toHaveBeenCalledWith([
       existingTask,
@@ -1459,7 +1459,7 @@ describe("createTaskTimerAddTask", () => {
     harness.submit();
 
     const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2];
-    confirmOpts?.onAlt?.();
+    confirmOpts?.onOk?.();
 
     expect(harness.ctx.setTasks).toHaveBeenCalledWith([
       existingTask,
@@ -1472,60 +1472,6 @@ describe("createTaskTimerAddTask", () => {
       }),
     ]);
     expect(harness.ctx.setAddTaskPlannedStartTimeState).toHaveBeenCalledWith("08:00");
-    expect(harness.ctx.closeConfirm).toHaveBeenCalled();
-  });
-
-  it("keeps the new task planned start and moves the conflicting task when conflict modal Continue is chosen", () => {
-    const existingTask = {
-      id: "busy-1",
-      name: "Deep Work",
-      taskType: "once-off",
-      onceOffDay: "mon",
-      onceOffTargetDate: null,
-      order: 1,
-      accumulatedMs: 0,
-      running: false,
-      startMs: null,
-      collapsed: false,
-      milestonesEnabled: false,
-      milestoneTimeUnit: "hour",
-      milestones: [],
-      hasStarted: false,
-      timeGoalEnabled: true,
-      timeGoalValue: 1,
-      timeGoalUnit: "hour",
-      timeGoalPeriod: "day",
-      timeGoalMinutes: 60,
-      plannedStartDay: "mon",
-      plannedStartTime: "09:00",
-      plannedStartByDay: { mon: "09:00" },
-      plannedStartOpenEnded: false,
-    };
-    const tasks = [existingTask];
-    const harness = createHarness("1", { tasks, plannedStartDate: "2026-09-07", taskType: "once-off" });
-    harness.addTaskMsToggle.checked = false;
-
-    harness.toggleSchedule(true);
-    harness.clickHourUnit();
-    harness.setManualPlannedStart("09:00");
-    harness.submit();
-
-    const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2];
-    confirmOpts?.onOk?.();
-
-    expect(harness.ctx.setTasks).toHaveBeenCalledWith([
-      expect.objectContaining({
-        id: "busy-1",
-        plannedStartTime: "10:00",
-        plannedStartByDay: expect.objectContaining({ mon: "10:00" }),
-      }),
-      expect.objectContaining({
-        taskType: "once-off",
-        onceOffTargetDate: "2026-09-07",
-        plannedStartTime: "09:00",
-        plannedStartByDay: expect.objectContaining({ mon: "09:00" }),
-      }),
-    ]);
     expect(harness.ctx.closeConfirm).toHaveBeenCalled();
   });
 

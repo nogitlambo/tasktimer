@@ -140,13 +140,23 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
+  if (!subscriptionId) {
+    throw new Error("Completed subscription checkout is missing its subscription ID.");
+  }
+  const subscription = await getStripeServer().subscriptions.retrieve(subscriptionId);
+  const priceId = asString(subscription.items.data[0]?.price?.id);
+  const status = asString(subscription.status);
   await upsertUserBillingState({
     uid,
-    plan: offer,
+    plan: planFromStripeSubscriptionStatus(status, {
+      offer: asString(subscription.metadata?.offer) || asString(session.metadata?.offer),
+      priceId,
+    }),
     customerId,
     subscriptionId,
-    priceId: asString(session.metadata?.priceId),
-    status: "checkout_completed",
+    priceId,
+    status,
+    currentPeriodEndAt: resolveSubscriptionPeriodEndAt(subscription),
   });
 }
 

@@ -14,12 +14,10 @@ import { getNextAutoTaskColor, getTaskColorFamilyForColor, normalizeTaskColor, r
 import {
   buildWeeklyPlannedStartByDay,
   findClosestAvailableSchedulePlacementSlot,
-  findClosestAvailableScheduleSlot,
   findFirstAvailableScheduleSlotFromProductivityWindow,
   findNextAvailableScheduleSlot,
   findScheduleOverlap,
   formatScheduleSlotSuggestion,
-  formatScheduleSlotTime,
   formatScheduleStoredTimeFromMinutes,
   formatScheduleTimeRange,
   getCurrentLocalDate,
@@ -748,16 +746,13 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   function formatScheduleConflictMessageHtml(
     conflictingTaskName: string,
     conflictingRangeText: string,
-    candidateTaskName: string,
-    plannedStartText: string
+    candidateTaskName: string
   ) {
     return `${ctx.escapeHtmlUI(conflictingTaskName)} - ${ctx.escapeHtmlUI(
       conflictingRangeText
     )}.\n\nDo you want to <strong>change</strong> ${ctx.escapeHtmlUI(
       candidateTaskName
-    )} to the closest available timeslot or <strong>continue</strong> with ${ctx.escapeHtmlUI(
-      plannedStartText
-    )} and move ${ctx.escapeHtmlUI(conflictingTaskName)} to the closest available timeslot?`;
+    )} to the closest available timeslot?`;
   }
 
   function formatScheduleConflictNoSlotMessage(conflictingTaskName: string, candidateTaskName: string) {
@@ -804,17 +799,11 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       reportScheduledTaskValidationError(formatPlannedStartOverlapMessage(tasks, newTask), options);
       return;
     }
-    const candidateStartMinutes = overlap.candidateStartMinutes;
     const conflictingStartMinutes = overlap.conflictingStartMinutes;
     const conflictingEndMinutes = overlap.conflictingEndMinutes;
     const candidateTaskName = String(newTask.name || "Task") || "Task";
     const conflictingTaskName = String(conflictingTask.name || "Task") || "Task";
     const candidateSlot = findClosestAvailableSchedulePlacementSlot(tasks, newTask);
-    const conflictingTaskSlot = findClosestAvailableScheduleSlot([...tasks, newTask], conflictingTask, {
-      day: overlap.day,
-      targetStartMinutes: conflictingStartMinutes,
-      excludeTaskIds: [conflictingTask.id],
-    });
 
     const openNoSlotMessage = () => {
       const message = formatScheduleConflictNoSlotMessage(conflictingTaskName, candidateTaskName);
@@ -862,17 +851,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       finishScheduledTaskCreate(tasks, newTask, options);
     };
 
-    const handleContinue = () => {
-      if (!conflictingTaskSlot) {
-        openNoSlotMessage();
-        return;
-      }
-      setTaskScheduledTimeForDay(conflictingTask, conflictingTaskSlot.day, formatScheduleStoredTimeFromMinutes(conflictingTaskSlot.startMinutes));
-      ctx.closeConfirm();
-      finishScheduledTaskCreate(tasks, newTask, options);
-    };
-
-    if ((!candidateSlot && !conflictingTaskSlot) || conflictingEndMinutes == null) {
+    if (!candidateSlot || conflictingEndMinutes == null) {
       openNoSlotMessage();
       return;
     }
@@ -880,22 +859,19 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     const messageHtml = formatScheduleConflictMessageHtml(
       conflictingTaskName,
       formatScheduleTimeRange(conflictingStartMinutes, conflictingEndMinutes),
-      candidateTaskName,
-      formatScheduleSlotTime(candidateStartMinutes)
+      candidateTaskName
     );
 
-    const canChange = !!candidateSlot;
-    const canContinue = !!conflictingTaskSlot;
     ctx.confirm("Schedule conflict", "", {
       cancelLabel: "Cancel",
-      altLabel: canChange && canContinue ? "Change" : null,
-      okLabel: canContinue ? "Continue" : "Change",
+      altLabel: null,
+      okLabel: "Change",
       altButtonClassName: "btn btn-ghost",
-      okButtonClassName: canContinue ? "btn btn-accent" : "btn btn-ghost",
+      okButtonClassName: "btn btn-accent",
       textHtml: messageHtml,
       overlayClassName: "isScheduleConflictConfirm",
-      onOk: canContinue ? handleContinue : handleMove,
-      onAlt: canChange && canContinue ? handleMove : null,
+      onOk: handleMove,
+      onAlt: null,
       onCancel: () => {
         ctx.closeConfirm();
         options?.onCancel?.();

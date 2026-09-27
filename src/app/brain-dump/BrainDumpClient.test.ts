@@ -340,7 +340,7 @@ describe("BrainDumpClient", () => {
     expect(source).toContain("undoAvailable");
     expect(source).toContain("handleUndoBatch");
     expect(source).toContain('aria-label="Undo Brain Dump task creation"');
-    expect(source).toContain('fetch(getApiUrl(`/api/brain-dump/sessions/${session.id}/undo/`), {');
+    expect(source).toContain('fetch(getApiUrl(`/api/brain-dump/sessions/${batchResult.sessionId}/undo/`), {');
     expect(source).toContain("idempotencyKey: batchResult.idempotencyKey");
     expect(source).toContain('trackEvent("brain_dump_tasks_undone"');
     expect(source).toContain("removed_count: payload.undo.removedCount");

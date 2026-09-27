@@ -44,10 +44,10 @@ export function shouldIncludeTaskOverviewForPlannedActivation(options: {
   isTaskRunning: (task: Task) => boolean;
   normalizeHistoryTimestampMs: (value: unknown) => number;
 }) {
-  const nowDate = new Date(options.nowMs);
+  // The overview covers the whole local day, including starts later today.
   const eligible = isTaskPlannedActivationEligible(options.task, {
     localDate: options.todayKey,
-    localTime: `${String(nowDate.getHours()).padStart(2, "0")}:${String(nowDate.getMinutes()).padStart(2, "0")}`,
+    localTime: "23:59",
   });
   if (eligible) return true;
   if (options.isTaskRunning(options.task)) return true;

@@ -1231,10 +1231,8 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
       });
       const payload = (await response.json()) as { batch?: BrainDumpCreationBatchResult; error?: string; code?: string };
       if (!response.ok || !payload.batch) throw payloadError(payload.error || "Brain Dump tasks could not be created.", payload.code);
-      setBatchResult(payload.batch);
-      setUndoResult(null);
       if (payload.batch.state === "completed") {
-        setSession((current) => (current ? { ...current, state: "completed" } : current));
+        handleClearDraft();
         setStatus(`Created ${payload.batch.createdCount} task${payload.batch.createdCount === 1 ? "" : "s"}`);
         void trackEvent("brain_dump_tasks_created", {
           created_count: payload.batch.createdCount,
@@ -1252,6 +1250,9 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
           retryable_count: payload.batch.retryableCount,
         });
       }
+      setBatchResult(payload.batch);
+      setUndoResult(null);
+      setNowMs(Date.now());
     } catch (err) {
       handleRequestError(err, "Brain Dump tasks could not be created.");
       setStatus("");
@@ -1266,7 +1267,7 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
   }
 
   async function handleUndoBatch() {
-    if (!session || !batchResult || !undoAvailable || busy) return;
+    if (!batchResult || !undoAvailable || busy) return;
     setBusy(true);
     setError("");
     setErrorCode("");
@@ -1277,7 +1278,7 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
       const idToken = await user?.getIdToken();
       if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
 
-      const response = await fetch(getApiUrl(`/api/brain-dump/sessions/${session.id}/undo/`), {
+      const response = await fetch(getApiUrl(`/api/brain-dump/sessions/${batchResult.sessionId}/undo/`), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1297,7 +1298,7 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
       handleRequestError(err, "Brain Dump undo could not be completed.");
       setStatus("");
       void trackEvent("brain_dump_tasks_undo_failed", {
-        session_id: session.id,
+        session_id: batchResult.sessionId,
       });
     } finally {
       setBusy(false);
@@ -1561,6 +1562,25 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
             </button>
           ) : null}
         </div>
+
+        {batchResult ? (
+          <div className={styles.reviewActions}>
+            {undoAvailable ? (
+              <button
+                className={primitiveSecondaryButtonClass}
+                type="button"
+                aria-label="Undo Brain Dump task creation"
+                disabled={busy}
+                onClick={handleUndoBatch}
+              >
+                Undo
+              </button>
+            ) : null}
+            <a className={primitiveSecondaryButtonClass} href={taskLaunchHref} onClick={handleBackNavigation}>
+              Tasks
+            </a>
+          </div>
+        ) : null}
 
         {session ? (
           <section className={`${styles.review}${embedded ? " brainDumpEmbeddedPanel brainDumpPrimitivePanel" : ""}`} aria-labelledby="brainDumpReviewTitle">
@@ -1897,24 +1917,7 @@ export default function BrainDumpClient({ embedded = false, onBack }: BrainDumpC
               >
                 {creatingTasks ? "Generating" : `Create ${selectedCount}`}
               </button>
-              {batchResult ? (
-                <>
-                  {undoAvailable ? (
-                    <button
-                      className={primitiveSecondaryButtonClass}
-                      type="button"
-                      aria-label="Undo Brain Dump task creation"
-                      disabled={busy}
-                      onClick={handleUndoBatch}
-                    >
-                      Undo
-                    </button>
-                  ) : null}
-                  <a className={primitiveSecondaryButtonClass} href={taskLaunchHref} onClick={handleBackNavigation}>
-                    Tasks
-                  </a>
-                </>
-              ) : null}
+
             </div>
           </section>
         ) : null}

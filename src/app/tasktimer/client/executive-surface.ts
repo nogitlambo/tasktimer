@@ -201,9 +201,7 @@ export function createExecutiveSurface(options: Options) {
       work,
       restDay ? "N/A" : brief ? `${brief.plan.remainingMinutes} min` : "Unavailable",
     );
-    const date = element(documentRef, "executiveTodayDate");
-    if (date)
-      date.textContent = brief?.date || capacity?.localDate || "Current plan";
+
   }
 
   async function refresh() {

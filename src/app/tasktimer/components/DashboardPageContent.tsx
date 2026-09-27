@@ -282,8 +282,8 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                           <line className="dashboardTasksCompletedNeedle" id="dashboardTasksCompletedNeedle" x1="190" y1="136" x2="190" y2="112" />
                         </svg>
                         <div className="dashboardTasksCompletedCenter" id="dashboardTasksCompletedCenter" aria-hidden="true" />
-                        <div className="dashboardTasksCompletedLabels" id="dashboardTasksCompletedLabels" aria-hidden="true" />
                       </div>
+                      <ul className="dashboardTasksCompletedLabels" id="dashboardTasksCompletedLabels" aria-label="Task statuses" />
                       <div className="dashboardSummaryProgress dashboardSummaryProgressSpacer" aria-hidden="true" />
                       <div className="dashboardSummaryStatus" aria-hidden="true" />
                       <div className="dashboardDelta dashboardSummaryFoot" id="dashboardTasksCompletedMeta" style={{ display: "none" }} />

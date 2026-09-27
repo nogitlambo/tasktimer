@@ -53,6 +53,11 @@ describe("task card scheduled start", () => {
   const now = new Date(2026, 8, 16, 15);
   const label = (overrides: Partial<Task>, date = now) => resolveTaskCardScheduleLabel(baseTask(overrides), date);
 
+  it.each(["once-off", "recurring"] as const)("renders today's dated %s schedule before its start time", (taskType) => {
+    const task = baseTask({ taskType, plannedStartDate: "2026-09-16", plannedStartTime: "16:30" });
+    expect(renderCard({ task, nowDate: now }).html).toContain('<div class="taskScheduledStart">Scheduled for 4:30 PM</div>');
+  });
+
   it("keeps today's time before and after it passes, using the day's own time", () => {
     const schedule = { plannedStartByDay: { wed: "09:00", thu: "14:30" } };
     expect(label(schedule, new Date(2026, 8, 16, 8))).toBe("Scheduled for 9:00 AM");

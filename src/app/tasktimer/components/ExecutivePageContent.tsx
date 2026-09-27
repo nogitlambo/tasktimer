@@ -239,33 +239,28 @@ function isNativeOrFileRuntime() {
   }
 }
 
-function ExecutiveTodayLocalTime() {
-  const [currentLocalTime, setCurrentLocalTime] = useState("");
+function formatExecutiveToday() {
+  const today = new Date();
+  const day = today.getDate();
+  const suffix = day % 100 >= 11 && day % 100 <= 13
+    ? "th"
+    : day % 10 === 1 ? "st" : day % 10 === 2 ? "nd" : day % 10 === 3 ? "rd" : "th";
+  const weekday = today.toLocaleDateString("en-GB", { weekday: "long" });
+  const month = today.toLocaleDateString("en-GB", { month: "long" });
+  return `${weekday} ${day}${suffix} ${month}, ${today.getFullYear()}`;
+}
+
+function ExecutiveTodayDate() {
+  const [date, setDate] = useState(formatExecutiveToday);
 
   useEffect(() => {
-    const updateCurrentLocalTime = () => {
-      setCurrentLocalTime(
-        new Intl.DateTimeFormat(undefined, {
-          hour: "numeric",
-          minute: "2-digit",
-          timeZoneName: "short",
-        }).format(new Date()),
-      );
-    };
-    updateCurrentLocalTime();
-    const timer = window.setInterval(updateCurrentLocalTime, 30_000);
+    const updateDate = () => setDate(formatExecutiveToday());
+    updateDate();
+    const timer = window.setInterval(updateDate, 30_000);
     return () => window.clearInterval(timer);
   }, []);
 
-  return (
-    <span
-      className="executiveTodayLocalTime"
-      id="executiveTodayLocalTime"
-      aria-live="polite"
-    >
-      {currentLocalTime ? `Local time: ${currentLocalTime}` : "Local time"}
-    </span>
-  );
+  return <strong id="executiveTodayDate" suppressHydrationWarning>{date}</strong>;
 }
 
 export default function ExecutivePageContent({ active }: Props) {
@@ -463,17 +458,8 @@ export default function ExecutivePageContent({ active }: Props) {
         >
           <div className="executiveShell">
             <header className="executiveHeader">
-              <div>
-                <h1>Executive Function</h1>
-                <p className="executiveHeaderSummary">
-                  Today&apos;s decisions, next action, and plan health in one
-                  place.
-                </p>
-              </div>
-              <div className="executiveTodayMarker" aria-label="Today">
-                <span>Today</span>
-                <strong id="executiveTodayDate">Current plan</strong>
-                <ExecutiveTodayLocalTime />
+              <div className="executiveTodayMarker">
+                <ExecutiveTodayDate />
                 <button
                   className="btn btn-ghost small executiveTodayRefreshButton"
                   id="executivePageRefreshBtn"

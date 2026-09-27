@@ -1159,16 +1159,16 @@ describe("edit task schedule conflict confirmation", () => {
       "Schedule conflict",
       "",
       expect.objectContaining({
-        altLabel: "Change",
-        okLabel: "Continue",
+        altLabel: null,
+        okLabel: "Change",
         textHtml:
-          "Deep Work - 9:00 AM - 10:00 AM.\n\nDo you want to <strong>change</strong> Focus to the closest available timeslot or <strong>continue</strong> with 9:00 AM and move Deep Work to the closest available timeslot?",
+          "Deep Work - 9:00 AM - 10:00 AM.\n\nDo you want to <strong>change</strong> Focus to the closest available timeslot?",
         altButtonClassName: "btn btn-ghost",
         okButtonClassName: "btn btn-accent",
       })
     );
     const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as Record<string, unknown> | undefined;
-    expect(options).toHaveProperty("onAlt");
+    expect(options).toHaveProperty("onAlt", null);
     expect(harness.ctx.save).not.toHaveBeenCalled();
   });
 
@@ -1176,8 +1176,8 @@ describe("edit task schedule conflict confirmation", () => {
     const harness = createEditHarness();
 
     harness.api.closeEdit(true);
-    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onAlt?: () => void } | undefined;
-    options?.onAlt?.();
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
+    options?.onOk?.();
 
     expect(harness.sourceTask.plannedStartTime).toBe("10:00");
     expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "10:00" });
@@ -1200,25 +1200,11 @@ describe("edit task schedule conflict confirmation", () => {
     });
 
     harness.api.closeEdit(true);
-    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onAlt?: () => void } | undefined;
-    options?.onAlt?.();
-
-    expect(harness.sourceTask.plannedStartTime).toBe("08:00");
-    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "08:00" });
-    expectEditConflictSavedAndClosed(harness);
-  });
-
-  it("keeps the edited task planned start and moves the conflicting task when conflict modal Continue is chosen", () => {
-    const harness = createEditHarness();
-
-    harness.api.closeEdit(true);
     const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
     options?.onOk?.();
 
-    expect(harness.sourceTask.plannedStartTime).toBe("09:00");
-    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00" });
-    expect(harness.busyTask.plannedStartTime).toBe("10:00");
-    expect(harness.busyTask.plannedStartByDay).toEqual({ mon: "10:00" });
+    expect(harness.sourceTask.plannedStartTime).toBe("08:00");
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "08:00" });
     expectEditConflictSavedAndClosed(harness);
   });
 
@@ -1228,8 +1214,8 @@ describe("edit task schedule conflict confirmation", () => {
     });
 
     harness.api.closeEdit(true);
-    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onAlt?: () => void } | undefined;
-    options?.onAlt?.();
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
+    options?.onOk?.();
 
     expect(harness.ctx.els.editPlannedStartHourSelect?.value).toBe("10");
     expect(harness.ctx.els.editPlannedStartMinuteSelect?.value).toBe("00");

@@ -138,6 +138,7 @@ describe("POST /api/stripe/webhook", () => {
   );
 
   it("writes monthly billing state when checkout completes", async () => {
+    mocks.planFromStripeSubscriptionStatus.mockReturnValueOnce("plus_monthly");
     mocks.constructEvent.mockReturnValue({
       id: "evt_checkout",
       type: "checkout.session.completed",
@@ -163,11 +164,17 @@ describe("POST /api/stripe/webhook", () => {
       customerId: "cus_123",
       subscriptionId: "sub_123",
       priceId: "price_monthly",
-      status: "checkout_completed",
+      status: "active",
+      currentPeriodEndAt: 1800000000000,
     });
   });
 
   it("writes yearly billing state when checkout completes", async () => {
+    mocks.planFromStripeSubscriptionStatus.mockReturnValueOnce("plus_yearly");
+    mocks.retrieveSubscription.mockResolvedValueOnce({
+      id: "sub_123", customer: "cus_123", metadata: {}, status: "active",
+      items: { data: [{ price: { id: "price_yearly" }, current_period_end: 1800000000 }] },
+    });
     mocks.constructEvent.mockReturnValue({
       id: "evt_checkout_yearly",
       type: "checkout.session.completed",
@@ -193,8 +200,38 @@ describe("POST /api/stripe/webhook", () => {
       customerId: "cus_123",
       subscriptionId: "sub_123",
       priceId: "price_yearly",
-      status: "checkout_completed",
+      status: "active",
+      currentPeriodEndAt: 1800000000000,
     });
+  });
+
+  it.each(["canceled", "incomplete"])("does not grant paid access for a %s subscription on checkout completion", async (status) => {
+    mocks.retrieveSubscription.mockResolvedValueOnce({
+      id: "sub_123", customer: "cus_123", metadata: {}, status,
+      items: { data: [{ price: { id: "price_monthly" } }] },
+    });
+    mocks.constructEvent.mockReturnValue({
+      id: "evt_checkout", type: "checkout.session.completed",
+      data: { object: { client_reference_id: "uid-123", customer: "cus_123", subscription: "sub_123", metadata: {} } },
+    });
+
+    const response = await POST(stripeWebhookRequest());
+
+    expect(response.status).toBe(200);
+    expect(mocks.upsertUserSubscriptionAndPlan).toHaveBeenCalledWith(expect.objectContaining({ plan: "free", status }));
+  });
+
+  it("returns a failure for retry without writing when subscription retrieval fails", async () => {
+    mocks.retrieveSubscription.mockRejectedValueOnce(new Error("Stripe unavailable"));
+    mocks.constructEvent.mockReturnValue({
+      id: "evt_checkout", type: "checkout.session.completed",
+      data: { object: { client_reference_id: "uid-123", customer: "cus_123", subscription: "sub_123", metadata: {} } },
+    });
+
+    const response = await POST(stripeWebhookRequest());
+
+    expect(response.status).toBe(400);
+    expect(mocks.upsertUserSubscriptionAndPlan).not.toHaveBeenCalled();
   });
 
   it("passes subscription metadata and price id to plan resolution on subscription updates", async () => {

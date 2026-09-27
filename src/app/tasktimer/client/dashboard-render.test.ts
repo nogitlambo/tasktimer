@@ -1726,12 +1726,29 @@ describe("dashboard completed card", () => {
     expect(css).toContain(".dashboardTasksCompletedRingEdge{\n  fill: none;\n  stroke: #0d0f13;\n  stroke-width: 5;");
   });
 
-  it("uses larger status text for outer donut task labels", () => {
-    const css = readFileSync("src/app/tasktimer/styles/03-dashboard.css", "utf8").replace(/\r\n/g, "\n");
+  it("places an accessible task list after the donut", () => {
+    const markup = readFileSync("src/app/tasktimer/components/DashboardPageContent.tsx", "utf8");
+    expect(markup).toMatch(/id="dashboardTasksCompletedCenter"[^>]*\/>\s*<\/div>\s*<ul[^>]*id="dashboardTasksCompletedLabels"[^>]*aria-label="Task statuses"/);
+  });
 
-    expect(css).toContain(".dashboardTasksCompletedLabelStatus{\n  color: rgba(188,214,230,.7);\n  font-family: var(--font-orbitron), \"Segoe UI Variable\", \"Segoe UI\", Arial, sans-serif !important;\n  font-size: 12px;");
-    expect(css).toContain(".dashboardTasksCompletedLabel.isCompact .dashboardTasksCompletedLabelStatus{\n  font-size: 11px;");
-    expect(css).toContain(".dashboardTasksCompletedLabel.isMicro .dashboardTasksCompletedLabelStatus{\n  font-size: 10px;");
+  it("shows today's dated tasks in the donut before their planned start time", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 16, 8));
+    const tasks = [
+      task({ id: "recurring", name: "Recurring Today", taskType: "recurring", plannedStartDate: "2026-09-16", plannedStartTime: "16:30", plannedStartByDay: { wed: "16:30" } }),
+      task({ id: "once-off", name: "Once-off Today", taskType: "once-off", plannedStartDate: "2026-09-16", onceOffTargetDate: "2026-09-16", plannedStartTime: "17:30", plannedStartByDay: { wed: "17:30" } }),
+      task({ id: "future", name: "Future Task", plannedStartDate: "2026-09-23", plannedStartTime: "09:00", plannedStartByDay: { wed: "09:00" } }),
+    ];
+    const harness = createRenderHarness(tasks);
+    try {
+      harness.render();
+      const labels = harness.byId.get("dashboardTasksCompletedLabels")?.children;
+      expect(labels).toHaveLength(2);
+      expect(labels?.[0]?.innerHTML).toContain("Recurring Today");
+      expect(labels?.[1]?.innerHTML).toContain("Once-off Today");
+    } finally {
+      harness.restore();
+    }
   });
 
   it("shows scheduled due tasks without daily goals in the donut", () => {
@@ -2363,99 +2380,35 @@ describe("dashboard completed card", () => {
     }
   });
 
-  it("keeps shortened task labels when full labels would overlap the donut area", () => {
-    const tasks = [
-      task({ id: "long-1", name: "Extremely Long Deep Work Task", order: 1, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
-      task({ id: "long-2", name: "Extremely Long Admin Task", order: 2, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
-    ];
-    const harness = createRenderHarness(tasks);
-
+  it("renders full task names in order with colors and updates statuses without duplicate rows", () => {
+    const tasks = Array.from({ length: 20 }, (_, index) => task({
+      id: `long-${index}`, name: `Extremely Long Task Name ${index}`, order: index,
+      color: "#35e8ff", timeGoalMinutes: 60, plannedStartByDay: todaySchedule(),
+    }));
+    const historyByTaskId = { "long-0": [] as { ts: number; name: string; ms: number }[] };
+    const harness = createRenderHarness(tasks, { historyByTaskId });
     try {
-      ElementStub.labelRectOverride = (element) => element.className.split(/\s+/).includes("dashboardTasksCompletedLabel")
-        ? element.className.split(/\s+/).includes("isMicro")
-          ? { left: 250, top: 128, right: 304, bottom: 152, width: 54, height: 24 }
-          : { left: 170, top: 170, right: 230, bottom: 200, width: 60, height: 30 }
-        : null;
-
       harness.render();
-      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
-      const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
-      const svgEl = harness.byId.get("dashboardTasksCompletedSvg");
-      const connectorEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedConnector") || [];
-
-      expect(labelsEl?.children).toHaveLength(2);
-      expect(labelsEl?.classList.contains("isHiddenForLayout")).toBe(false);
-      expect(labelsEl?.children.every((child) => child.className.includes("isMicro"))).toBe(true);
-      expect(labelsEl?.children[0]?.innerHTML).toContain("Extre...");
-      expect(labelsEl?.children[0]?.getAttribute("title")).toBe("Extremely Long Deep Work Task: Not complete");
-      expect(labelsEl?.children[0]?.getAttribute("aria-label")).toBe("Extremely Long Deep Work Task: Not complete");
-      expect(connectorEls).toHaveLength(0);
-      expect(centerEl?.innerHTML).toContain("0%");
-    } finally {
-      harness.restore();
-    }
-  });
-
-  it("keeps shortened task labels close to their connector lines", () => {
-    const tasks = [
-      task({ id: "long-1", name: "Extremely Long Deep Work Task", order: 1, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
-      task({ id: "long-2", name: "Extremely Long Admin Task", order: 2, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
-    ];
-    const harness = createRenderHarness(tasks);
-
-    try {
-      ElementStub.labelRectOverride = (element) => element.className.split(/\s+/).includes("dashboardTasksCompletedLabel")
-        ? element.className.split(/\s+/).includes("isMicro")
-          ? { left: 250, top: 128, right: 304, bottom: 152, width: 54, height: 24 }
-          : { left: 170, top: 170, right: 230, bottom: 200, width: 60, height: 30 }
-        : null;
-
-      harness.render();
-      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
-      const label = labelsEl?.children[0];
-      const labelX = Number.parseFloat(String(label?.style.left || "0"));
-      const labelY = Number.parseFloat(String(label?.style.top || "0"));
-      const labelDistance = Math.hypot(labelX - 190, labelY - 190);
-
-      expect(label?.className).toContain("isMicro");
-      expect(labelDistance).toBeCloseTo(126, 0);
-    } finally {
-      harness.restore();
-    }
-  });
-
-  it("keeps shortened task labels when the rendered chart viewport would clip full labels", () => {
-    const tasks = [
-      task({ id: "goal-task", name: "Goal Task", order: 1, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
-      task({ id: "new-task", name: "New Task", order: 2, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
-    ];
-    const harness = createRenderHarness(tasks);
-
-    try {
-      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
-      Object.assign(labelsEl as object, {
-        getBoundingClientRect: () => ({ left: 0, top: 0, right: 300, bottom: 380, width: 300, height: 380 }),
+      const labels = harness.byId.get("dashboardTasksCompletedLabels");
+      expect(labels?.children).toHaveLength(20);
+      labels?.children.forEach((row, index) => {
+        expect(row.innerHTML).toContain(tasks[index].name);
+        expect(row.innerHTML).toContain("Not complete");
+        expect(row.innerHTML).toContain('class="dashboardTasksCompletedLabelDot" aria-hidden="true"');
+        expect(row.style["--dashboard-task-label-color"]).toBe("#35e8ff");
+        expect(row.style.left).toBeUndefined();
+        expect(row.style.top).toBeUndefined();
       });
-      ElementStub.labelRectOverride = (element) => element.className.split(/\s+/).includes("dashboardTasksCompletedLabel")
-        ? element.className.split(/\s+/).includes("isMicro")
-          ? { left: 220, top: 128, right: 274, bottom: 152, width: 54, height: 24 }
-          : { left: 280, top: 120, right: 340, bottom: 150, width: 60, height: 30 }
-        : null;
-
+      historyByTaskId["long-0"].push({ ts: Date.now(), name: tasks[0].name, ms: 30 * 60 * 1000 });
       harness.render();
-      const svgEl = harness.byId.get("dashboardTasksCompletedSvg");
-      const connectorEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedConnector") || [];
-
-      expect(labelsEl?.children).toHaveLength(2);
-      expect(labelsEl?.classList.contains("isHiddenForLayout")).toBe(false);
-      expect(labelsEl?.children.every((child) => child.className.includes("isMicro"))).toBe(true);
-      expect(labelsEl?.children[0]?.getAttribute("title")).toBe("Goal Task: Not complete");
-      expect(labelsEl?.children[1]?.getAttribute("title")).toBe("New Task: Not complete");
-      expect(connectorEls).toHaveLength(0);
+      expect(labels?.children).toHaveLength(20);
+      expect(labels?.children[0].innerHTML).toContain("50% complete");
+      expect(harness.byId.get("dashboardTasksCompletedCenter")?.innerHTML).toContain("completed today");
     } finally {
       harness.restore();
     }
   });
+
 });
 
 describe("momentum summary copy", () => {
