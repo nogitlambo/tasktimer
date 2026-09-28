@@ -7,7 +7,8 @@ import {
   getFirebaseAdminDb,
   hasFirebaseAdminCredentialConfig,
 } from "@/lib/firebaseAdmin";
-import { asString, type FeedbackType } from "../jira/feedback/shared";
+import { asString, type FeedbackType, type FeedbackEmailStatus } from "@/lib/feedback";
+import { storeFeedbackAttachments, deleteFeedbackAttachments, type FeedbackAttachment } from "./attachments";
 
 const FEEDBACK_SUBMISSION_WINDOW_MS = 24 * 60 * 60 * 1000;
 const FEEDBACK_SUBMISSION_LIMIT = 3;
@@ -214,6 +215,8 @@ export async function validateAndRecordFeedbackSubmission(input: {
   type: FeedbackType;
   title: string;
   details: string;
+  submissionId?: string;
+  attachments?: FeedbackAttachment[];
   createPayload: Record<string, unknown>;
   privatePayload?: Record<string, unknown>;
 }) {
@@ -221,53 +224,100 @@ export async function validateAndRecordFeedbackSubmission(input: {
   const fingerprint = buildFeedbackFingerprint(input.type, input.title, input.details);
   const db = getFirebaseAdminDb();
   const nowMs = Date.now();
-  const feedbackRef = db.collection("feedback_items").doc();
+  const submissionId = input.submissionId || "";
+  if (submissionId && !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(submissionId)) {
+    throw new FeedbackApiError("feedback/invalid-submission-id", "Invalid submission reference.", 400);
+  }
+  const feedbackId = submissionId ? createHash("sha256").update(`${normalizedUid}:${submissionId.toLowerCase()}`).digest("hex") : db.collection("feedback_items").doc().id;
+  const feedbackRef = db.collection("feedback_items").doc(feedbackId);
+  const outboxRef = db.collection("feedback_email_outbox").doc(feedbackId);
+  const attachments = input.attachments || [];
+  const hashes = attachments.map((file) => createHash("sha256").update(file.data).digest("hex"));
+  const requestHash = createHash("sha256").update(JSON.stringify({
+    type: input.type, title: input.title, details: input.details,
+    anonymous: !!input.createPayload.isAnonymous,
+    attachments: attachments.map((file, index) => ({ filename: file.filename, hash: hashes[index] })),
+  })).digest("hex");
+  const existingResult = (data: FirebaseFirestore.DocumentData) => {
+    if (data.requestHash !== requestHash || data.ownerUid !== normalizedUid) {
+      throw new FeedbackApiError("feedback/submission-conflict", "This submission reference was already used for different feedback.", 409);
+    }
+    return { feedbackId, deduplicated: true, emailDeliveryStatus: (data.status === "sent" || data.status === "failed" ? data.status : "pending") as FeedbackEmailStatus };
+  };
+  const existing = await outboxRef.get();
+  if (existing.exists) return existingResult(existing.data()!);
+  const storedAttachments = await storeFeedbackAttachments(feedbackId, attachments, hashes);
   const privateFeedbackRef = db.collection("feedback_private").doc(feedbackRef.id);
 
-  await db.runTransaction(async (tx) => {
-    const controlRef = feedbackControlDoc(normalizedUid);
-    const controlSnap = await tx.get(controlRef);
-    const state = normalizeFeedbackControlState(controlSnap.data());
-    const submissionEvents = pruneSubmissionEvents(state.submissionEvents, nowMs);
+  try {
+    const result = await db.runTransaction(async (tx) => {
+      const existing = await tx.get(outboxRef);
+      if (existing.exists) return existingResult(existing.data()!);
+      const controlRef = feedbackControlDoc(normalizedUid);
+      const controlSnap = await tx.get(controlRef);
+      const state = normalizeFeedbackControlState(controlSnap.data());
+      const submissionEvents = pruneSubmissionEvents(state.submissionEvents, nowMs);
 
-    if (submissionEvents.some((entry) => entry.fingerprint === fingerprint)) {
-      throw new FeedbackApiError("feedback/duplicate-submission", "You recently submitted similar feedback. Please wait before sending it again.", 429);
-    }
-    if (submissionEvents.length >= FEEDBACK_SUBMISSION_LIMIT) {
-      throw new FeedbackApiError("feedback/submission-rate-limited", "Daily submission limit reached. Please try again later.", 429);
-    }
+      if (submissionEvents.some((entry) => entry.fingerprint === fingerprint)) {
+        throw new FeedbackApiError("feedback/duplicate-submission", "You recently submitted similar feedback. Please wait before sending it again.", 429);
+      }
+      if (submissionEvents.length >= FEEDBACK_SUBMISSION_LIMIT) {
+        throw new FeedbackApiError("feedback/submission-rate-limited", "Daily submission limit reached. Please try again later.", 429);
+      }
 
-    submissionEvents.push({ atMs: nowMs, fingerprint });
-    tx.create(feedbackRef, {
-      feedbackId: feedbackRef.id,
-      ...input.createPayload,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-      lastActivityAt: FieldValue.serverTimestamp(),
-      schemaVersion: 1,
-    });
-    if (input.privatePayload && Object.keys(input.privatePayload).length) {
-      tx.create(privateFeedbackRef, {
+      tx.create(outboxRef, {
+        feedbackId, ownerUid: normalizedUid, requestHash,
+        status: "pending", attempts: 0, nextAttemptAtMs: nowMs,
+        leaseId: null, leaseUntilMs: 0, createdAtMs: nowMs, retryStartedAtMs: nowMs,
+        updatedAtMs: nowMs, attachments: storedAttachments,
+        payload: {
+          type: input.type, title: input.title, details: input.details,
+          isAnonymous: !!input.createPayload.isAnonymous,
+          authorEmail: input.createPayload.isAnonymous ? null : asString(input.privatePayload?.authorEmail, 320) || null,
+          authorDisplayName: input.createPayload.isAnonymous ? null : asString(input.createPayload.authorDisplayName, 120) || null,
+        },
+      });
+      submissionEvents.push({ atMs: nowMs, fingerprint });
+      tx.create(feedbackRef, {
         feedbackId: feedbackRef.id,
-        ownerUid: normalizedUid,
-        ...input.privatePayload,
+        ...input.createPayload,
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
+        lastActivityAt: FieldValue.serverTimestamp(),
         schemaVersion: 1,
       });
-    }
-    tx.set(
-      controlRef,
-      {
-        schemaVersion: 1,
-        submissionEvents: submissionEvents.slice(-FEEDBACK_SUBMISSION_LIMIT),
-        updatedAt: FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
-  });
-
-  return { feedbackId: feedbackRef.id };
+      if (input.privatePayload && Object.keys(input.privatePayload).length) {
+        tx.create(privateFeedbackRef, {
+          feedbackId: feedbackRef.id,
+          ownerUid: normalizedUid,
+          ...input.privatePayload,
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+          schemaVersion: 1,
+        });
+      }
+      tx.set(
+        controlRef,
+        {
+          schemaVersion: 1,
+          submissionEvents: submissionEvents.slice(-FEEDBACK_SUBMISSION_LIMIT),
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+      return { feedbackId, deduplicated: false, emailDeliveryStatus: "pending" as FeedbackEmailStatus };
+    });
+    if (result.deduplicated) await deleteFeedbackAttachments(storedAttachments);
+    return result;
+  } catch (error) {
+    // A transaction may commit even if its response is lost. Never delete its attachments.
+    try {
+      const committed = await outboxRef.get();
+      const referenced = new Set((committed.data()?.attachments || []).map((file: { path: string }) => file.path));
+      await deleteFeedbackAttachments(storedAttachments.filter((file) => !referenced.has(file.path)));
+    } catch { /* Leave uncertain uploads for the orphan sweeper. */ }
+    throw error;
+  }
 }
 
 export async function toggleFeedbackVoteWithLimits(input: {

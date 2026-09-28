@@ -72,6 +72,7 @@ type CreateHistoryEntrySummaryInteractionOptions = {
 
 export type HistoryEntrySummaryOpenOptions = {
   source?: "default" | "activityOverviewChart";
+  presentation?: "summary" | "note";
 };
 
 function normalizeTimestamp(raw: unknown) {
@@ -265,9 +266,10 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       && hasChangedDraft
       && getEditedNoteDrafts().some((draft) => richNoteHasMeaningfulText(draft.note));
     if (closeBtn) {
+      const subject = overlay.dataset.historyEntryPresentation === "note" ? "session note" : "session summary";
       const closeLabel = overlay.dataset.historyEntryEditing === "true" && hasChangedDraft
-        ? "Cancel session summary"
-        : "Close session summary";
+        ? `Cancel ${subject}`
+        : `Close ${subject}`;
       closeBtn.setAttribute("aria-label", closeLabel);
       closeBtn.setAttribute("title", closeLabel.startsWith("Cancel") ? "Cancel" : "Close");
       closeBtn.dataset.historyEntryCloseMode = closeLabel.startsWith("Cancel") ? "cancel" : "close";
@@ -353,24 +355,32 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       getEntryNote: options.getEntryNote,
     });
     if (!payload) return false;
-    if (elements.title) elements.title.textContent = "Session Summary";
+    const presentation = openOptions?.presentation ?? "summary";
+    const title = presentation === "note" ? "Session Note" : "Session Summary";
+    if (elements.overlay) elements.overlay.dataset.historyEntryPresentation = presentation;
+    elements.overlay?.querySelector(".modal")?.setAttribute("aria-label", title);
+    if (elements.title) elements.title.textContent = title;
     if (elements.meta) {
-      const showMeta = openOptions?.source !== "activityOverviewChart" && !!payload.titleText;
+      const showMeta = presentation !== "note" && openOptions?.source !== "activityOverviewChart" && !!payload.titleText;
       elements.meta.textContent = showMeta ? payload.titleText : "";
       elements.meta.style.display = showMeta ? "" : "none";
     }
     if (elements.body) {
-      elements.body.innerHTML = renderHistoryEntrySummaryHtml(payload, options.escapeHtml);
+      elements.body.innerHTML = renderHistoryEntrySummaryHtml(payload, options.escapeHtml, presentation);
       syncPlaceholders();
     }
     setTarget(taskId, entries);
     options.openOverlay(elements.overlay);
+    if (presentation === "note" && elements.overlay?.dataset.historyEntryEditable === "true") {
+      beginEdit(elements.body?.querySelector('[data-history-summary-action="edit-note"]') ?? null);
+    }
     return true;
   }
 
   function clearTarget() {
     const overlay = elements.overlay;
     if (overlay) {
+      delete overlay.dataset.historyEntryPresentation;
       overlay.dataset.historyEntryOwner = "";
       overlay.dataset.historyEntryTaskId = "";
       overlay.dataset.historyEntryTargetKey = "";

@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  verify: vi.fn(), profile: vi.fn(), save: vi.fn(), jira: vi.fn(), upload: vi.fn(), rateLimit: vi.fn(),
+  verify: vi.fn(), profile: vi.fn(), save: vi.fn(), vote: vi.fn(),  rateLimit: vi.fn(),
 }));
 
 vi.mock("./shared", async (importOriginal) => ({
@@ -9,27 +9,24 @@ vi.mock("./shared", async (importOriginal) => ({
   verifyFeedbackRequestUser: mocks.verify,
   loadFeedbackAuthorProfile: mocks.profile,
   validateAndRecordFeedbackSubmission: mocks.save,
-}));
-vi.mock("../jira/feedback/shared", async (importOriginal) => ({
-  ...await importOriginal<typeof import("../jira/feedback/shared")>(),
-  createJiraIssue: mocks.jira,
-  uploadJiraIssueAttachment: mocks.upload,
+  toggleFeedbackVoteWithLimits: mocks.vote,
 }));
 vi.mock("../shared/rateLimit", async (importOriginal) => ({
   ...await importOriginal<typeof import("../shared/rateLimit")>(),
   enforceUidRateLimit: mocks.rateLimit,
 }));
 
-import { OPTIONS, POST } from "./route";
+import { OPTIONS, POST, PATCH } from "./route";
 import { FeedbackApiError } from "./shared";
 
 describe("feedback submission endpoint", () => {
+  afterEach(() => vi.unstubAllGlobals());
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.stubGlobal("fetch", vi.fn(() => { throw new Error("Unexpected external call"); }));
     mocks.verify.mockResolvedValue({ uid: "user-1", email: "pilot@example.com" });
     mocks.profile.mockResolvedValue({ displayName: "Pilot" });
-    mocks.save.mockResolvedValue({ feedbackId: "feedback-1" });
-    mocks.jira.mockResolvedValue({ jiraIssueKey: "TL-1", jiraIssueBrowseUrl: "https://example.atlassian.net/browse/TL-1" });
+    mocks.save.mockResolvedValue({ feedbackId: "feedback-1", emailDeliveryStatus: "pending", deduplicated: false });
   });
 
   it.each(["https://tasklaunch.app", "https://localhost", "capacitor://localhost"])(
@@ -43,6 +40,7 @@ describe("feedback submission endpoint", () => {
         body: JSON.stringify({ title: "Broken button", details: "Cannot submit", type: "bug", authorEmail: "spoof@example.com" }),
       }));
       expect(response.status).toBe(200);
+      expect(fetch).not.toHaveBeenCalled();
       expect(response.headers.get("access-control-allow-origin")).toBe(origin);
       expect(await response.json()).toMatchObject({ ok: true, feedbackId: "feedback-1" });
       expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({
@@ -51,8 +49,7 @@ describe("feedback submission endpoint", () => {
     },
   );
 
-  it("saves anonymous multipart feedback even when Jira fetch fails", async () => {
-    mocks.jira.mockRejectedValue(new TypeError("fetch failed"));
+  it("queues anonymous multipart feedback with its screenshots", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       const body = new FormData();
@@ -63,10 +60,12 @@ describe("feedback submission endpoint", () => {
       body.append("attachments", new File([new Uint8Array([137, 80, 78, 71])], "screen.png", { type: "image/png" }));
       const response = await POST(new Request("https://tasklaunch.app/api/feedback/", { method: "POST", body }));
       expect(response.status).toBe(200);
-      expect(await response.json()).toMatchObject({ ok: true, feedbackId: "feedback-1", jiraIssueBrowseUrl: null });
+      expect(fetch).not.toHaveBeenCalled();
+      expect(await response.json()).toMatchObject({ ok: true, feedbackId: "feedback-1", emailDeliveryStatus: "pending", jiraIssueBrowseUrl: null });
       expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({
         createPayload: expect.objectContaining({ isAnonymous: true, authorDisplayName: null }),
         privatePayload: undefined,
+        attachments: [expect.objectContaining({ filename: "screen.png", data: new Uint8Array([137, 80, 78, 71]) })],
       }));
       expect(mocks.profile).not.toHaveBeenCalled();
     } finally {
@@ -84,9 +83,35 @@ describe("feedback submission endpoint", () => {
       expect(response.status).toBe(401);
       expect(response.headers.get("access-control-allow-origin")).toBe("https://localhost");
       expect(mocks.save).not.toHaveBeenCalled();
-      expect(mocks.jira).not.toHaveBeenCalled();
     } finally {
       log.mockRestore();
     }
   });
+  it.each([
+    [9, 1, "image/png", "8 screenshots"],
+    [1, 6 * 1024 * 1024 + 1, "image/png", "6 MB"],
+    [3, 6 * 1024 * 1024, "image/png", "15 MB"],
+    [1, 4, "image/jpeg", "PNG"],
+  ])("rejects invalid screenshot batches (%s files, %s bytes)", async (count, size, type, message) => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const body = new FormData();
+      body.set("title", "Test"); body.set("details", "Test");
+      for (let i = 0; i < Number(count); i++) body.append("attachments", new File([new Uint8Array(Number(size))], "test.png", {type: String(type)}));
+      const response = await POST(new Request("https://tasklaunch.app/api/feedback/", {method: "POST", body}));
+      expect(response.status).toBe(400);
+      expect((await response.json()).error).toContain(message);
+      expect(mocks.save).not.toHaveBeenCalled();
+    } finally {log.mockRestore();}
+  });
+
+  it("updates votes without calling Jira even for historical linked feedback", async () => {
+    mocks.vote.mockResolvedValue({upvoted: true, upvoteCount: 2, jiraIssueBrowseUrl: "https://example.atlassian.net/browse/TL-1"});
+    const response = await PATCH(new Request("https://tasklaunch.app/api/feedback/", {
+      method: "PATCH", body: JSON.stringify({feedbackId: "feedback-1"}),
+    }));
+    expect(response.status).toBe(200);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
 });

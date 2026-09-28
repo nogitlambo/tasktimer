@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Task } from "../lib/types";
 import { dispatchTaskCardAction, renderTaskCardHtml, resolveTaskCardScheduleLabel } from "./task-card-view-model";
+import { createTaskTimerSharedTask } from "./task-shared";
 
 function baseTask(overrides: Partial<Task> = {}): Task {
   return {
@@ -53,32 +54,58 @@ describe("task card scheduled start", () => {
   const now = new Date(2026, 8, 16, 15);
   const label = (overrides: Partial<Task>, date = now) => resolveTaskCardScheduleLabel(baseTask(overrides), date);
 
+  it("retains an overdue once-off label after reload normalization", () => {
+    const task = baseTask({ taskType: "once-off", onceOffDay: "tue", onceOffTargetDate: "2020-09-29", plannedStartDate: "2020-09-29", plannedStartTime: "10:30", plannedStartByDay: { tue: "10:30" } });
+    const beforeReload = resolveTaskCardScheduleLabel(task, now);
+    const reloaded = JSON.parse(JSON.stringify(task)) as Task;
+    createTaskTimerSharedTask({ createId: () => "id" }).normalizeLoadedTask(reloaded);
+    expect(beforeReload).toBe("Tue 29/09 at 10:30AM");
+    expect(resolveTaskCardScheduleLabel(reloaded, now)).toBe(beforeReload);
+  });
+
   it.each(["once-off", "recurring"] as const)("renders today's dated %s schedule before its start time", (taskType) => {
     const task = baseTask({ taskType, plannedStartDate: "2026-09-16", plannedStartTime: "16:30" });
-    expect(renderCard({ task, nowDate: now }).html).toContain('<div class="taskScheduledStart">Scheduled for 4:30 PM</div>');
+    expect(renderCard({ task, nowDate: now }).html).toContain('<div class="taskScheduledStart">Today at 4:30PM</div>');
   });
 
   it("keeps today's time before and after it passes, using the day's own time", () => {
     const schedule = { plannedStartByDay: { wed: "09:00", thu: "14:30" } };
-    expect(label(schedule, new Date(2026, 8, 16, 8))).toBe("Scheduled for 9:00 AM");
-    expect(label(schedule)).toBe("Scheduled for 9:00 AM");
-    expect(label(schedule, new Date(2026, 8, 17, 0))).toBe("Scheduled for 2:30 PM");
+    expect(label(schedule, new Date(2026, 8, 16, 8))).toBe("Today at 9:00AM");
+    expect(label(schedule)).toBe("Today at 9:00AM");
+    expect(label(schedule, new Date(2026, 8, 17, 0))).toBe("Today at 2:30PM");
   });
 
   it("uses the next scheduled day across the week boundary", () => {
-    expect(label({ plannedStartByDay: { mon: "12:00" } })).toBe("Scheduled for Mon 12:00 PM");
-    expect(label({ plannedStartByDay: { thu: "00:00" } })).toBe("Scheduled for Thu 12:00 AM");
+    expect(label({ plannedStartByDay: { mon: "12:00" } })).toBe("Mon 21/09 at 12:00PM");
+    expect(label({ plannedStartByDay: { thu: "00:00" } })).toBe("Thu 17/09 at 12:00AM");
   });
 
-  it("respects activation dates and the seven-day date formatting boundary", () => {
-    expect(label({ plannedStartDate: "2026-09-23", plannedStartByDay: { wed: "09:00" } })).toBe("Scheduled for Wed 9:00 AM");
-    expect(label({ plannedStartDate: "2026-09-24", plannedStartByDay: { wed: "09:00" } })).toBe("Scheduled for 30 Sep 2026, 9:00 AM");
+  it("respects activation dates and formats dates beyond the current week", () => {
+    expect(label({ plannedStartDate: "2026-09-23", plannedStartByDay: { wed: "09:00" } })).toBe("Wed 23/09 at 9:00AM");
+    expect(label({ plannedStartDate: "2026-09-24", plannedStartByDay: { wed: "09:00" } })).toBe("Wed 30/09 at 9:00AM");
   });
 
   it("keeps once-off dates instead of repeating them weekly", () => {
-    expect(label({ taskType: "once-off", plannedStartDate: "2026-09-15", plannedStartTime: "09:00" })).toBe("Scheduled for 15 Sep 2026, 9:00 AM");
-    expect(label({ taskType: "once-off", onceOffTargetDate: "2026-09-17", plannedStartByDay: { thu: "09:00" } })).toBe("Scheduled for Thu 9:00 AM");
-    expect(label({ taskType: "once-off", plannedStartDate: "2026-10-01", plannedStartTime: "09:00" })).toBe("Scheduled for 1 Oct 2026, 9:00 AM");
+    expect(label({ taskType: "once-off", plannedStartDate: "2026-09-15", plannedStartTime: "09:00" })).toBe("Tue 15/09 at 9:00AM");
+    expect(label({ taskType: "once-off", onceOffTargetDate: "2026-09-17", plannedStartByDay: { thu: "09:00" } })).toBe("Thu 17/09 at 9:00AM");
+    expect(label({ taskType: "once-off", plannedStartDate: "2026-10-01", plannedStartTime: "09:00" })).toBe("Thu 01/10 at 9:00AM");
+  });
+
+  it("formats the requested examples for both task types", () => {
+    const monday = new Date(2026, 8, 28, 12);
+    expect(label({ taskType: "once-off", onceOffDay: "mon", onceOffTargetDate: "2026-09-28", plannedStartTime: "11:00" }, monday)).toBe("Today at 11:00AM");
+    expect(label({ taskType: "once-off", onceOffDay: "tue", onceOffTargetDate: "2026-09-29", plannedStartTime: "10:30" }, monday)).toBe("Tue 29/09 at 10:30AM");
+    expect(label({ taskType: "recurring", plannedStartByDay: { mon: "11:00" } }, monday)).toBe("Today at 11:00AM");
+    expect(label({ taskType: "recurring", plannedStartByDay: { tue: "10:30" }, plannedStartTime: "09:00" }, monday)).toBe("Tue 29/09 at 10:30AM");
+  });
+
+  it("uses the once-off target date over conflicting date and weekday fields", () => {
+    expect(label({ taskType: "once-off", onceOffDay: "thu", onceOffTargetDate: "2026-09-23", plannedStartDate: "2026-09-16", plannedStartTime: "11:00" })).toBe("Wed 23/09 at 11:00AM");
+  });
+
+  it("resolves recurring dates across month and year boundaries", () => {
+    expect(label({ taskType: "recurring", plannedStartByDay: { thu: "00:00" } }, new Date(2026, 8, 30, 12))).toBe("Thu 01/10 at 12:00AM");
+    expect(label({ taskType: "recurring", plannedStartByDay: { fri: "12:00" } }, new Date(2026, 11, 31, 12))).toBe("Fri 01/01 at 12:00PM");
   });
 
   it.each([
@@ -96,10 +123,10 @@ describe("task card scheduled start", () => {
     for (const state of [{}, { running: true }, { collapsed: true }]) {
       const task = baseTask({ ...state, plannedStartTime: "09:00" });
       const rendered = renderCard({ task, nowDate: now, isTimeGoalCompleted: true });
-      expect(rendered.html).toContain('title="Open focus mode">Write &lt;docs&gt;</div><div class="taskScheduledStart">Scheduled for 9:00 AM</div>');
+      expect(rendered.html).toContain('title="Open focus mode">Write &lt;docs&gt;</div><div class="taskScheduledStart">Today at 9:00AM</div>');
       expect(rendered.html).toContain('data-action="editName"');
       task.plannedStartTime = "14:30";
-      expect(renderCard({ task, nowDate: now }).html).toContain("Scheduled for 2:30 PM");
+      expect(renderCard({ task, nowDate: now }).html).toContain("Today at 2:30PM");
       task.plannedStartTime = null;
       expect(renderCard({ task, nowDate: now }).html).not.toContain('class="taskScheduledStart"');
     }

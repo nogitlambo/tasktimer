@@ -88,6 +88,11 @@ function createCollectionRef(path, filters = []) {
       return createCollectionRef(`${path}/${name}`);
     },
     async get() {
+      if (path.endsWith("/tasks")) {
+        return { docs: Object.entries(state.tasks)
+          .filter(([key]) => key.startsWith(`${path}/`) && key.slice(path.length + 1).indexOf("/") < 0)
+          .map(([key, value]) => createDocSnapshot(key.split("/").pop(), value)) };
+      }
       if (path.includes("/devices")) {
         return {
           docs: state.devices.map((row) => createDocSnapshot(row.id, row)),
@@ -194,7 +199,60 @@ vi.mock("firebase-functions", () => ({
   },
 }));
 
-const { __testing } = await import("./index.js");
+const { __testing, applyScheduledPushAction } = await import("./index.js");
+
+describe("manual completion gap suppression", () => {
+  const now = new Date(2026, 5, 1, 12).getTime();
+  const until = new Date(2026, 5, 2).getTime();
+  const entry = { name: "Task", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 10 };
+  const schedule = (id, dueAtMs = now) => ({
+    ...createDocSnapshot(id, { taskId: id, dueAtMs }),
+    ref: createCollectionRef(`scheduled_time_goal_pushes/user-1__${id}`),
+  });
+  beforeEach(() => {
+    resetState();
+    state.devices = [{ id: "native", token: "token", enabled: true, native: true, provider: "fcm", platform: "android", appActive: false }];
+  });
+
+  it("deletes completed once-off schedules while sending another eligible task", async () => {
+    state.tasks["users/user-1/tasks/done"] = { ...entry, taskType: "once-off", markedDoneAtMs: now - 1 };
+    state.tasks["users/user-1/tasks/open"] = entry;
+    await __testing.processDueUnscheduledGapTasks("user-1", [schedule("done"), schedule("open")], now);
+    expect(state.deletes).toContain("scheduled_time_goal_pushes/user-1__done");
+    expect(state.sendEachForMulticast).toHaveBeenCalledTimes(1);
+    expect(state.sendEachForMulticast.mock.calls[0][0].data.taskId).toBe("open");
+  });
+
+  it("defers recurring tasks and resumes at expiry without a client sync", async () => {
+    state.tasks["users/user-1/tasks/task"] = { ...entry, markedDoneAtMs: now - 1, markedDoneUntilMs: until };
+    await __testing.processDueUnscheduledGapTasks("user-1", [schedule("task")], now);
+    expect(state.sendEachForMulticast).not.toHaveBeenCalled();
+    expect(state.writes).toContainEqual(expect.objectContaining({ data: expect.objectContaining({ dueAtMs: until }) }));
+    await __testing.processDueUnscheduledGapTasks("user-1", [schedule("task", until)], until);
+    expect(state.sendEachForMulticast).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows a reopened once-off task", async () => {
+    state.tasks["users/user-1/tasks/task"] = { ...entry, taskType: "once-off", markedDoneAtMs: null };
+    await __testing.processDueUnscheduledGapTasks("user-1", [schedule("task")], now);
+    expect(state.sendEachForMulticast).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["launchTask", "postponeNextGap"])("ignores stale %s actions while retaining recurring expiry", async (actionId) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    try {
+      state.tasks["users/user-1/tasks/task"] = { ...entry, markedDoneAtMs: now - 1, markedDoneUntilMs: until };
+      state.tasks["scheduled_time_goal_pushes/user-1__task"] = { eventType: "unscheduledGapReminder", dueAtMs: now };
+      const result = await applyScheduledPushAction({ auth: { uid: "user-1" }, data: { taskId: "task", actionId } });
+      expect(result).toMatchObject({ applied: false, reason: "completed" });
+      expect(state.writes).toContainEqual(expect.objectContaining({ data: expect.objectContaining({ dueAtMs: until }) }));
+      expect(state.batchWrites).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
 
 describe("sendFriendRequestPendingNotification", () => {
   beforeEach(() => {

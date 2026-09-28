@@ -1,3 +1,4 @@
+import { feedbackAttachmentError, type FeedbackEmailStatus } from "@/lib/feedback";
 import {
   collection,
   doc,
@@ -53,6 +54,7 @@ export type ToggleFeedbackUpvoteResult =
   | { ok: false; message: string };
 
 export type CreateFeedbackItemInput = {
+  submissionId?: string;
   ownerUid?: string;
   authorDisplayName?: string | null;
   authorEmail?: string | null;
@@ -206,7 +208,7 @@ function feedbackVoteDoc(feedbackId: string, uid: string) {
   return db ? doc(db, "feedback_items", feedbackId, "votes", uid) : null;
 }
 
-export async function createFeedbackItem(input: CreateFeedbackItemInput): Promise<{ ok: true; item: FeedbackItem } | { ok: false; message: string }> {
+export async function createFeedbackItem(input: CreateFeedbackItemInput): Promise<{ ok: true; item: FeedbackItem; emailDeliveryStatus: FeedbackEmailStatus } | { ok: false; message: string }> {
   try {
     const ownerUid = normalizeString(input.ownerUid, 120);
     const title = normalizeString(input.title, 160);
@@ -215,6 +217,8 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
     if (!title) return { ok: false, message: "A feedback title is required." };
     if (!details) return { ok: false, message: "Feedback details are required." };
     const attachments = Array.isArray(input.attachments) ? input.attachments : [];
+    const attachmentError = feedbackAttachmentError(attachments.map((attachment) => attachment.file));
+    if (attachmentError) return { ok: false, message: attachmentError };
     const hasAttachments = attachments.length > 0;
     const headers: Record<string, string> = {
     };
@@ -224,6 +228,7 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
     if (hasAttachments) {
       const formData = new FormData();
       if (authToken) formData.append("authToken", authToken);
+      if (input.submissionId) formData.append("submissionId", input.submissionId);
       formData.append("authorCurrentRankId", normalizeNullableString(input.authorCurrentRankId, 120) || "");
       formData.append("authorDisplayName", normalizeNullableString(input.authorDisplayName, 120) || "");
       formData.append("authorEmail", normalizeNullableString(input.authorEmail, 320) || "");
@@ -250,6 +255,7 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
       headers["Content-Type"] = "application/json";
       body = JSON.stringify({
         authToken,
+        submissionId: input.submissionId,
         authorCurrentRankId: normalizeNullableString(input.authorCurrentRankId, 120),
         authorDisplayName: normalizeNullableString(input.authorDisplayName, 120),
         authorEmail: normalizeNullableString(input.authorEmail, 320),
@@ -268,7 +274,7 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
       body,
     });
     const result = (await response.json().catch(() => null)) as
-      | { error?: string; jiraIssueBrowseUrl?: string | null; jiraIssueKey?: string | null }
+      | { error?: string; feedbackId?: string; emailDeliveryStatus?: FeedbackEmailStatus; jiraIssueBrowseUrl?: string | null; jiraIssueKey?: string | null }
       | null;
     if (!response.ok) {
       recordNativeFeedbackSubmitDiagnostic("http-error", new Error(result?.error || `Feedback submit HTTP ${response.status}`), {
@@ -280,10 +286,12 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
       });
       return { ok: false, message: result?.error || "Could not submit feedback." };
     }
+    const jiraIssueBrowseUrl = normalizeNullableString(result?.jiraIssueBrowseUrl, 2048);
     return {
       ok: true,
+      emailDeliveryStatus: result?.emailDeliveryStatus === "sent" || result?.emailDeliveryStatus === "failed" ? result.emailDeliveryStatus : "pending",
       item: {
-        feedbackId: "",
+        feedbackId: normalizeString(result?.feedbackId, 120),
         ownerUid,
         authorDisplayName: normalizeNullableString(input.authorDisplayName, 120),
         authorEmail: normalizeNullableString(input.authorEmail, 320),
@@ -300,7 +308,7 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
         updatedAt: null,
         lastActivityAt: null,
         schemaVersion: 1,
-        jiraIssueBrowseUrl: normalizeNullableString(result?.jiraIssueBrowseUrl, 2048),
+        jiraIssueBrowseUrl,
       },
     };
   } catch (error) {
@@ -402,3 +410,12 @@ export async function toggleFeedbackUpvote(
   }
 }
 
+
+export async function getFeedbackEmailStatus(feedbackId: string, authToken: string, signal?: AbortSignal): Promise<FeedbackEmailStatus | null> {
+  const response = await fetch(getApiUrl(`/api/feedback/${encodeURIComponent(feedbackId)}/delivery/`), {
+    headers: { "x-firebase-auth": authToken }, credentials: "same-origin", cache: "no-store", signal,
+  });
+  if (!response.ok) return null;
+  const body = await response.json();
+  return ["pending", "sent", "failed"].includes(body.emailDeliveryStatus) ? body.emailDeliveryStatus : null;
+}

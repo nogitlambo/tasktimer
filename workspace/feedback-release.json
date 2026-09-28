@@ -1,0 +1,31 @@
+{
+  "stage": "C:\\Users\\anive\\AppData\\Local\\Temp\\tasklaunch-feedback-release-6y488vzg",
+  "files": [
+    "apphosting.yaml",
+    ".env.example",
+    "functions/index.js",
+    "functions/package.json",
+    "functions/package-lock.json",
+    "src/app/tasktimer/components/FeedbackScreen.tsx",
+    "src/app/tasktimer/lib/feedbackStore.ts",
+    "src/app/tasktimer/lib/feedbackStore.test.ts",
+    "src/lib/feedback.ts",
+    "src/lib/feedback.test.ts",
+    "src/test/feedback-firestore.js",
+    "scripts/requeue-feedback-email.mjs",
+    "docs/feedback-email.md",
+    "src/app/api/feedback/attachments.test.ts",
+    "src/app/api/feedback/attachments.ts",
+    "src/app/api/feedback/queue.test.ts",
+    "src/app/api/feedback/route.test.ts",
+    "src/app/api/feedback/route.ts",
+    "src/app/api/feedback/shared.test.ts",
+    "src/app/api/feedback/shared.ts",
+    "src/app/api/feedback/submission.test.ts",
+    "src/app/api/feedback/[feedbackId]/delivery/route.test.ts",
+    "src/app/api/feedback/[feedbackId]/delivery/route.ts",
+    "functions/feedback-email-worker.js",
+    "functions/feedback-email-worker.test.js",
+    "functions/feedback-email.js"
+  ]
+}

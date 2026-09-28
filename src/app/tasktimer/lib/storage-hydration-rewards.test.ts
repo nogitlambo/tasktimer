@@ -181,13 +181,44 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     vi.clearAllMocks();
   });
 
-  it.each([false, true])("preserves scheduled once-off tasks through save and reload (conversion: %s)", async (conversion) => {
+  it.each(["once-off", "recurring"] as const)("retains a pending %s schedule across refresh when cloud writes fail", async (taskType) => {
+    const scheduled = task("pending-schedule", "Scheduled task", {
+      taskType,
+      plannedStartDate: "2026-09-09",
+      onceOffTargetDate: taskType === "once-off" ? "2026-09-09" : null,
+      plannedStartTime: "14:00",
+      plannedStartByDay: { wed: "14:00" },
+    });
+    cloudStoreMocks.saveTask.mockRejectedValueOnce(Object.assign(new Error("Permission denied"), { code: "permission-denied" }));
+    saveTasks([scheduled]);
+    await vi.advanceTimersByTimeAsync(1);
+    resetVolatileWorkspaceStateForAuthChange();
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [task("pending-schedule", "Scheduled task", { taskType, plannedStartOpenEnded: true })],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: buildDefaultCloudPreferences(),
+      dashboard: null,
+      taskUi: null,
+    });
+    await hydrateStorageFromCloud({ force: true });
+    expect(loadTasks()).toEqual([expect.objectContaining(scheduled)]);
+  });
+
+  it.each([
+    [false, "2026-09-09"],
+    [true, "2026-09-09"],
+    [false, "2026-04-29"],
+    [true, "2026-04-29"],
+  ])("preserves scheduled once-off tasks through save and reload (conversion: %s, date: %s)", async (conversion, date) => {
     if (conversion) saveTasks([task("once-off-save", "Scheduled task", { taskType: "recurring" })]);
     const scheduledTask = task("once-off-save", "Scheduled task", {
       taskType: "once-off",
       onceOffDay: "wed",
-      onceOffTargetDate: "2026-09-09",
-      plannedStartDate: "2026-09-09",
+      onceOffTargetDate: date,
+      plannedStartDate: date,
       plannedStartDay: "wed",
       plannedStartTime: "14:00",
       plannedStartByDay: { wed: "14:00" },
@@ -205,6 +236,19 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
       expect.objectContaining(scheduledTask),
       expect.anything(),
     );
+    clearScopedStorageState();
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [scheduledTask],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: buildDefaultCloudPreferences(),
+      dashboard: null,
+      taskUi: null,
+    });
+    await hydrateStorageFromCloud({ force: true });
+    expect(loadTasks()).toEqual([expect.objectContaining(scheduledTask)]);
   });
 
   it("preserves full color task cards as a signed-out fallback when clearing scoped state", () => {

@@ -4,6 +4,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocFromServer,
   getDocs,
   onSnapshot,
   query,
@@ -19,6 +20,7 @@ import { getApiUrl } from "./apiClient";
 import { claimUsernameClient } from "./usernameClaim";
 import { normalizeTaskTimerPlan, type TaskTimerPlan } from "./entitlements";
 import { normalizeCompletionDifficulty } from "./completionDifficulty";
+import { isTaskMarkedDone } from "./taskManualCompletion";
 import { patchLeaderboardProfileFromUserRoot } from "./leaderboard";
 import {
   getTimeGoalCompletionDayKey,
@@ -1005,14 +1007,17 @@ export function buildScheduledTimeGoalPushPlan(task: Task, nowMs = Date.now(), c
   weekStarting: DashboardWeekStart;
 } {
   const plannedStartDueAtMs = computePlannedStartPushDueAtMs(task);
-  const unscheduledGapCandidate = isUnscheduledGapPushCandidate(task);
+  const gapResumeAtMs = isTaskMarkedDone(task, nowMs)
+    ? task.taskType === "once-off" ? null : task.markedDoneUntilMs!
+    : nowMs;
+  const unscheduledGapCandidate = gapResumeAtMs != null && isUnscheduledGapPushCandidate(task, gapResumeAtMs);
   const weekStarting = normalizeDashboardWeekStart(context?.weekStarting);
   const timeGoalCompleteDueAtMs = computeTimeGoalCompletePushDueAtMs(task, nowMs, { ...context, weekStarting });
   const timeGoalPeriod = task.timeGoalPeriod === "day" ? "day" : "week";
   const timeGoalGoalMs = task.timeGoalEnabled && normalizeTimeGoalValue(task.timeGoalMinutes) > 0
     ? Math.floor(normalizeTimeGoalValue(task.timeGoalMinutes) * 60_000)
     : null;
-  const dueAtMs = plannedStartDueAtMs ?? timeGoalCompleteDueAtMs ?? (unscheduledGapCandidate ? nowMs : null);
+  const dueAtMs = plannedStartDueAtMs ?? timeGoalCompleteDueAtMs ?? (unscheduledGapCandidate ? gapResumeAtMs : null);
   const notificationKind =
     plannedStartDueAtMs != null
       ? "plannedStart"
@@ -1044,12 +1049,13 @@ export function buildScheduledTimeGoalPushPlan(task: Task, nowMs = Date.now(), c
   };
 }
 
-function isUnscheduledGapPushCandidate(task: Task): boolean {
+function isUnscheduledGapPushCandidate(task: Task, nowMs: number): boolean {
   return (
     normalizeDayTimeGoalMinutes(task) != null &&
     !getTaskPlannedStartByDay(task) &&
     task.plannedStartOpenEnded !== true &&
-    !isTaskTimeGoalCompletedToday(task)
+    !isTaskMarkedDone(task, nowMs) &&
+    !isTaskTimeGoalCompletedToday(task, nowMs)
   );
 }
 
@@ -1452,26 +1458,6 @@ function mapTaskToCompatibilityFirestore(task: Task): Record<string, unknown> {
   return compatibilityRow;
 }
 
-function mapTaskToMinimalCompatibilityFirestore(task: Task): Record<string, unknown> {
-  const compatibilityRow = mapTaskToCompatibilityFirestore(task);
-  const {
-    plannedStartDate,
-    plannedStartDay,
-    plannedStartTime,
-    plannedStartByDay,
-    plannedStartOpenEnded,
-    plannedStartPushRemindersEnabled,
-    ...minimalCompatibilityRow
-  } = compatibilityRow;
-  void plannedStartDate;
-  void plannedStartDay;
-  void plannedStartTime;
-  void plannedStartByDay;
-  void plannedStartOpenEnded;
-  void plannedStartPushRemindersEnabled;
-  return minimalCompatibilityRow;
-}
-
 export async function saveUserRootPatch(uid: string, patch: Record<string, unknown>): Promise<void> {
   await writeUserRootDocument(uid, {
     patch,
@@ -1845,58 +1831,9 @@ export async function saveTask(uid: string, task: Task, context?: ScheduledTimeG
             }
             recoveredWithLegacyFallback = true;
           } catch (compatibilityError) {
-            const describedCompatibilityError = describeError(compatibilityError);
-            const shouldRetryMinimalCompatibility =
-              describedCompatibilityError.code === "permission-denied" ||
-              String(describedCompatibilityError.message || "").toLowerCase().includes("missing or insufficient permissions");
-            if (shouldRetryMinimalCompatibility) {
-              const minimalCompatibilityTaskRow = mapTaskToMinimalCompatibilityFirestore(task);
-              try {
-                await setDoc(ref, await buildSavePayload(minimalCompatibilityTaskRow, { includeMetadata: false }));
-                savedRowKeys = Object.keys(minimalCompatibilityTaskRow);
-                if (process.env.NODE_ENV !== "production") {
-                  console.warn("[tasktimer-cloud] Saved task with minimal compatibility fallback", {
-                    uid,
-                    taskId: String(task.id || ""),
-                    databaseRowKeys: savedRowKeys,
-                  });
-                }
-                recoveredWithLegacyFallback = true;
-              } catch (minimalCompatibilityError) {
-                if (process.env.NODE_ENV !== "production") {
-                  const describedMinimalCompatibilityError = describeError(minimalCompatibilityError);
-                  console.error("[tasktimer-cloud] Legacy fallback save failed", {
-                    uid,
-                    taskId: String(task.id || ""),
-                    databaseRowKeys: Object.keys(legacyTaskRow),
-                    taskRow: legacyTaskRow,
-                    compatibilityRowKeys: Object.keys(compatibilityTaskRow),
-                    compatibilityTaskRow,
-                    minimalCompatibilityRowKeys: Object.keys(minimalCompatibilityTaskRow),
-                    minimalCompatibilityTaskRow,
-                    error: describedMinimalCompatibilityError,
-                    errorMessage: describedMinimalCompatibilityError.message ?? null,
-                    errorCode: describedMinimalCompatibilityError.code ?? null,
-                  });
-                }
-                throw minimalCompatibilityError;
-              }
-            } else {
-              if (process.env.NODE_ENV !== "production") {
-                console.error("[tasktimer-cloud] Legacy fallback save failed", {
-                  uid,
-                  taskId: String(task.id || ""),
-                  databaseRowKeys: Object.keys(legacyTaskRow),
-                  taskRow: legacyTaskRow,
-                  compatibilityRowKeys: Object.keys(compatibilityTaskRow),
-                  compatibilityTaskRow,
-                  error: describedCompatibilityError,
-                  errorMessage: describedCompatibilityError.message ?? null,
-                  errorCode: describedCompatibilityError.code ?? null,
-                });
-              }
-              throw compatibilityError;
-            }
+            // Never retry by dropping schedule fields: setDoc replaces the saved task.
+            // Propagate the failure so persistence retains the pending local edit.
+            throw compatibilityError;
           }
         } else {
           if (process.env.NODE_ENV !== "production") {
@@ -2368,11 +2305,11 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
   return normalizeUserPreferencesDocument(snap.data());
 }
 
-export async function loadUserRootPlan(uid: string): Promise<TaskTimerPlan> {
+export async function loadUserRootPlan(uid: string, options: { serverOnly?: boolean } = {}): Promise<TaskTimerPlan> {
   const normalizedUid = String(uid || "").trim();
   const ref = normalizedUid ? usersDoc(normalizedUid) : null;
   if (!ref) return "free";
-  const snap = await getDoc(ref);
+  const snap = await (options.serverOnly ? getDocFromServer(ref) : getDoc(ref));
   return normalizeTaskTimerPlan(snap.exists() ? snap.get("plan") : "free");
 }
 

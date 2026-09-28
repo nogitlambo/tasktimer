@@ -18,7 +18,7 @@ vi.mock("@/lib/firebaseTelemetry", () => ({
   recordNonFatal: mocks.recordNonFatal,
 }));
 
-import { createFeedbackItem, toggleFeedbackUpvote } from "./feedbackStore";
+import { createFeedbackItem, getFeedbackEmailStatus, toggleFeedbackUpvote } from "./feedbackStore";
 
 describe("feedbackStore API calls", () => {
   beforeEach(() => {
@@ -46,6 +46,7 @@ describe("feedbackStore API calls", () => {
     });
 
     expect(result.ok).toBe(true);
+    if (result.ok) expect(result.emailDeliveryStatus).toBe("pending");
     expect(fetch).toHaveBeenCalledWith(
       "https://tasklaunch.app/api/feedback/",
       expect.objectContaining({
@@ -75,6 +76,21 @@ describe("feedbackStore API calls", () => {
         method: "POST",
       })
     );
+  });
+
+  it("reports pending email delivery after feedback is saved", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(Response.json({
+      ok: true, feedbackId: "feedback-1", jiraIssueBrowseUrl: null,
+    }))));
+    const result = await createFeedbackItem({
+      ownerUid: "uid-1", isAnonymous: true, type: "bug",
+      title: "Missing Jira item", details: "Feedback was saved but Jira failed.",
+    });
+    expect(result).toMatchObject({
+      ok: true,
+      emailDeliveryStatus: "pending",
+      item: { feedbackId: "feedback-1", jiraIssueBrowseUrl: null },
+    });
   });
 
   it("patches feedback votes to the hosted API origin in native runtime", async () => {
@@ -146,4 +162,20 @@ describe("feedbackStore API calls", () => {
     expect(result).toEqual({ ok: false, message: "Failed to fetch" });
     expect(mocks.recordNonFatal).not.toHaveBeenCalled();
   });
+  it.each([false, true])("forwards a stable submission UUID for JSON and multipart (attachments=%s)", async (attached) => {
+    const submissionId = "11111111-1111-4111-8111-111111111111";
+    const input = {ownerUid: "uid-1", submissionId, isAnonymous: true, type: "bug" as const, title: "Title", details: "Details"};
+    const file = new File([new Uint8Array([137, 80, 78, 71])], "screen.png", {type: "image/png"});
+    await createFeedbackItem({...input, attachments: attached ? [{file, filename: file.name, mimeType: file.type, sizeBytes: file.size, width: 1, height: 1}] : []});
+    const body = vi.mocked(fetch).mock.calls[0][1]?.body;
+    expect(body instanceof FormData ? body.get("submissionId") : JSON.parse(String(body)).submissionId).toBe(submissionId);
+  });
+
+  it("checks delivery through the hosted authenticated native API", async () => {
+    mocks.isNativeOrFileRuntime.mockReturnValue(true);
+    vi.mocked(fetch).mockResolvedValue(Response.json({emailDeliveryStatus: "sent"}));
+    expect(await getFeedbackEmailStatus("feedback-1", "id-token")).toBe("sent");
+    expect(fetch).toHaveBeenCalledWith("https://tasklaunch.app/api/feedback/feedback-1/delivery/", expect.objectContaining({headers: {"x-firebase-auth": "id-token"}, cache: "no-store"}));
+  });
+
 });

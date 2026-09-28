@@ -5,14 +5,7 @@ import {
   enforceUidRateLimit,
 } from "../shared/rateLimit";
 import { authenticatedApiOptions, withAuthenticatedApiCors } from "../shared/cors";
-import {
-  asString,
-  createJiraIssue,
-  describeError,
-  parseJiraIssueKeyFromBrowseUrl,
-  syncJiraIssueVote,
-  uploadJiraIssueAttachment,
-} from "../jira/feedback/shared";
+import { asString, feedbackAttachmentError } from "@/lib/feedback";
 import {
   FeedbackApiError,
   loadFeedbackAuthorProfile,
@@ -52,7 +45,7 @@ function createErrorResponse(error: unknown, fallbackMessage: string) {
   if (error instanceof FeedbackApiError) {
     return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
   }
-  const message = error instanceof Error && error.message ? error.message : fallbackMessage;
+  const message = fallbackMessage;
   return NextResponse.json({ error: message, code: "feedback/internal" }, { status: 500 });
 }
 
@@ -83,6 +76,12 @@ async function parseFeedbackPostBody(req: Request) {
       400
     );
   }
+
+  if (attachmentEntries.some((entry) => !(entry instanceof File))) {
+    throw new FeedbackApiError("feedback/invalid-attachment", "One of the screenshots could not be read.", 400);
+  }
+  const attachmentError = feedbackAttachmentError(attachmentEntries as File[]);
+  if (attachmentError) throw new FeedbackApiError("feedback/invalid-attachments", attachmentError, 400);
 
   const attachments = await Promise.all(
     attachmentEntries.map(async (entry, index) => {
@@ -161,52 +160,13 @@ export async function POST(req: Request) {
       throw new FeedbackApiError("feedback/invalid-email", "A feedback email address is required unless submitted anonymously.", 400);
     }
 
-    let jira: Awaited<ReturnType<typeof createJiraIssue>> | null = null;
-    try {
-      jira = await createJiraIssue({
-        uid,
-        type,
-        title,
-        details,
-        isAnonymous,
-        authorEmail,
-        authorDisplayName,
-      });
-    } catch (error) {
-      console.error("[api/feedback] Jira issue creation failed; persisting feedback without Jira mirror", {
-        uid,
-        type,
-        error: describeError(error),
-      });
-      jira = null;
-    }
-
-    const jiraIssueTarget = jira ? asString(jira.jiraIssueId, 120) || asString(jira.jiraIssueKey, 120) : "";
-    if (jiraIssueTarget) {
-      for (const attachment of attachments) {
-        try {
-          await uploadJiraIssueAttachment({
-            jiraIssueIdOrKey: jiraIssueTarget,
-            filename: attachment.filename,
-            contentType: attachment.mimeType,
-            data: attachment.data,
-          });
-        } catch (error) {
-          console.error("[api/feedback] Jira attachment upload failed; continuing without attachment mirror", {
-            uid,
-            jiraIssueTarget,
-            filename: attachment.filename,
-            error: describeError(error),
-          });
-        }
-      }
-    }
-
     const result = await validateAndRecordFeedbackSubmission({
       uid,
       type,
       title,
       details,
+      submissionId: asString(body.submissionId),
+      attachments,
       createPayload: {
         ownerUid: uid,
         authorDisplayName,
@@ -219,7 +179,7 @@ export async function POST(req: Request) {
         status: "open",
         upvoteCount: 0,
         commentCount: 0,
-        jiraIssueBrowseUrl: asString(jira?.jiraIssueBrowseUrl, 2048) || null,
+        jiraIssueBrowseUrl: null,
       },
       privatePayload: authorEmail
         ? {
@@ -234,14 +194,15 @@ export async function POST(req: Request) {
     return withAuthenticatedApiCors(req, NextResponse.json({
       ok: true,
       feedbackId: result.feedbackId,
-      jiraIssueId: jira?.jiraIssueId || null,
-      jiraIssueKey: jira?.jiraIssueKey || null,
-      jiraIssueBrowseUrl: jira?.jiraIssueBrowseUrl || null,
-      deduplicated: jira?.deduplicated || false,
+      emailDeliveryStatus: result.emailDeliveryStatus,
+      jiraIssueId: null,
+      jiraIssueKey: null,
+      jiraIssueBrowseUrl: null,
+      deduplicated: result.deduplicated,
     }));
   } catch (error) {
     console.error("[api/feedback] Feedback submission failed", {
-      error: describeError(error),
+      code: error instanceof FeedbackApiError ? error.code : "feedback/internal",
     });
     return withAuthenticatedApiCors(req, createErrorResponse(error, "Could not submit feedback."));
   }
@@ -269,25 +230,6 @@ export async function PATCH(req: Request) {
       feedbackId,
     });
 
-    const jiraIssueKey = parseJiraIssueKeyFromBrowseUrl(result.jiraIssueBrowseUrl);
-    if (jiraIssueKey) {
-      const jiraBaseUrl = asString(process.env.JIRA_BASE_URL).replace(/\/+$/, "");
-      if (jiraBaseUrl) {
-        void syncJiraIssueVote({
-          jiraBaseUrl,
-          jiraIssueKey,
-          upvoteCount: result.upvoteCount,
-          upvoted: result.upvoted,
-        }).catch((error) => {
-          console.error("[api/feedback] Jira vote sync failed", {
-            feedbackId,
-            jiraIssueKey,
-            error: describeError(error),
-          });
-        });
-      }
-    }
-
     return withAuthenticatedApiCors(req, NextResponse.json({
       ok: true,
       upvoted: result.upvoted,
@@ -296,7 +238,7 @@ export async function PATCH(req: Request) {
     }));
   } catch (error) {
     console.error("[api/feedback] Feedback vote failed", {
-      error: describeError(error),
+      code: error instanceof FeedbackApiError ? error.code : "feedback/internal",
     });
     return withAuthenticatedApiCors(req, createErrorResponse(error, "Could not update vote."));
   }

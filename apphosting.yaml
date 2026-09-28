@@ -76,20 +76,6 @@ env:
     availability:
       - BUILD
       - RUNTIME
-  - variable: JIRA_BASE_URL
-    value: "https://aniven82.atlassian.net/"
-    availability:
-      - BUILD
-      - RUNTIME
-  - variable: JIRA_PROJECT_KEY
-    value: "TLAPP"
-    availability:
-      - BUILD
-      - RUNTIME
-  - variable: JIRA_EMAIL
-    secret: JIRA_EMAIL
-    availability:
-      - RUNTIME
   - variable: SMTP_HOST
     value: "smtp.hostinger.com"
     availability:
@@ -143,10 +129,6 @@ env:
       - RUNTIME
   - variable: STRIPE_WEBHOOK_SECRET
     secret: STRIPE_WEBHOOK_SECRET
-    availability:
-      - RUNTIME
-  - variable: JIRA_API_TOKEN
-    secret: JIRA_API_TOKEN
     availability:
       - RUNTIME
   - variable: SMTP_PASS

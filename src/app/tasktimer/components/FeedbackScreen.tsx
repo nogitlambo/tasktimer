@@ -1,13 +1,14 @@
 "use client";
-import { useCallback, useEffect, useState, type ClipboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type ClipboardEvent } from "react";
 import { onAuthStateChanged, type Auth, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
+import { feedbackAttachmentError, feedbackDeliveryMessage } from "@/lib/feedback";
 import AppImg from "@/components/AppImg";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 
-import { createFeedbackItem, type FeedbackAttachmentUploadInput, type FeedbackType } from "../lib/feedbackStore";
+import { createFeedbackItem, getFeedbackEmailStatus, type FeedbackAttachmentUploadInput, type FeedbackType } from "../lib/feedbackStore";
 import { resolveStandaloneRouteBackTarget } from "../lib/routeBack";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import DesktopAppRail from "./DesktopAppRail";
@@ -70,6 +71,8 @@ async function resizeClipboardImageToPng(file: File): Promise<FeedbackAttachment
 }
 
 export default function FeedbackScreen() {
+  const submission = useRef<{ signature: string; id: string } | null>(null);
+  const [deliveryFeedbackId, setDeliveryFeedbackId] = useState("");
   const [feedbackEmail, setFeedbackEmail] = useState("");
   const [feedbackAnonymous, setFeedbackAnonymous] = useState(false);
   const [feedbackType, setFeedbackType] = useState<FeedbackType | "">("");
@@ -78,6 +81,7 @@ export default function FeedbackScreen() {
   const [feedbackStatus, setFeedbackStatus] = useState("");
   const [feedbackError, setFeedbackError] = useState("");
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [feedbackAttachmentDrafts, setFeedbackAttachmentDrafts] = useState<FeedbackAttachmentDraft[]>([]);
   const [feedbackAttachmentBusy, setFeedbackAttachmentBusy] = useState(false);
   const [viewerUid, setViewerUid] = useState("");
@@ -154,6 +158,29 @@ export default function FeedbackScreen() {
     return () => unsub();
   }, []);
 
+  useEffect(() => {
+    if (!deliveryFeedbackId) return;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      let terminal = false;
+      try {
+        const session = await resolveAuthSession();
+        if (controller.signal.aborted) return;
+        if (session) {
+          const status = await getFeedbackEmailStatus(deliveryFeedbackId, session.idToken, controller.signal);
+          if (status && !controller.signal.aborted) {
+            setFeedbackStatus(feedbackDeliveryMessage(status));
+            terminal = status !== "pending";
+          }
+        }
+      } catch { /* Keep the saved/pending confirmation during transient outages. */ }
+      if (!terminal && !controller.signal.aborted) timer = setTimeout(poll, 5000);
+    };
+    timer = setTimeout(poll, 5000);
+    return () => { controller.abort(); clearTimeout(timer); };
+  }, [deliveryFeedbackId, resolveAuthSession]);
+
   const handleBack = useCallback(() => {
     if (typeof window === "undefined") return;
     window.location.assign(resolveTaskTimerRouteHref(resolveStandaloneRouteBackTarget("/tasklaunch")));
@@ -165,8 +192,8 @@ export default function FeedbackScreen() {
     if (!feedbackType) return "Select a feedback type before submitting.";
     if (!feedbackTitle.trim()) return "Enter a feedback title before submitting.";
     if (!feedbackDetails.trim()) return "Enter feedback details before submitting.";
-    return "";
-  }, [feedbackAnonymous, feedbackAttachmentBusy, feedbackDetails, feedbackEmail, feedbackTitle, feedbackType]);
+    return feedbackAttachmentError(feedbackAttachmentDrafts.map((attachment) => attachment.file));
+  }, [feedbackAnonymous, feedbackAttachmentBusy, feedbackAttachmentDrafts, feedbackDetails, feedbackEmail, feedbackTitle, feedbackType]);
 
   const handleSubmitFeedback = useCallback(async () => {
     const validationMessage = getFeedbackValidationMessage();
@@ -178,6 +205,7 @@ export default function FeedbackScreen() {
     if (feedbackSubmitting || feedbackAttachmentBusy) return;
     setFeedbackError("");
     setFeedbackStatus("");
+    setDeliveryFeedbackId("");
     setFeedbackSubmitting(true);
     let session: Awaited<ReturnType<typeof resolveAuthSession>> = null;
     try {
@@ -189,7 +217,12 @@ export default function FeedbackScreen() {
     const effectiveViewerUid = String(currentUser?.uid || viewerUid).trim();
     const effectiveViewerDisplayName = String(currentUser?.displayName || viewerDisplayName).trim();
     const effectiveViewerEmail = feedbackAnonymous ? null : String(currentUser?.email || feedbackEmail).trim() || null;
+    const signature = JSON.stringify([effectiveViewerUid, feedbackAnonymous, feedbackType, feedbackTitle, feedbackDetails, feedbackAttachmentDrafts.map((file) => file.id)]);
+    if (!submission.current || submission.current.signature !== signature) {
+      submission.current = { signature, id: crypto.randomUUID() };
+    }
     const saved = await createFeedbackItem({
+      submissionId: submission.current.id,
       authToken: session?.idToken || "",
       ownerUid: effectiveViewerUid,
       authorDisplayName: effectiveViewerDisplayName || null,
@@ -211,7 +244,10 @@ export default function FeedbackScreen() {
     setFeedbackTitle("");
     setFeedbackDetails("");
     setFeedbackAttachmentDrafts([]);
-    setFeedbackStatus("Feedback submitted successfully.");
+    submission.current = null;
+    setFeedbackStatus(feedbackDeliveryMessage(saved.emailDeliveryStatus));
+    setDeliveryFeedbackId(saved.emailDeliveryStatus === "pending" ? saved.item.feedbackId : "");
+    setFeedbackSubmitted(true);
   }, [
     feedbackAnonymous,
     feedbackDetails,
@@ -240,6 +276,7 @@ export default function FeedbackScreen() {
     event.preventDefault();
     setFeedbackError("");
     setFeedbackStatus("");
+    setDeliveryFeedbackId("");
     setFeedbackAttachmentBusy(true);
     try {
       const nextAttachments = await Promise.all(
@@ -253,14 +290,28 @@ export default function FeedbackScreen() {
           } satisfies FeedbackAttachmentDraft;
         })
       );
-      setFeedbackAttachmentDrafts((prev) => [...prev, ...nextAttachments]);
+      const combined = [...feedbackAttachmentDrafts, ...nextAttachments];
+      const error = feedbackAttachmentError(combined.map((attachment) => attachment.file));
+      if (error) throw new Error(error);
+      setFeedbackAttachmentDrafts(combined);
     } catch (error) {
       const message = error instanceof Error && error.message ? error.message : "The pasted screenshot could not be added.";
       setFeedbackError(message);
     } finally {
       setFeedbackAttachmentBusy(false);
     }
-  }, []);
+  }, [feedbackAttachmentDrafts]);
+
+  if (feedbackSubmitted) {
+    return (
+      <main id="app" className="feedbackSubmittedPage" aria-label="TaskLaunch Feedback">
+        <p className="feedbackSubmittedMessage" role="status">Thank you for submitting your feedback.</p>
+        <button className="btn btn-ghost" type="button" onClick={handleBack} autoFocus>
+          Close
+        </button>
+      </main>
+    );
+  }
 
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch Feedback">
@@ -363,7 +414,7 @@ export default function FeedbackScreen() {
                       <textarea
                         id="feedbackDetailsInput"
                         rows={8}
-                        placeholder="Please provide steps to reproduce or what you would like improved. Screenshots can be pasted here."
+                        placeholder="Please provide steps to reproduce or what you would like improved. Paste up to 8 PNG screenshots (6 MB each, 15 MB total)."
                         value={feedbackDetails}
                         onChange={(e) => setFeedbackDetails(e.target.value)}
                         onPaste={handleDetailsPaste}

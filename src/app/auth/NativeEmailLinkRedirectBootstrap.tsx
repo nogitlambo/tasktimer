@@ -25,7 +25,10 @@ export default function NativeEmailLinkRedirectBootstrap() {
       if (!route) return;
       const target = resolveTaskTimerRouteHref(route);
       const current = `${window.location.pathname}${window.location.search || ""}`;
-      if (current === target) return;
+      if (current === target) {
+        window.dispatchEvent(new PopStateEvent("popstate"));
+        return;
+      }
       void Browser.close().catch(() => {});
       window.location.assign(target);
     };

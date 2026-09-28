@@ -43,7 +43,6 @@ import { normalizeSessionNoteAttachments } from "./sessionNoteAttachments";
 import {
   getCurrentLocalDate,
   getScheduleDayForLocalDate,
-  hasLocalDatePassed,
   hasMeaningfulTaskSchedule,
   normalizeLocalDateValue,
   normalizeTaskPlannedStartByDay,
@@ -387,12 +386,6 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
         ? null
         : Math.max(0, Math.floor(Number(task.sharedSourceImportedAtMs))),
   };
-  if (normalizedTask.taskType === "once-off" && normalizedTask.onceOffTargetDate && hasLocalDatePassed(normalizedTask.onceOffTargetDate)) {
-    normalizedTask.plannedStartDay = null;
-    normalizedTask.plannedStartTime = null;
-    normalizedTask.plannedStartByDay = null;
-    normalizedTask.plannedStartOpenEnded = false;
-  }
   syncLegacyPlannedStartFields(normalizedTask);
   syncOnceOffPlannedStartFields(normalizedTask);
   return normalizedTask;

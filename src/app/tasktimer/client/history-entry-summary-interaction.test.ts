@@ -176,6 +176,39 @@ function createHarness(overrides?: {
   };
 }
 
+describe("Notes presentation", () => {
+  it("opens completed notes for editing and restores the summary presentation", () => {
+    const entry = { taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note", historyTargetKey: "target-1" };
+    const h = createHarness({ entries: [entry], resolveEntryTarget: () => entry });
+    const { trigger, input } = triggerStubFor({ ts: "1000", historyTargetKey: "target-1" });
+    h.body.querySelector.mockReturnValue(trigger);
+    h.interaction.openSummary("task-1", [entry], { presentation: "note" });
+    expect(h.title.textContent).toBe("Session Note");
+    expect(h.modal.setAttribute).toHaveBeenCalledWith("aria-label", "Session Note");
+    expect(input.classList.contains("isEditing")).toBe(true);
+    expect(input.focus).toHaveBeenCalled();
+    expect(h.overlay.dataset.historyEntryEditing).toBe("true");
+    expect(h.body.innerHTML).not.toContain("XP earned");
+    expect(h.body.innerHTML).not.toContain("Time goal");
+    expect(h.body.innerHTML).not.toContain('data-history-summary-action="delete-session"');
+    h.interaction.openSummary("task-1", [entry]);
+    expect(h.title.textContent).toBe("Session Summary");
+    expect(h.overlay.dataset.historyEntryPresentation).toBe("summary");
+    expect(h.body.innerHTML).toContain("XP earned");
+  });
+
+  it("keeps live notes read-only with no formatting or summary actions", () => {
+    const h = createHarness();
+    h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, name: "Focus", note: "Live note", isLiveSession: true }], { presentation: "note" });
+    expect(h.body.innerHTML).toContain("Live note");
+    expect(h.body.innerHTML).not.toContain("richNoteToolbar");
+    expect(h.body.innerHTML).not.toContain('data-history-summary-action=');
+    expect(h.overlay.dataset.historyEntryEditable).toBe("false");
+    expect(h.overlay.dataset.historyEntryEditing).toBe("false");
+    expect(h.closeBtn.setAttribute).toHaveBeenCalledWith("aria-label", "Close session note");
+  });
+});
+
 function triggerStub() {
   const input = inputStub();
   const attrs: Record<string, string> = {

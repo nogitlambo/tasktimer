@@ -13,16 +13,6 @@ vi.mock("@/lib/firebaseAdmin", () => ({
   hasFirebaseAdminCredentialConfig: () => false,
 }));
 
-vi.mock("../jira/feedback/shared", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../jira/feedback/shared")>();
-  return {
-    ...actual,
-    createJiraIssue: vi.fn(),
-    syncJiraIssueVote: vi.fn(),
-    uploadJiraIssueAttachment: vi.fn(),
-  };
-});
-
 import { OPTIONS } from "./route";
 
 describe("/api/feedback CORS", () => {

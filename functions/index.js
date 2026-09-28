@@ -6,6 +6,7 @@ import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {logger} from "firebase-functions";
 import {createHash} from "node:crypto";
+export {sendFeedbackEmails, cleanupFeedbackEmailAttachments} from "./feedback-email.js";
 
 if (!getApps().length) {
   initializeApp();
@@ -818,6 +819,28 @@ function isUnscheduledGapCandidateTask(taskData) {
   );
 }
 
+// Match the client's manual completion lifetime, including stored midnight expiry.
+function isTaskMarkedDone(taskData, nowMs) {
+  const markedAt = Number(taskData.markedDoneAtMs);
+  if (!Number.isFinite(markedAt) || Math.floor(markedAt) <= 0) return false;
+  if (taskData.taskType === "once-off") return true;
+  const until = Number(taskData.markedDoneUntilMs);
+  return Number.isFinite(until) && Math.floor(until) > nowMs;
+}
+
+async function deferCompletedGapTask(ref, taskData, nowMs) {
+  if (!isTaskMarkedDone(taskData, nowMs)) return false;
+  if (taskData.taskType === "once-off") {
+    await ref.delete();
+  } else {
+    await ref.set({
+      dueAtMs: Math.floor(Number(taskData.markedDoneUntilMs)),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+  }
+  return true;
+}
+
 function buildScheduledBlocksForDay(taskRows, ts) {
   return taskRows
     .flatMap((taskData) => {
@@ -1474,6 +1497,16 @@ async function processDueUnscheduledGapTasks(uid, docSnaps, nowMs) {
     data: taskSnap.data() || {},
   }));
 
+  for (let index = activeDocSnaps.length - 1; index >= 0; index--) {
+    const docSnap = activeDocSnaps[index];
+    const taskId = asString((docSnap.data() || {}).taskId || docSnap.id);
+    const task = taskRows.find((row) => row.id === taskId);
+    if (task && await deferCompletedGapTask(docSnap.ref, task.data, nowMs)) {
+      activeDocSnaps.splice(index, 1);
+    }
+  }
+  if (!activeDocSnaps.length) return {status: "skipped"};
+
   const runningTask = taskRows.find((row) => row.data.running === true);
   if (runningTask) {
     await Promise.all(activeDocSnaps.map((docSnap) =>
@@ -1803,6 +1836,9 @@ export const applyScheduledPushAction = onCall(protectedCallableOptions, async (
   const taskHasPlannedStart = getPlannedStartEntries(taskPlannedStartDay, taskPlannedStartTime, taskPlannedStartByDay).length > 0;
 
   if (baseEventType === UNSCHEDULED_GAP_REMINDER_EVENT) {
+    if (await deferCompletedGapTask(scheduledRef, taskData, nowMs)) {
+      return {ok: true, applied: false, reason: "completed"};
+    }
     if (!isUnscheduledGapCandidateTask(taskData)) {
       await scheduledRef.delete().catch(() => {});
       return {ok: true, applied: false, reason: "disabled"};
@@ -2040,5 +2076,6 @@ export const __testing = {
   sendFriendRequestPendingNotification,
   sendScheduledTaskNotification,
   processDuePlannedStartTask,
+  processDueUnscheduledGapTasks,
   processDueTimeGoalCompleteTask,
 };

@@ -719,7 +719,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const liveTs = Math.floor(Number(liveSession?.startedAtMs || liveSession?.updatedAtMs || 0));
     const entry: any = historyEntry || (liveSession && liveTs === ts ? { ...liveSession, taskId, isLiveSession: true } : null);
     if (!entry) return false;
-    openHistoryEntryNoteOverlay(taskId, [{ ...entry, taskId, historyMutationAllowed: !entry.isLiveSession }]);
+    openHistoryEntryNoteOverlay(taskId, [{ ...entry, taskId, ts, historyMutationAllowed: !entry.isLiveSession }], { presentation: "note" });
     return true;
   }
 
@@ -761,7 +761,9 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     ctx.saveHistory(nextHistory);
     ctx.renderDashboardWidgets();
     const reopenTaskId = validDrafts[0]?.taskId || "";
-    if (reopenTaskId) openHistoryEntryNoteOverlay(reopenTaskId, updatedEntries);
+    if (reopenTaskId) openHistoryEntryNoteOverlay(reopenTaskId, updatedEntries, {
+      presentation: overlay.dataset.historyEntryPresentation === "note" ? "note" : "summary",
+    });
     touchedTaskIds.forEach((taskId) => renderHistory(taskId));
   }
 

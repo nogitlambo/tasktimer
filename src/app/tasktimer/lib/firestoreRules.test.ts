@@ -155,7 +155,7 @@ describe("firestore task document rules", () => {
     const block = functionBlock(readRules(), "isTaskDoc");
 
     expect(block).toContain('"plannedStartDate"');
-    expect(block).toContain("request.resource.data.plannedStartDate.matches('^\\\\d{4}-\\\\d{2}-\\\\d{2}$')");
+    expect(block).toContain("data.plannedStartDate.matches('^\\\\d{4}-\\\\d{2}-\\\\d{2}$')");
   });
 
   it("allows manual completion and Next Best Action snooze timestamps", () => {
@@ -163,7 +163,7 @@ describe("firestore task document rules", () => {
 
     for (const field of ["markedDoneAtMs", "markedDoneUntilMs", "nextBestActionSnoozedUntilMs"]) {
       expect(block).toContain(`"${field}"`);
-      expect(block).toContain(`request.resource.data.${field} == null || request.resource.data.${field} is int`);
+      expect(block).toContain(`data.${field} == null || data.${field} is int`);
     }
   });
 
@@ -174,7 +174,7 @@ describe("firestore task document rules", () => {
     expect(block).toContain('"sharedSourceTaskId"');
     expect(block).toContain('"sharedSourceShareDocId"');
     expect(block).toContain('"sharedSourceImportedAtMs"');
-    expect(block).toContain('(!("sharedSourceImportedAtMs" in request.resource.data) || request.resource.data.sharedSourceImportedAtMs == null || request.resource.data.sharedSourceImportedAtMs is int)');
+    expect(block).toContain('(!("sharedSourceImportedAtMs" in data) || data.sharedSourceImportedAtMs == null || data.sharedSourceImportedAtMs is int)');
   });
 });
 

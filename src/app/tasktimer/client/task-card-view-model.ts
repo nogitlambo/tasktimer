@@ -464,7 +464,7 @@ function renderTaskHistoryInlineHtml({
 export function resolveTaskCardScheduleLabel(task: Task, nowDate = new Date()): string {
   if (task.plannedStartOpenEnded) return "";
   const byDay = getTaskPlannedStartByDay(task);
-  const rawDate = task.plannedStartDate || (task.taskType === "once-off" ? task.onceOffTargetDate : null);
+  const rawDate = task.taskType === "once-off" ? task.onceOffTargetDate || task.plannedStartDate : task.plannedStartDate;
   const plannedDate = normalizeLocalDateValue(rawDate);
   if (rawDate && !plannedDate) return "";
   const today = formatLocalDate(nowDate);
@@ -483,16 +483,10 @@ export function resolveTaskCardScheduleLabel(task: Task, nowDate = new Date()): 
   }
   if (minutes == null) return "";
   const dateKey = formatLocalDate(date);
-  const weekAhead = new Date(`${today}T12:00:00`);
-  weekAhead.setDate(weekAhead.getDate() + 7);
-  let prefix = "";
-  if (dateKey < today || dateKey > formatLocalDate(weekAhead)) {
-    const month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][date.getMonth()];
-    prefix = `${date.getDate()} ${month} ${date.getFullYear()}, `;
-  } else if (dateKey !== today) {
-    prefix = `${formatScheduleDayLabel(getLocalScheduleDay(date))} `;
-  }
-  return `Scheduled for ${prefix}${formatScheduleSlotTime(minutes)}`;
+  const dayLabel = dateKey === today
+    ? "Today"
+    : `${formatScheduleDayLabel(getLocalScheduleDay(date))} ${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}`;
+  return `${dayLabel} at ${formatScheduleSlotTime(minutes).replace(/\s+(AM|PM)$/, "$1")}`;
 }
 
 export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTaskCard {

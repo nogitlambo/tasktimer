@@ -198,6 +198,21 @@ function task(overrides: Partial<Task> = {}): Task {
 }
 
 describe("buildScheduledTimeGoalPushPlan", () => {
+  it("suppresses done once-off gaps and defers recurring gaps until expiry", () => {
+    const now = new Date(2026, 5, 1, 12).getTime();
+    const until = new Date(2026, 5, 2).getTime();
+    const entry = task({ timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 10,
+      markedDoneAtMs: now - 1000, markedDoneUntilMs: until });
+    expect(buildScheduledTimeGoalPushPlan(entry, now)).toMatchObject({
+      notificationKind: "unscheduledGap", dueAtMs: until,
+    });
+    expect(buildScheduledTimeGoalPushPlan(entry, until).dueAtMs).toBe(until);
+    expect(buildScheduledTimeGoalPushPlan({ ...entry, taskType: "once-off" }, now)).toMatchObject({
+      notificationKind: null, dueAtMs: null, unscheduledGapCandidate: false,
+    });
+    expect(buildScheduledTimeGoalPushPlan({ ...entry, taskType: "once-off", markedDoneAtMs: null }, now).dueAtMs).toBe(now);
+  });
+
   it("uses planned start as the source of truth when a scheduled task is also running toward a time goal", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 5, 1, 8, 0, 0));

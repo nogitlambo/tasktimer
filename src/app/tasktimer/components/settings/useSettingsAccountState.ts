@@ -27,6 +27,7 @@ import {
 import type { SettingsAccountViewModel } from "./types";
 import { useSharedProfileSessionActions } from "./useSharedProfileSessionActions";
 import { useNativePlusUpsell } from "../useNativePlusUpsell";
+import { startCheckoutPlanRefresh } from "./checkout-plan-refresh";
 
 type UseSettingsAccountStateOptions = {
   nativeCheckoutReturnPath?: string;
@@ -79,6 +80,9 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
   const [syncCooldownUntilMs, setSyncCooldownUntilMs] = useState(0);
   const [signOutError, setSignOutError] = useState("");
   const [uidCopyStatus, setUidCopyStatus] = useState("");
+  const [checkoutPlanStatus, setCheckoutPlanStatus] = useState<"idle" | "updating" | "pending">("idle");
+  const [checkoutPlanRetry, setCheckoutPlanRetry] = useState(0);
+  const checkoutOwnerRef = useRef<string | null>(null);
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
   const nativePlusUpsell = useNativePlusUpsell({
     returnPath: nativeCheckoutReturnPath,
@@ -286,6 +290,55 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
   }, [beginPlanRefresh, markPlanConfirmed, markSynced]);
 
   useEffect(() => {
+    if (!nativePlusUpsell.checkoutSuccess) {
+      checkoutOwnerRef.current = null;
+      setCheckoutPlanStatus("idle");
+      return;
+    }
+    if (!authUserUid) {
+      setCheckoutPlanStatus("idle");
+      return;
+    }
+    if (checkoutOwnerRef.current && checkoutOwnerRef.current !== authUserUid) {
+      setCheckoutPlanStatus("idle");
+      return;
+    }
+    checkoutOwnerRef.current = authUserUid;
+    const uid = authUserUid;
+    const refreshId = ++planRefreshIdRef.current;
+    pendingPlanRefreshRef.current = true;
+    setAuthPlanStatus("confirmed");
+    setAuthPlanIsProvisional(false);
+    setCheckoutPlanStatus("updating");
+    const isCurrent = () => planRefreshIdRef.current === refreshId
+      && getFirebaseAuthClient()?.currentUser?.uid === uid;
+    const stop = startCheckoutPlanRefresh({
+      loadPlan: () => loadUserRootPlan(uid, { serverOnly: true }),
+      onConfirmed: (plan) => {
+        if (!isCurrent()) return;
+        markPlanConfirmed(plan, uid);
+        writeTaskTimerPlanToStorage(plan, { uid });
+        setCheckoutPlanStatus("idle");
+        void loadUserSubscriptionRenewalAtMs(uid).then((value) => {
+          if (isCurrent()) markPlanRenewal(value, uid);
+        }).catch(() => {});
+      },
+      onPending: () => {
+        if (!isCurrent()) return;
+        pendingPlanRefreshRef.current = false;
+        setCheckoutPlanStatus("pending");
+      },
+    });
+    return () => {
+      stop();
+      if (planRefreshIdRef.current === refreshId) {
+        planRefreshIdRef.current += 1;
+        pendingPlanRefreshRef.current = false;
+      }
+    };
+  }, [authUserUid, nativePlusUpsell.checkoutSuccess, checkoutPlanRetry, markPlanConfirmed, markPlanRenewal]);
+
+  useEffect(() => {
     if (!authUserUid || authIsAnonymous) {
       setAuthUserAlias("");
       setAuthUserAliasDraft("");
@@ -457,6 +510,8 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       authPlanStatus,
       authPlanIsProvisional,
       authPlanRenewalAtMs,
+      checkoutPlanStatus,
+      onRetryCheckoutPlan: () => setCheckoutPlanRetry((value) => value + 1),
       authUserEmail,
       authUserUid,
       authIsAnonymous,

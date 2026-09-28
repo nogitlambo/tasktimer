@@ -12,6 +12,7 @@ import {
 } from "@/app/tasktimer/client/rank-promotion";
 import RankLadderModal from "../RankLadderModal";
 import NativePlusUpsellModal from "../NativePlusUpsellModal";
+import CheckoutPlanStatus from "./CheckoutPlanStatus";
 import RankPromotionOverlay from "../RankPromotionOverlay";
 import SignOutConfirmModal from "../SignOutConfirmModal";
 import RankThumbnail from "../RankThumbnail";
@@ -227,6 +228,7 @@ export function SettingsAccountPane({
                         <span className={`settingsAccountPlanPill settingsAccountPlanPill-${account.authPlan}`}>
                           {formatSubscriptionPlan(account.authPlan)}
                         </span>
+                        <CheckoutPlanStatus account={account} />
                         {account.authPlan === "free" ? (
                           <>
                             <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>

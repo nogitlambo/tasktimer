@@ -1,6 +1,26 @@
 /* Feedback route styling. */
 /* Extracted from the transitional tasktimer tail so Feedback now has a dedicated owner file. */
 
+#app[aria-label="TaskLaunch Feedback"].feedbackSubmittedPage{
+  width: 100%;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: #0d0f13;
+  text-align: center;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackSubmittedMessage{
+  margin: 0;
+  font-family: var(--font-readable);
+  font-size: 16px;
+}
+
 #app[aria-label="TaskLaunch Feedback"] .feedbackPageLayout{
   width: min(1920px, calc(100% - 24px));
   margin: 0 auto;

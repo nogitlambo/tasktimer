@@ -7,6 +7,7 @@ import { buildRewardsHeaderViewModel } from "../lib/rewards";
 import { getAccountBackRoute } from "../lib/accountRoute";
 import DesktopAppRail from "./DesktopAppRail";
 import NativePlusUpsellModal from "./NativePlusUpsellModal";
+import CheckoutPlanStatus from "./settings/CheckoutPlanStatus";
 import RankLadderModal from "./RankLadderModal";
 import RankPromotionOverlay from "./RankPromotionOverlay";
 import RankThumbnail from "./RankThumbnail";
@@ -244,6 +245,7 @@ export default function AccountScreen() {
                               <span className={`settingsAccountPlanPill settingsAccountPlanPill-${account.authPlan}`}>
                                 {formatAccountPlan(account.authPlan)}
                               </span>
+                              <CheckoutPlanStatus account={account} />
                               {account.authPlan === "plus" || account.authPlan === "plus_monthly" || account.authPlan === "plus_yearly" || account.authPlan === "pro" ? (
                                 <>
                                   <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>

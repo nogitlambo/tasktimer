@@ -419,8 +419,10 @@ export function buildHistoryEntrySummaryPayload({
 
 export function renderHistoryEntrySummaryHtml(
   payload: HistoryEntrySummaryPayload,
-  escapeHtml: (value: unknown) => string
+  escapeHtml: (value: unknown) => string,
+  presentation: "summary" | "note" = "summary"
 ) {
+  const notesOnly = presentation === "note";
   const showSessionHeading = payload.sessions.length > 1;
   const renderAttachmentList = (session: HistoryEntrySummaryItem, editorId: string) =>
     `<div class="sessionNoteAttachments" data-session-note-attachment-editor="${editorId}" aria-live="polite">${session.attachments
@@ -450,7 +452,7 @@ export function renderHistoryEntrySummaryHtml(
       </div>
     </div>`;
   };
-  const aggregateHtml = payload.aggregate
+  const aggregateHtml = !notesOnly && payload.aggregate
     ? `<section class="historyEntrySummaryAggregateCard historyEntrySummarySharedCard" aria-label="${escapeHtml(payload.titleText)} activity summary">
         <div class="historyEntrySummaryAggregateInfo">
           <div class="historyEntrySummarySectionTitle">Activity Summary</div>
@@ -475,7 +477,7 @@ export function renderHistoryEntrySummaryHtml(
         : "";
       const emptyNotePlaceholder = session.mutationAllowed ? DESKTOP_EMPTY_NOTE_PLACEHOLDER : NO_SESSION_NOTE_TEXT;
       const deleteButtonHtml =
-        session.mutationAllowed && session.taskId && session.ts > 0 && session.name
+        !notesOnly && session.mutationAllowed && session.taskId && session.ts > 0 && session.name
           ? `<button class="iconBtn historyEntrySummaryDeleteBtn" type="button" aria-label="Delete session entry" title="Delete session entry" data-history-summary-action="delete-session"${historyTargetKeyAttr} data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}"><img class="historyEntrySummaryDeleteIcon" src="/icons/icons_default/trash.webp" alt="" aria-hidden="true" /></button>`
           : "";
       return `<section class="historyEntrySummarySessionCard historyEntrySummarySharedCard" aria-label="Session ${escapeHtml(index + 1)}">
@@ -487,17 +489,17 @@ export function renderHistoryEntrySummaryHtml(
                 ${showSessionHeading ? `<div class="historyEntrySummarySectionTitle">Session ${escapeHtml(index + 1)}</div>` : ""}
                 <div class="historyEntrySummarySessionDate">${escapeHtml(session.startedAtMs > 0 ? session.startedDateText : session.loggedDateText)}</div>
                 ${(session.startedAtMs > 0 ? session.startedTimeText : session.loggedTimeText) ? `<div class="historyEntrySummarySessionTime">${escapeHtml(session.startedAtMs > 0 ? session.startedTimeText : session.loggedTimeText)}</div>` : ""}
-                <div class="historyEntrySummarySessionElapsed isProgressColored" style="--history-entry-summary-elapsed-color: ${escapeHtml(session.elapsedColor)}">${escapeHtml(session.elapsedText)}</div>
+                ${notesOnly ? "" : `<div class="historyEntrySummarySessionElapsed isProgressColored" style="--history-entry-summary-elapsed-color: ${escapeHtml(session.elapsedColor)}">${escapeHtml(session.elapsedText)}</div>`}
               </div>
               ${deleteButtonHtml ? `<div class="historyEntrySummarySessionHeadActions">${deleteButtonHtml}</div>` : ""}
             </div>
-            <div class="historyEntrySummaryGrid">
+            ${notesOnly ? "" : `<div class="historyEntrySummaryGrid">
               ${session.startedAtMs > 0 && session.finishedAtMs > 0
                 ? `${renderField("Start", session.startedDateTimeText)}${renderField("Finish", session.finishedDateTimeText)}`
                 : renderField("Logged", session.loggedDateTimeText)}
               ${renderField("Time goal", session.timeGoalText)}
               ${renderXpField("XP earned", session.xpText, { xpEarned: session.xpEarned, taskId: session.taskId })}
-            </div>
+            </div>`}
           </div>
           <div class="historyEntrySummaryNoteRow">
             <div class="historyEntrySummaryNoteBlock"${noteMutationAttrs}>

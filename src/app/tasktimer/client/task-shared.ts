@@ -1,7 +1,6 @@
 import {
   getCurrentLocalDate,
   getScheduleDayForLocalDate,
-  hasLocalDatePassed,
   hasMeaningfulTaskSchedule,
   normalizeLocalDateValue,
   normalizeTaskPlannedStartByDay,
@@ -176,12 +175,6 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     }
     task.plannedStartDay = normalizePlannedStartDay(task.plannedStartDay);
     task.plannedStartByDay = normalizeTaskPlannedStartByDay(task.plannedStartByDay);
-    if (task.taskType === "once-off" && task.onceOffTargetDate && hasLocalDatePassed(task.onceOffTargetDate)) {
-      task.plannedStartDay = null;
-      task.plannedStartTime = null;
-      task.plannedStartByDay = null;
-      task.plannedStartOpenEnded = false;
-    }
     syncLegacyPlannedStartFields(task);
     syncOnceOffPlannedStartFields(task);
     task.plannedStartPushRemindersEnabled = task.plannedStartPushRemindersEnabled !== false;

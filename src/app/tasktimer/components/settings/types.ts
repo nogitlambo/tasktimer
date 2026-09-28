@@ -46,6 +46,8 @@ export type SettingsAccountViewModel = {
   authPlanStatus: "confirmed" | "refreshing";
   authPlanIsProvisional: boolean;
   authPlanRenewalAtMs: number | null;
+  checkoutPlanStatus: "idle" | "updating" | "pending";
+  onRetryCheckoutPlan: () => void;
   authUserEmail: string | null;
   authUserUid: string | null;
   authIsAnonymous: boolean;
