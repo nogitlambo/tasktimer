@@ -419,19 +419,16 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
   });
 
   it("opens and claims the daily reward through the shared modal XP delivery path", () => {
-    expect(source).toContain("isDailyOpenRewardEligible");
+    expect(source).toContain("workspaceRepository.checkDailyRewardEligibility(uid)");
     expect(source).toContain("shouldSuppressDailyRewardForOnboarding");
     expect(source).toContain("TASKTIMER_ONBOARDING_STATE_CHANGED_EVENT");
     expect(source).toContain("parseAuthCreationAtMs(user)");
     expect(source).toContain("if (!dailyRewardOnboardingGate.ready || dailyRewardOnboardingGate.suppress) return;");
-    expect(source).toMatch(
-      /if \(!dailyRewardOnboardingGate\.ready \|\| dailyRewardOnboardingGate\.suppress\) return;[\s\S]*?if \(!isDailyOpenRewardEligible/
-    );
-    expect(source).toContain("isDailyRewardMarkedClaimedForDay(dailyRewardUid, dayKey)");
-    expect(source).toContain("markDailyRewardClaimedForDay(dailyRewardUid, dayKey)");
+    expect(source).toContain("workspaceRepository.subscribeDailyRewardClaim(uid, dayKey");
     expect(source).toContain("openDailyRewardOverlay(document)");
-    expect(source).toContain("awardDailyOpenReward(currentProgress, awardedAt)");
-    expect(source).toContain("markDailyRewardClaimedForDay(dailyRewardUid, claimedDayKey)");
+    expect(source).toContain("bindDailyRewardClaimAction({");
+    expect(source).toContain("claim: workspaceRepository.claimDailyReward");
+    expect(source).toContain("acceptRewards: workspaceRepository.acceptCommittedDailyRewards");
     expect(source).toContain('sourceModal: "dailyReward"');
     expect(source).toContain('sourceOverlayId: "dailyRewardOverlay"');
     expect(source).toContain('sourceElementKey: "dailyRewardXpValue"');
@@ -487,7 +484,7 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).not.toContain("TASKTIMER_TIME_GOAL_COMPLETE_XP_CLAIM_DELIVERED_EVENT");
     expect(source).not.toContain("TASKTIMER_DAILY_REWARD_XP_CLAIM_DELIVERED_EVENT");
     expect(source).not.toContain("3400");
-    expect(source).toMatch(/requestDailyRewardXpClaim\(awardedXp\);\r?\n\s+\}\r?\n\s+closeDailyRewardOverlay\(document\);/);
+    expect(source).toContain("close: () => closeDailyRewardOverlay(document)");
   });
 
   it("keeps the shared XP award spotlight while removing modal unit animation CSS", () => {

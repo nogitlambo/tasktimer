@@ -53,6 +53,7 @@ import {
   type MobileLeaderboardSwipeState,
 } from "./components/mobileLeaderboardSwipe";
 import type { AppPage } from "./client/types";
+import { bindDailyRewardClaimAction } from "./client/daily-reward-claim-action";
 import { AVATAR_CATALOG, normalizeBundledAvatarWebpSrc } from "./lib/avatarCatalog";
 import {
   ACCOUNT_AVATAR_UPDATED_EVENT,
@@ -92,12 +93,10 @@ import {
 import { loadFriendships } from "./lib/friendsStore";
 import {
   buildRewardsHeaderViewModel,
-  awardDailyOpenReward,
   DEFAULT_REWARD_PROGRESS,
   DAILY_OPEN_REWARD_XP,
   getPersistedRewardProgressUpdate,
   getRankForXp,
-  isDailyOpenRewardEligible,
   normalizeRewardProgress,
 } from "./lib/rewards";
 import {
@@ -359,7 +358,6 @@ function buildXpPayloadStyle(sourceRect: PendingXpAward["sourceRect"], targetRec
 
 const XP_AWARD_DELIVERY_DONE_AUDIO_SRC = "/xp_increase_done.mp3";
 const DAILY_REWARD_AUDIO_SRC = "/daily_reward.mp3";
-const DAILY_REWARD_CLAIMED_DAY_STORAGE_KEY = "taskticker_tasks_v1:dailyRewardClaimedDay";
 
 function LeaderboardAvatar({ profile, small = false }: { profile: LeaderboardProfile; small?: boolean }) {
   const avatarSrc = getLeaderboardAvatarRenderSrc(profile);
@@ -823,41 +821,8 @@ function parseAuthCreationAtMs(user: User | null | undefined): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-function getDailyRewardClaimedDayStorageKey(uidRaw: string): string {
-  const uid = String(uidRaw || "").trim();
-  return uid ? `${DAILY_REWARD_CLAIMED_DAY_STORAGE_KEY}:${uid}` : "";
-}
-
 function getCurrentDailyRewardUid(): string {
   return String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
-}
-
-function readDailyRewardClaimedDayKey(uidRaw: string): string {
-  if (typeof window === "undefined") return "";
-  const storageKey = getDailyRewardClaimedDayStorageKey(uidRaw);
-  if (!storageKey) return "";
-  try {
-    return String(window.localStorage.getItem(storageKey) || "").trim();
-  } catch {
-    return "";
-  }
-}
-
-function markDailyRewardClaimedForDay(uidRaw: string, dayKeyRaw: string): void {
-  const dayKey = String(dayKeyRaw || "").trim();
-  if (typeof window === "undefined" || !dayKey) return;
-  const storageKey = getDailyRewardClaimedDayStorageKey(uidRaw);
-  if (!storageKey) return;
-  try {
-    window.localStorage.setItem(storageKey, dayKey);
-  } catch {
-    // The canonical reward progress still prevents duplicate XP when storage is unavailable.
-  }
-}
-
-function isDailyRewardMarkedClaimedForDay(uidRaw: string, dayKeyRaw: string): boolean {
-  const dayKey = String(dayKeyRaw || "").trim();
-  return !!dayKey && readDailyRewardClaimedDayKey(uidRaw) === dayKey;
 }
 
 function isOverlayElementVisible(overlay: Element | null | undefined): boolean {
@@ -901,7 +866,7 @@ function openDailyRewardOverlay(documentRef: Document): void {
 
 function closeDailyRewardOverlay(documentRef: Document): void {
   const overlay = documentRef.getElementById("dailyRewardOverlay") as HTMLElement | null;
-  if (!overlay) return;
+  if (!overlay || !isOverlayElementVisible(overlay)) return;
   closeTaskTimerOverlay(overlay, documentRef);
   delete overlay.dataset.awardedXp;
 }
@@ -959,7 +924,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const displayedXpRef = useRef(displayedXp);
   const rewardProgressRef = useRef(rewardProgress);
   const dailyRewardPromptedDayKeyRef = useRef<string | null>(null);
+  const dailyRewardClaimInFlightRef = useRef(false);
+  const dailyRewardAccountGenerationRef = useRef(0);
+  const [dailyRewardAccountUid, setDailyRewardAccountUid] = useState("");
   const [dailyRewardRetrySeq, setDailyRewardRetrySeq] = useState(0);
+  const dailyRewardPreferencesReady = cachedPreferences !== null;
   const previousActiveAwardRef = useRef<PendingXpAward | null>(null);
   const xpAnimationFrameRef = useRef<number | null>(null);
   const xpAnimationStartTimerRef = useRef<number | null>(null);
@@ -1075,7 +1044,13 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     const refreshDailyRewardOnboardingGate = async (user: User | null | undefined) => {
       const isAnonymous = !!user?.isAnonymous;
       const uid = isAnonymous ? "" : String(user?.uid || "").trim();
+      if (activeUid !== uid) {
+        dailyRewardAccountGenerationRef.current += 1;
+        dailyRewardPromptedDayKeyRef.current = null;
+        closeDailyRewardOverlay(document);
+      }
       activeUid = uid;
+      setDailyRewardAccountUid(uid);
       activeUser = user || null;
       if (!uid) {
         setDailyRewardOnboardingGate({ ready: true, suppress: true });
@@ -1124,29 +1099,58 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated || !cachedPreferences || typeof document === "undefined" || typeof window === "undefined") return;
+    const retry = () => setDailyRewardRetrySeq((current) => current + 1);
+    const foreground = () => { if (document.visibilityState === "visible") retry(); };
+    window.addEventListener("online", retry);
+    window.addEventListener("focus", retry);
+    document.addEventListener("visibilitychange", foreground);
+    const midnight = new Date();
+    midnight.setHours(24, 0, 0, 0);
+    const timer = window.setTimeout(retry, Math.max(1, midnight.getTime() - Date.now()));
+    return () => {
+      window.removeEventListener("online", retry);
+      window.removeEventListener("focus", retry);
+      document.removeEventListener("visibilitychange", foreground);
+      window.clearTimeout(timer);
+    };
+  }, [dailyRewardRetrySeq]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !dailyRewardAccountUid || !dailyRewardPreferencesReady) return;
     if (!dailyRewardOnboardingGate.ready || dailyRewardOnboardingGate.suppress) return;
-    const nowValue = Date.now();
-    const dayKey = localDayKeyForTimestamp(nowValue);
-    const dailyRewardUid = getCurrentDailyRewardUid();
-    if (dailyRewardPromptedDayKeyRef.current === dayKey) return;
-    if (isDailyRewardMarkedClaimedForDay(dailyRewardUid, dayKey)) {
-      dailyRewardPromptedDayKeyRef.current = dayKey;
-      return;
-    }
-    if (!isDailyOpenRewardEligible(cachedPreferences.rewards || DEFAULT_REWARD_PROGRESS, nowValue)) {
-      markDailyRewardClaimedForDay(dailyRewardUid, dayKey);
-      dailyRewardPromptedDayKeyRef.current = dayKey;
-      return;
-    }
-    if (hasBlockingDailyRewardOverlay(document)) {
-      const retryTimer = window.setTimeout(() => setDailyRewardRetrySeq((current) => current + 1), 1000);
-      return () => window.clearTimeout(retryTimer);
-    }
-    dailyRewardPromptedDayKeyRef.current = dayKey;
-    openDailyRewardOverlay(document);
-    if (achievementSoundsEnabled) dailyRewardAudioPlayer.play();
-  }, [achievementSoundsEnabled, cachedPreferences, dailyRewardAudioPlayer, dailyRewardOnboardingGate, dailyRewardRetrySeq, isAuthenticated]);
+    const uid = dailyRewardAccountUid;
+    const dayKey = localDayKeyForTimestamp(Date.now());
+    const promptKey = `${uid}:${dayKey}`;
+    let cancelled = false;
+    let retryTimer: number | undefined;
+    const stillCurrent = () => !cancelled && getCurrentDailyRewardUid() === uid && localDayKeyForTimestamp(Date.now()) === dayKey;
+    const unsubscribe = workspaceRepository.subscribeDailyRewardClaim(uid, dayKey, (rewards) => {
+      if (!stillCurrent() || dailyRewardClaimInFlightRef.current) return;
+      dailyRewardPromptedDayKeyRef.current = promptKey;
+      workspaceRepository.acceptCommittedDailyRewards(uid, rewards);
+      closeDailyRewardOverlay(document);
+    });
+    const check = async () => {
+      if (dailyRewardPromptedDayKeyRef.current === promptKey) return;
+      const status = await workspaceRepository.checkDailyRewardEligibility(uid);
+      if (!stillCurrent()) return;
+      if (status === "alreadyClaimed") {
+        dailyRewardPromptedDayKeyRef.current = promptKey;
+        closeDailyRewardOverlay(document);
+        return;
+      }
+      if (status === "retryable" || hasBlockingDailyRewardOverlay(document)) {
+        retryTimer = window.setTimeout(() => setDailyRewardRetrySeq((current) => current + 1), status === "retryable" ? 30000 : 1000);
+        return;
+      }
+      if (dailyRewardPromptedDayKeyRef.current === promptKey) return;
+      dailyRewardPromptedDayKeyRef.current = promptKey;
+      openDailyRewardOverlay(document);
+      if (achievementSoundsEnabled) dailyRewardAudioPlayer.play();
+    };
+    void check();
+    return () => { cancelled = true; unsubscribe(); window.clearTimeout(retryTimer); };
+  }, [achievementSoundsEnabled, dailyRewardAudioPlayer, dailyRewardOnboardingGate, dailyRewardRetrySeq, dailyRewardAccountUid, dailyRewardPreferencesReady, isAuthenticated]);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof document === "undefined") return;
@@ -1162,42 +1166,36 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       });
     };
 
-    const handleClaim = () => {
-      if (claimBtn.disabled) return;
-      const currentProgress = normalizeRewardProgress(preferencesPersistence.loadResolved().rewards || rewardProgressRef.current);
-      const awardedAt = Date.now();
-      const claimedDayKey = localDayKeyForTimestamp(awardedAt);
-      const dailyRewardUid = getCurrentDailyRewardUid();
-      const award = awardDailyOpenReward(currentProgress, awardedAt);
-      const awardedXp = Math.max(0, Math.floor(Number(award.amount || 0) || 0));
-      claimBtn.disabled = true;
-      claimBtn.textContent = awardedXp > 0 ? "Claiming..." : "Close";
-      markDailyRewardClaimedForDay(dailyRewardUid, claimedDayKey);
-      if (awardedXp > 0) {
-        const sourceElement =
-          (document.getElementById("dailyRewardXpValue") as HTMLElement | null) ||
-          (document.getElementById("dailyRewardText") as HTMLElement | null);
-        const nextPreferences = preferencesPersistence.update({ rewards: award.next });
-        setRewardProgress(normalizeRewardProgress(nextPreferences.rewards));
-        const promotion = getRankPromotion(award.previous.currentRankId, award.next.currentRankId);
-        if (promotion) dispatchRankPromotionEvent(window, promotion);
-        dispatchPendingXpAwardEvent(window, {
-          fromXp: award.previous.totalXp,
-          toXp: award.next.totalXp,
-          awardedXp,
-          sourceModal: "dailyReward",
-          sourceTaskId: null,
-          sourceOverlayId: "dailyRewardOverlay",
-          sourceElementKey: "dailyRewardXpValue",
-          sourceRect: captureXpAwardRectSnapshot(sourceElement),
-        });
-        requestDailyRewardXpClaim(awardedXp);
-      }
-      closeDailyRewardOverlay(document);
-    };
-
-    claimBtn.addEventListener("click", handleClaim);
-    return () => claimBtn.removeEventListener("click", handleClaim);
+    return bindDailyRewardClaimAction({
+      button: claimBtn,
+      inFlight: dailyRewardClaimInFlightRef,
+      getAccount: () => ({ uid: getCurrentDailyRewardUid(), generation: dailyRewardAccountGenerationRef.current }),
+      claim: workspaceRepository.claimDailyReward,
+      acceptRewards: workspaceRepository.acceptCommittedDailyRewards,
+      close: () => closeDailyRewardOverlay(document),
+      onAward: (award) => {
+        const awardedXp = award.amount;
+        if (awardedXp > 0) {
+          const sourceElement =
+            (document.getElementById("dailyRewardXpValue") as HTMLElement | null) ||
+            (document.getElementById("dailyRewardText") as HTMLElement | null);
+          setRewardProgress(normalizeRewardProgress(preferencesPersistence.loadResolved().rewards));
+          const promotion = getRankPromotion(award.previous.currentRankId, award.next.currentRankId);
+          if (promotion) dispatchRankPromotionEvent(window, promotion);
+          dispatchPendingXpAwardEvent(window, {
+            fromXp: award.previous.totalXp,
+            toXp: award.next.totalXp,
+            awardedXp,
+            sourceModal: "dailyReward",
+            sourceTaskId: null,
+            sourceOverlayId: "dailyRewardOverlay",
+            sourceElementKey: "dailyRewardXpValue",
+            sourceRect: captureXpAwardRectSnapshot(sourceElement),
+          });
+          requestDailyRewardXpClaim(awardedXp);
+        }
+      },
+    });
   }, []);
 
   useEffect(() => {

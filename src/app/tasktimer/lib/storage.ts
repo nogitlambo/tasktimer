@@ -38,7 +38,7 @@ import {
 } from "./entitlements";
 import { syncCurrentUserPlanCache } from "./planFunctions";
 import { nowMs } from "./time";
-import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, reconcileRewardProgressWithHistory } from "./rewards";
+import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, preserveDailyOpenRewards, reconcileRewardProgressWithHistory, type RewardProgressV1 } from "./rewards";
 import { normalizeSessionNoteAttachments } from "./sessionNoteAttachments";
 import {
   getCurrentLocalDate,
@@ -1635,6 +1635,17 @@ export function loadCachedPreferences() {
   return cachedPreferences;
 }
 
+/** Apply confirmed daily awards without replacing local settings or queuing a stale cloud write. */
+export function acceptCommittedDailyRewards(uid: string, rewards: RewardProgressV1) {
+  if (currentUid() !== uid) return;
+  const current = loadCachedPreferences() || buildDefaultCloudPreferences();
+  cachedPreferences = { ...current, rewards: preserveDailyOpenRewards(current.rewards, rewards) };
+  cachedPreferencesUid = uid;
+  saveShadowPreferences(uid, cachedPreferences);
+  emitPreferenceChange();
+  scheduleLeaderboardProfileSync(uid);
+}
+
 export function subscribeCachedPreferences(
   listener: (prefs: CachedPreferences) => void
 ): () => void {
@@ -1892,8 +1903,9 @@ function flushQueuedCloudPreferences(uidRaw: string): void {
   queuedPreferencesSyncSnapshot = null;
   queuedPreferencesSyncUid = "";
   const syncPromise = savePreferences(uid, nextSnapshot)
-    .then(() => {
+    .then((committedRewards) => {
       if (syncGeneration !== preferencesSyncGeneration || inFlightPreferencesSyncUid !== uid) return;
+      if (committedRewards) acceptCommittedDailyRewards(uid, committedRewards);
       lastSuccessfulPreferencesSyncUid = uid;
       lastSuccessfulPreferencesSyncSignature = nextSignature;
       lastPreferenceSyncError = null;

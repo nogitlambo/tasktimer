@@ -1200,6 +1200,19 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    match /users/{userId}/dailyRewardClaims/{dayKey} {
+      allow read: if isOwner(userId);
+      allow create: if isActiveOwner(userId)
+        && dayKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.keys().hasAll(['dayKey', 'xp', 'sourceKey', 'claimedAt'])
+        && request.resource.data.keys().hasOnly(['dayKey', 'xp', 'sourceKey', 'claimedAt'])
+        && request.resource.data.dayKey == dayKey
+        && request.resource.data.xp == 10
+        && request.resource.data.sourceKey == 'dailyOpen:' + dayKey
+        && request.resource.data.claimedAt == request.time;
+      allow update, delete: if false;
+    }
+
     match /users/{userId}/preferences/{docId} {
       allow read: if isOwner(userId);
       allow create, update: if isActiveOwner(userId) && docId == "v1" && isPreferencesV1();

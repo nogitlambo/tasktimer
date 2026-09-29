@@ -77,6 +77,7 @@ Subcollections:
 4. `accountState/{docId}`
 5. `tasks/{taskId}`
 6. `deletedTasks/{taskId}`
+7. `dailyRewardClaims/{YYYY-MM-DD}`
 
 Notes:
 
@@ -299,6 +300,16 @@ Notes:
 - Client runtime also keeps a local fallback key for this setting: ``${STORAGE_KEY}:autoFocusOnTaskLaunchEnabled``.
 
 ---
+
+### `users/{userId}/dailyRewardClaims/{YYYY-MM-DD}`
+
+- Document ID is the claiming device's local calendar date, shared across the account.
+- Fields: `dayKey: string`, `xp: 10`, `sourceKey: "dailyOpen:YYYY-MM-DD"`, `claimedAt: server timestamp`.
+- Owner-readable; active owners may create validated records. Client updates and deletes are denied.
+- Online transactions create a claim and update `preferences/v1.rewards` atomically. Existing legacy daily awards seed a claim without awarding additional XP.
+- Preference saves preserve committed daily awards when writing older device snapshots. Claim records remain even after reward-ledger retention expires.
+- Recursive account deletion removes this subcollection with the rest of the user's data.
+- Deploy the Firestore rules before releasing clients that use this collection. Older running clients must reload to use the shared claim flow.
 
 ### `users/{userId}/dashboard/v1`
 

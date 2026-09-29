@@ -381,6 +381,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
     const auth = getFirebaseAuthClient();
     const user = auth?.currentUser || null;
     if (!user) {
+      setShowDeleteAccountConfirm(false);
       setAuthError("You must be signed in to delete your account.");
       setAuthStatus("");
       return;
@@ -392,7 +393,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
     try {
       await handleDeleteAccountFlow(user);
     } catch (err: unknown) {
-      setShowDeleteAccountConfirm(true);
+      setShowDeleteAccountConfirm(false);
       setAuthError(getErrorMessage(err, "Could not delete account."));
       setAuthStatus("");
       setAuthBusy(false);

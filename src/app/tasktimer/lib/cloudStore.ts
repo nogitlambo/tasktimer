@@ -8,6 +8,7 @@ import {
   getDocs,
   onSnapshot,
   query,
+  runTransaction,
   serverTimestamp,
   setDoc,
   writeBatch,
@@ -52,7 +53,7 @@ import {
   type LiveTaskSession,
   type Task,
 } from "./types";
-import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, type RewardProgressV1 } from "./rewards";
+import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, preserveDailyOpenRewards, type RewardProgressV1 } from "./rewards";
 import {
   DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS,
   DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
@@ -2254,11 +2255,11 @@ export async function deleteDeletedTaskMeta(uid: string, taskId: string): Promis
   await deleteDoc(ref);
 }
 
-export async function savePreferences(uid: string, prefs: UserPreferencesV1): Promise<void> {
+export async function savePreferences(uid: string, prefs: UserPreferencesV1): Promise<RewardProgressV1 | undefined> {
   const ref = preferencesDoc(uid);
   if (!ref) return;
   const normalizedPreferences = normalizeUserPreferencesDocument(prefs as unknown as Record<string, unknown>);
-  const normalizedRewards = normalizedPreferences.rewards;
+  let normalizedRewards = normalizedPreferences.rewards;
   try {
     await upsertUserRoot(uid);
   } catch (error) {
@@ -2271,15 +2272,18 @@ export async function savePreferences(uid: string, prefs: UserPreferencesV1): Pr
       }
     }
   }
-  await setDoc(
-    ref,
-    {
+  const db = getFirebaseFirestoreClient();
+  if (!db) throw new Error("Preferences database unavailable");
+  await runTransaction(db, async (transaction) => {
+    const current = await transaction.get(ref);
+    normalizedRewards = preserveDailyOpenRewards(normalizedPreferences.rewards, current.data()?.rewards);
+    transaction.set(ref, {
       ...normalizedPreferences,
       rewards: normalizedRewards,
       schemaVersion: 1,
       updatedAt: serverTimestamp(),
-    }
-  );
+    });
+  });
   try {
     await saveUserRootPatch(uid, {
       rewardCurrentRankId: normalizedRewards.currentRankId,
@@ -2295,6 +2299,7 @@ export async function savePreferences(uid: string, prefs: UserPreferencesV1): Pr
       });
     }
   }
+  return normalizedRewards;
 }
 
 export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | null> {

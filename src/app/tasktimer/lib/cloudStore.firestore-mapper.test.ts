@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Task } from "./types";
+import { awardDailyOpenReward, DEFAULT_REWARD_PROGRESS } from "./rewards";
 
 type FirestoreDocumentStub = {
   exists: () => boolean;
@@ -34,6 +35,7 @@ vi.mock("firebase/firestore", () => ({
   getDocs: firestoreMocks.getDocs,
   onSnapshot: vi.fn(() => vi.fn()),
   query: vi.fn((value) => value),
+  runTransaction: vi.fn(async (_db, callback) => callback({ get: firestoreMocks.getDoc, set: firestoreMocks.setDoc })),
   serverTimestamp: vi.fn(() => "SERVER_TIMESTAMP"),
   setDoc: firestoreMocks.setDoc,
   writeBatch: vi.fn(() => ({
@@ -426,6 +428,21 @@ describe("saveTask Firestore planned start payloads", () => {
       })
     );
     expect(findSetDocOptions("users/user-1/preferences/v1")).toBeUndefined();
+  });
+
+  it("preserves a committed daily award when a stale device saves preferences", async () => {
+    const committed = awardDailyOpenReward(DEFAULT_REWARD_PROGRESS, Date.now()).next;
+    firestoreMocks.getDoc.mockImplementation(async (ref) => ({
+      exists: () => ref?.path === "users/user-1/preferences/v1",
+      data: () => ref?.path === "users/user-1/preferences/v1" ? { rewards: committed } : undefined,
+      get: () => undefined,
+    }));
+    const stale = buildDefaultUserPreferences();
+    stale.rewards = { ...stale.rewards, totalXp: 75, totalXpPrecise: 75 };
+    const saved = await savePreferences("user-1", stale);
+    expect(saved).toMatchObject({ totalXp: 85 });
+    expect(saved?.awardLedger).toEqual(committed.awardLedger);
+    expect(findSetDocWrite("users/user-1/preferences/v1")).toMatchObject({ rewards: { totalXp: 85 } });
   });
 });
 

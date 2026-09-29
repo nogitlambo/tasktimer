@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useSettingsAccountState } from "./useSettingsAccountState";
 import CheckoutPlanStatus from "./CheckoutPlanStatus";
+import { getErrorMessage, handleDeleteAccountFlow } from "./settingsAccountService";
 import { readTaskTimerPlanFromStorage, TASKTIMER_PLAN_CHANGED_EVENT } from "../../lib/entitlements";
 
 const mocks = vi.hoisted(() => ({
@@ -69,6 +70,20 @@ async function success() {
     window.dispatchEvent(new PopStateEvent("popstate"));
   });
 }
+
+it("dismisses the deletion confirmation so a failed request's error is visible", async () => {
+  const error = new Error("Could not delete your cloud data.");
+  vi.mocked(handleDeleteAccountFlow).mockRejectedValueOnce(error);
+  vi.mocked(getErrorMessage).mockReturnValueOnce(error.message);
+  await act(async () => root.render(<Harness />));
+  await act(async () => account.setShowDeleteAccountConfirm(true));
+  await act(async () => account.onDeleteAccount());
+  expect(handleDeleteAccountFlow).toHaveBeenCalledWith(mocks.user);
+  expect(account.showDeleteAccountConfirm).toBe(false);
+  expect(account.authError).toBe(error.message);
+  expect(account.authBusy).toBe(false);
+  expect(account.authStatus).toBe("");
+});
 
 it.each(["plus_monthly", "plus_yearly"])("refreshes a delayed %s Plan and shared entitlement cache without blocking the profile", async (plan) => {
   await act(async () => root.render(<Harness />));

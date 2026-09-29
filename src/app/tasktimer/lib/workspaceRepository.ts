@@ -1,4 +1,6 @@
 import type { DeletedTaskMeta, HistoryByTaskId, LiveSessionsByTaskId, LiveTaskSession, Task } from "./types";
+import { checkDailyRewardEligibility, claimDailyReward, subscribeDailyRewardClaim } from "./dailyRewardClaims";
+import type { RewardProgressV1 } from "./rewards";
 import {
   normalizeUserPreferencesDocument,
   type UserPreferencesV1,
@@ -7,6 +9,7 @@ import {
 } from "./cloudStore";
 import {
   appendHistoryEntry,
+  acceptCommittedDailyRewards,
   buildDefaultCloudPreferences,
   clearLiveSession,
   clearScopedStorageState,
@@ -192,6 +195,10 @@ export function createTaskTimerWorkspacePreferencesPersistence(
 
 export function createTaskTimerWorkspaceRepository() {
   return {
+    checkDailyRewardEligibility,
+    claimDailyReward,
+    subscribeDailyRewardClaim,
+    acceptCommittedDailyRewards: (uid: string, rewards: RewardProgressV1) => acceptCommittedDailyRewards(uid, rewards),
     buildDefaultPreferences: () => buildDefaultCloudPreferences(),
     loadWorkspaceSnapshot: () => buildWorkspaceSnapshot(),
     loadTimerStateSnapshot: () => buildTimerStateSnapshot(),

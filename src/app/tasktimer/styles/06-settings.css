@@ -1097,7 +1097,7 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal .deleteAccountBus
 
 body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns) .btn{
   border-color:rgba(255,255,255,.86) !important;
-  border-radius:0 !important;
+  border-radius:8px !important;
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
 }
 

@@ -952,8 +952,25 @@ export function isDailyOpenRewardEligible(progressRaw: unknown, awardedAtRaw: nu
   const progress = normalizeRewardProgress(progressRaw);
   const awardedAt = Math.max(0, Math.floor(Number(awardedAtRaw || 0) || 0)) || Date.now();
   const lastAwardedAt = progress.lastDailyRewardAwardedAtMs;
-  if (!lastAwardedAt) return true;
-  return localDayKey(lastAwardedAt) !== localDayKey(awardedAt);
+  const dayKey = localDayKey(awardedAt);
+  return (!lastAwardedAt || localDayKey(lastAwardedAt) !== dayKey) &&
+    !progress.awardLedger.some((entry) => entry.reason === "dailyOpen" && entry.dayKey === dayKey);
+}
+
+/** Preserve committed daily awards when an older device saves its preferences. */
+export function preserveDailyOpenRewards(incomingRaw: unknown, committedRaw: unknown): RewardProgressV1 {
+  const incoming = normalizeRewardProgress(incomingRaw);
+  const committed = normalizeRewardProgress(committedRaw);
+  const days = new Set(incoming.awardLedger.filter((entry) => entry.reason === "dailyOpen").map((entry) => entry.dayKey));
+  if (incoming.lastDailyRewardAwardedAtMs) days.add(localDayKey(incoming.lastDailyRewardAwardedAtMs));
+  const missing = committed.awardLedger.filter((entry) => {
+    if (entry.reason !== "dailyOpen" || days.has(entry.dayKey)) return false;
+    days.add(entry.dayKey);
+    return true;
+  });
+  const next = awardEntries(incoming, missing, 0).next;
+  next.lastDailyRewardAwardedAtMs = Math.max(incoming.lastDailyRewardAwardedAtMs || 0, committed.lastDailyRewardAwardedAtMs || 0) || null;
+  return next;
 }
 
 export function awardDailyOpenReward(progress: RewardProgressV1, awardedAtRaw: number): RewardAwardResult {
@@ -961,7 +978,7 @@ export function awardDailyOpenReward(progress: RewardProgressV1, awardedAtRaw: n
   const awardedAt = clampAwardTimestamp(previous, awardedAtRaw);
   if (!awardedAt) return awardEntries(previous, [], 0);
   const dayKey = localDayKey(awardedAt);
-  if (previous.lastDailyRewardAwardedAtMs && localDayKey(previous.lastDailyRewardAwardedAtMs) === dayKey) {
+  if (!isDailyOpenRewardEligible(previous, awardedAt)) {
     return awardEntries(previous, [], 0);
   }
   const existingSources = getExistingSourceKeys(previous);
