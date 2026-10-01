@@ -199,7 +199,33 @@ vi.mock("firebase-functions", () => ({
   },
 }));
 
-const { __testing, applyScheduledPushAction } = await import("./index.js");
+const { __testing, applyScheduledPushAction, syncCurrentUserPlan, setUserPlanAdmin } = await import("./index.js");
+
+describe("subscription plan sync", () => {
+  beforeEach(resetState);
+
+  it.each(["plus_monthly", "plus_yearly", "plus_lifetime", "plus", "pro", "free"])(
+    "preserves the webhook-written %s plan without overwriting Firestore",
+    async (plan) => {
+      state.tasks["users/user-1"] = { plan };
+      const result = await syncCurrentUserPlan({ auth: { uid: "user-1", token: {} } });
+      expect(result).toEqual({ ok: true, plan });
+      expect(state.writes).toEqual([]);
+      expect(state.batchWrites).toEqual([]);
+    },
+  );
+
+  it.each(["plus_monthly", "plus_yearly"])("preserves %s through admin plan writes", async (plan) => {
+    const result = await setUserPlanAdmin({
+      auth: { uid: "admin-1", token: { admin: true } },
+      data: { uid: "user-1", plan },
+    });
+    expect(result.plan).toBe(plan);
+    expect(state.writes).toContainEqual(expect.objectContaining({
+      path: "users/user-1", data: expect.objectContaining({ plan }),
+    }));
+  });
+});
 
 describe("manual completion gap suppression", () => {
   const now = new Date(2026, 5, 1, 12).getTime();

@@ -70,6 +70,7 @@ function asBool(value) {
 
 function normalizePlan(value) {
   const raw = String(value || "").trim().toLowerCase();
+  if (raw === "plus_monthly" || raw === "plus_yearly") return raw;
   if (raw === "plus_lifetime") return "plus_lifetime";
   if (raw === "plus" || raw === "pro") return "plus";
   return "free";
@@ -404,7 +405,8 @@ export const syncCurrentUserPlan = onCall(protectedCallableOptions, async (reque
     const userRef = db.collection("users").doc(uid);
     const snap = await userRef.get();
     const existingPlan = snap.exists ? asString(snap.get("plan")).toLowerCase() : "";
-    if (existingPlan === "free" || existingPlan === "plus" || existingPlan === "plus_lifetime" || existingPlan === "pro") {
+    // Preserve all plans written by Stripe before considering account bootstrap.
+    if (["free", "plus", "plus_monthly", "plus_yearly", "plus_lifetime", "pro"].includes(existingPlan)) {
       return {ok: true, plan: existingPlan};
     }
     const restoredPlan = await restoreRetainedSubscriptionForUser(uid, email);
