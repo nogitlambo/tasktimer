@@ -49,7 +49,7 @@ function checkoutRequest(body: Record<string, unknown> = { idToken: "token" }) {
 describe("POST /api/stripe/create-checkout-session", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.STRIPE_PRICE_ID_PLUS_MONTHLY = "price_live_no_trial";
+    process.env.STRIPE_PRICE_ID_PLUS_MONTHLY = "price_live_monthly";
     process.env.STRIPE_PRICE_ID_PLUS_YEARLY = "price_live_plus_yearly";
     loadStripeCustomerIdForUser.mockResolvedValue("");
     isStripeApiError.mockReturnValue(false);
@@ -64,7 +64,11 @@ describe("POST /api/stripe/create-checkout-session", () => {
     const { url } = await response.json();
     expect(url).toBe("https://checkout.stripe.com/session");
     expect(checkoutSessionsCreate).toHaveBeenCalledWith(expect.objectContaining({
-      line_items: [{ price: "price_live_no_trial", quantity: 1 }],
+      line_items: [{ price: "price_live_monthly", quantity: 1 }],
+      subscription_data: {
+        trial_period_days: 30,
+        metadata: { uid: "uid-123", offer: "plus_monthly", priceId: "price_live_monthly" },
+      },
       client_reference_id: "uid-123",
       customer_email: "user@example.com",
       success_url: "https://tasklaunch.app/dashboard?checkout=success&session_id={CHECKOUT_SESSION_ID}",
@@ -102,6 +106,13 @@ describe("POST /api/stripe/create-checkout-session", () => {
       expect.objectContaining({
         success_url: "https://tasklaunch.app/checkout-return/?target=%2Faccount&checkout=success&session_id=%7BCHECKOUT_SESSION_ID%7D",
         cancel_url: "https://tasklaunch.app/checkout-return/?target=%2Fsettings%3Fpage%3Dgeneral&checkout=cancelled",
+        subscription_data: {
+          ...(offer === "plus_monthly" ? { trial_period_days: 30 } : {}),
+          metadata: {
+            uid: "uid-123", offer,
+            priceId: offer === "plus_monthly" ? "price_live_monthly" : "price_live_plus_yearly",
+          },
+        },
       })
     );
   });
@@ -151,7 +162,7 @@ describe("POST /api/stripe/create-checkout-session", () => {
     expect(response.headers.get("vary")).toBe("Origin");
   });
 
-  it("retries checkout without a stored customer when Stripe says that customer is missing", async () => {
+  it.each(["plus_monthly", "plus_yearly"])("preserves %s trial settings when retrying a missing customer", async (offer) => {
     loadStripeCustomerIdForUser.mockResolvedValue("cus_stale");
     checkoutSessionsCreate
       .mockRejectedValueOnce({
@@ -161,7 +172,7 @@ describe("POST /api/stripe/create-checkout-session", () => {
       })
       .mockResolvedValueOnce({ url: "https://checkout.stripe.com/session" });
 
-    const response = await POST(checkoutRequest({ offer: "plus_yearly" }));
+    const response = await POST(checkoutRequest({ offer }));
 
     expect(response.status).toBe(200);
     expect(checkoutSessionsCreate).toHaveBeenCalledTimes(2);
@@ -177,6 +188,13 @@ describe("POST /api/stripe/create-checkout-session", () => {
       expect.objectContaining({
         customer: undefined,
         customer_email: "user@example.com",
+        subscription_data: {
+          ...(offer === "plus_monthly" ? { trial_period_days: 30 } : {}),
+          metadata: {
+            uid: "uid-123", offer,
+            priceId: offer === "plus_monthly" ? "price_live_monthly" : "price_live_plus_yearly",
+          },
+        },
       })
     );
   });

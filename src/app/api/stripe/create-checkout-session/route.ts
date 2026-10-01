@@ -123,6 +123,8 @@ export async function POST(req: Request) {
       client_reference_id: uid,
       allow_promotion_codes: true,
       subscription_data: {
+        // Payment Link trial settings are not inherited by API-created Checkout Sessions.
+        ...(offer === "plus_monthly" ? { trial_period_days: 30 } : {}),
         metadata: { uid, offer, priceId },
       },
       metadata: { uid, offer, priceId },

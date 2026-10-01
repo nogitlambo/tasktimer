@@ -150,7 +150,7 @@ export default function Landing(props: LandingProps) {
         <section className={`landingV2Hero ${showHero ? "isVisible" : ""}`} aria-label="TaskLaunch landing hero">
           <div className="landingV2HeroMain">
             <h1 className="landingV2HeroTitle displayFont">
-              Your <span className="landingV2HeroTitleGradient">Executive Function,</span> Outsourced.
+              <span className="landingV2HeroTitleGradient">EXECUTIVE FUNCTION</span> SUPPORT FOR THE NEURODIVERGENT
             </h1>
 
             <p className="landingV2HeroCopy">
