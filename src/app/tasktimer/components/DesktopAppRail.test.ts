@@ -17,10 +17,10 @@ describe("DesktopAppRail profile menu", () => {
     const mobileItems = getMobileFooterNavItems();
 
     expect(desktopItems.map((item) => item.label)).toEqual([
+      "Executive Function",
       "Dashboard",
-      "Notes",
       "Tasks",
-      "Executive",
+      "Notes",
       "Friends",
       "Leaderboards",
     ]);

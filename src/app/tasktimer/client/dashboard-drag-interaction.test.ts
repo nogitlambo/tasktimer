@@ -188,20 +188,6 @@ function makeDashboardContext() {
   };
 }
 
-function makeExecutiveSummaryTarget(options?: { interactive?: boolean }) {
-  const executiveSummary = { id: "dashboardExecutiveSummary" };
-  const interactive = { id: "dashboardExecutiveSummaryNestedControl" };
-  return {
-    closest: (selector: string) => {
-      if (selector === "#dashboardExecutiveSummary") return executiveSummary;
-      if (selector === "button,a,input,select,textarea,summary,[role='button'],[tabindex]") {
-        return options?.interactive ? interactive : null;
-      }
-      return null;
-    },
-  };
-}
-
 function makeDashboardActivityDayTarget(dayKey: string) {
   return {
     closest: (selector: string) =>
@@ -302,62 +288,6 @@ describe("dashboard drag interaction guards", () => {
       });
 
       expect(harness.activityPageCalls).toEqual(["older"]);
-    } finally {
-      if (hadWindow) {
-        Object.defineProperty(globalThis, "window", {
-          configurable: true,
-          value: originalWindow,
-        });
-      } else {
-        Reflect.deleteProperty(globalThis, "window");
-      }
-      harness.restore();
-    }
-  });
-
-  it("opens the Executive page when the Executive Summary dashboard panel is clicked", () => {
-    const harness = makeDashboardContext();
-    const hadWindow = Object.prototype.hasOwnProperty.call(globalThis, "window");
-    const originalWindow = (globalThis as { window?: unknown }).window;
-
-    try {
-      Object.defineProperty(globalThis, "window", {
-        configurable: true,
-        value: {},
-      });
-      harness.dashboard.registerDashboardEvents();
-      harness.dispatchDashboardClick(makeExecutiveSummaryTarget());
-
-      expect(harness.appPageCalls).toEqual([
-        { page: "executive", opts: { pushNavStack: true, syncUrl: "push" } },
-      ]);
-    } finally {
-      if (hadWindow) {
-        Object.defineProperty(globalThis, "window", {
-          configurable: true,
-          value: originalWindow,
-        });
-      } else {
-        Reflect.deleteProperty(globalThis, "window");
-      }
-      harness.restore();
-    }
-  });
-
-  it("does not navigate from Executive Summary clicks that originate on nested controls", () => {
-    const harness = makeDashboardContext();
-    const hadWindow = Object.prototype.hasOwnProperty.call(globalThis, "window");
-    const originalWindow = (globalThis as { window?: unknown }).window;
-
-    try {
-      Object.defineProperty(globalThis, "window", {
-        configurable: true,
-        value: {},
-      });
-      harness.dashboard.registerDashboardEvents();
-      harness.dispatchDashboardClick(makeExecutiveSummaryTarget({ interactive: true }));
-
-      expect(harness.appPageCalls).toEqual([]);
     } finally {
       if (hadWindow) {
         Object.defineProperty(globalThis, "window", {

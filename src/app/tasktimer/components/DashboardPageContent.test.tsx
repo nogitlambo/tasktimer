@@ -23,19 +23,19 @@ describe("DashboardPageContent momentum dial markers", () => {
     expect(html).not.toContain(">Brain Dump<");
   });
 
-  it("renders one compact Executive Summary and removes permanent executive cards", () => {
+  it("omits Executive Summary and preserves activity summaries", () => {
     const html = renderDashboardMarkup();
 
     expect(html).not.toContain(">Time Tracked<");
     expect(html).not.toContain("dashboardActivityOverviewTitleRow");
-    expect(html).toContain('id="dashboardExecutiveSummary"');
-    expect(html).toContain('aria-label="Executive summary"');
-    expect(html).toContain('class="dashboardExecutiveSummaryStatusRow"');
-    expect(html).toContain('class="dashboardExecutiveSummaryStatusLabel">Workload Assessment<');
+    expect(html).not.toContain('id="dashboardExecutiveSummary"');
+    expect(html).toContain('id="dashboardActivityTodayHoursValue"');
+    expect(html).toContain('id="dashboardActivityWeeklyGoalsValue"');
+    expect(html).not.toContain('aria-label="Executive summary"');
+    expect(html).not.toContain('class="dashboardExecutiveSummaryStatusRow"');
+    expect(html).not.toContain('class="dashboardExecutiveSummaryStatusLabel">Workload Assessment<');
     expect(html).not.toContain('id="dashboardExecutiveSummaryHeading"');
     expect(html).not.toContain(">Executive Summary<");
-    expect(html.indexOf('id="dashboardExecutiveSummary"')).toBeGreaterThan(html.indexOf('data-dashboard-id="activity-overview"'));
-    expect(html.indexOf('id="dashboardExecutiveSummary"')).toBeLessThan(html.indexOf('class="dashboardActivityOverviewHead"'));
     expect(html).not.toContain(">NEXT BEST ACTION<");
     expect(html).not.toContain('id="dashboardExecutiveSummaryNext"');
     expect(html).not.toContain('id="dashboardExecutiveSummaryStart"');
@@ -50,38 +50,6 @@ describe("DashboardPageContent momentum dial markers", () => {
     expect(html).not.toContain('id="dashboardRecoveryCard"');
   });
 
-  it("keeps the Executive Summary on the shared dashboard panel baseline", () => {
-    const css = readFileSync("src/app/tasktimer/styles/03-dashboard.css", "utf8").replace(/\r\n/g, "\n");
-    const referenceCss = css.slice(css.indexOf("/* Activity Overview and Momentum reference redesign. */"));
-    const sharedPanelRule =
-      referenceCss.match(
-        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardActivityOverviewCard,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n\}/
-      )?.[0] || "";
-    const sharedPanelTopLineRule =
-      referenceCss.match(
-        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardActivityOverviewCard::before,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard::before\{[\s\S]*?\n\}/
-      )?.[0] || "";
-    const executivePanelRule =
-      referenceCss.match(
-        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel \.dashboardActivityOverviewCard > \.dashboardExecutiveSummary\{[\s\S]*?\n\}/
-      )?.[0] || "";
-    const mobileSharedPanelRule =
-      referenceCss.match(
-        /@media \(max-width: 640px\)\{\n\s+body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel \.dashboardActivityOverviewCard > \.dashboardExecutiveSummary,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n  \}/
-      )?.[0] || "";
-
-    expect(sharedPanelRule).toContain(".dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardExecutiveSummary,");
-    expect(sharedPanelRule).toContain("border-radius:18px !important;");
-    expect(sharedPanelRule).toContain("background:linear-gradient(180deg, var(--dashboard-reference-panel-bg-top), var(--dashboard-reference-panel-bg-bottom)) !important;");
-    expect(sharedPanelTopLineRule).toContain(".dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardExecutiveSummary::before,");
-    expect(sharedPanelTopLineRule).toContain("background:linear-gradient(90deg, transparent, var(--dashboard-reference-border-strong), transparent) !important;");
-    expect(executivePanelRule).toContain("padding:26px 28px !important;");
-    expect(referenceCss).toContain(".dashboardExecutiveSummaryStatus[data-plan-health]{");
-    expect(referenceCss).toContain("border-radius:999px !important;");
-    expect(referenceCss).toContain("color:#ff7462 !important;");
-    expect(mobileSharedPanelRule).toContain("border-radius:16px !important;");
-  });
-
   it("places Time Tracked across two desktop columns and moves Momentum to the second row", () => {
     const css = readFileSync("src/app/tasktimer/styles/03-dashboard.css", "utf8").replace(/\r\n/g, "\n");
     const desktopOrderCss = css.slice(css.indexOf("/* Desktop dashboard panel order: Time Tracked spans two columns, Momentum starts row two. */"));
@@ -91,8 +59,6 @@ describe("DashboardPageContent momentum dial markers", () => {
       desktopOrderCss.match(/\.dashboardSupportGrid > \.dashboardMomentumCard\{[\s\S]*?\n  \}/)?.[0] || "";
     const tasksRule =
       desktopOrderCss.match(/\.dashboardSupportGrid > \.dashboardTasksCompletedCard\{[\s\S]*?\n  \}/)?.[0] || "";
-    const executiveRule =
-      desktopOrderCss.match(/\.dashboardIntegratedPanel \.dashboardActivityOverviewCard > \.dashboardExecutiveSummary\{[\s\S]*?\n  \}/)?.[0] || "";
     const activityHeadRule =
       desktopOrderCss.match(/\.dashboardIntegratedPanel \.dashboardActivityOverviewHead\{[\s\S]*?\n  \}/)?.[0] || "";
     const activityBodyRule =
@@ -100,12 +66,10 @@ describe("DashboardPageContent momentum dial markers", () => {
 
     expect(activityRule).toContain("grid-column:1 / span 2 !important;");
     expect(activityRule).toContain("grid-row:1 !important;");
-    expect(executiveRule).toContain("grid-column:1 !important;");
-    expect(executiveRule).toContain("grid-row:2 !important;");
-    expect(activityHeadRule).toContain("grid-column:2 !important;");
-    expect(activityHeadRule).toContain("grid-row:2 !important;");
+    expect(activityHeadRule).toContain("grid-column:1 / -1 !important;");
+    expect(activityHeadRule).toContain("grid-row:1 !important;");
     expect(activityBodyRule).toContain("grid-column:1 / -1 !important;");
-    expect(activityBodyRule).toContain("grid-row:3 !important;");
+    expect(activityBodyRule).toContain("grid-row:2 !important;");
     expect(momentumRule).toContain("grid-column:2 !important;");
     expect(momentumRule).toContain("grid-row:2 !important;");
     expect(tasksRule).toContain("grid-column:3 !important;");

@@ -15,7 +15,7 @@ describe("Dashboard Next Best Action card", () => {
       createElement(ExecutivePageContent, { active: true }),
     );
 
-    expect(dashboardHtml).toContain('id="dashboardExecutiveSummary"');
+    expect(dashboardHtml).not.toContain('id="dashboardExecutiveSummary"');
     expect(dashboardHtml).not.toContain('id="dashboardNextBestActionCard"');
     expect(html).toContain('id="dashboardNextBestActionCard"');
     expect(html).toContain('id="dashboardNextBestActionDailyProgress"');

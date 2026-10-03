@@ -88,6 +88,16 @@ function isPlusSubscriptionPlan(plan: TaskTimerPlan) {
 
 const NAV_ITEMS: NavItem[] = [
   {
+    page: "executive",
+    label: "Executive Function",
+    ariaLabel: "Executive Function",
+    iconSrc: "/icons/icons_default/executive.webp",
+    desktopId: "commandCenterExecutiveBtn",
+    mobileId: "footerExecutiveBtn",
+    href: "/executive",
+    mobileFooterOrder: 1,
+  },
+  {
     page: "dashboard",
     label: "Dashboard",
     ariaLabel: "Dashboard",
@@ -96,16 +106,6 @@ const NAV_ITEMS: NavItem[] = [
     mobileId: "footerDashboardBtn",
     href: "/dashboard",
     mobileFooterOrder: 0,
-  },
-  {
-    page: "notes",
-    label: "Notes",
-    ariaLabel: "Notes",
-    iconSrc: "/icons/icons_default/notes.webp",
-    desktopId: "commandCenterSessionNotesBtn",
-    mobileId: "footerSessionNotesBtn",
-    href: "/notes",
-    showInMobileFooter: false,
   },
   {
     page: "tasks",
@@ -118,14 +118,14 @@ const NAV_ITEMS: NavItem[] = [
     mobileFooterOrder: 2,
   },
   {
-    page: "executive",
-    label: "Executive",
-    ariaLabel: "Executive",
-    iconSrc: "/icons/icons_default/executive.webp",
-    desktopId: "commandCenterExecutiveBtn",
-    mobileId: "footerExecutiveBtn",
-    href: "/executive",
-    mobileFooterOrder: 1,
+    page: "notes",
+    label: "Notes",
+    ariaLabel: "Notes",
+    iconSrc: "/icons/icons_default/notes.webp",
+    desktopId: "commandCenterSessionNotesBtn",
+    mobileId: "footerSessionNotesBtn",
+    href: "/notes",
+    showInMobileFooter: false,
   },
   {
     page: "friends",
@@ -878,6 +878,12 @@ export default function DesktopAppRail({
             <nav className="dashboardRailNav">
               {DESKTOP_NAV_ITEMS.map((item) => (
                 <Fragment key={item.desktopId}>
+                  {item.page === "friends" ? (
+                    <>
+                      <div className="desktopRailNavDivider" aria-hidden="true" />
+                      <div className="dashboardRailSectionLabel">Social</div>
+                    </>
+                  ) : null}
                   {renderDesktopNavItem(item, navActivePage, useClientNavButtons, {
                     onClick: undefined,
                   })}

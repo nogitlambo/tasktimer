@@ -15,18 +15,6 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                 <div className="dashboardShellContent dashboardShellFace dashboardShellFaceFront" id="dashboardShellContent">
                   <div className="dashboardGrid dashboardIntegratedPanel">
                   <section className="dashboardCard dashboardActivityOverviewCard" data-dashboard-id="activity-overview" data-dashboard-label="Activity Overview" aria-label="Activity overview">
-                    <section className="dashboardCard dashboardExecutiveSummary" id="dashboardExecutiveSummary" aria-label="Executive summary" data-executive-summary-state="loading">
-                      <div className="dashboardExecutiveSummaryStatusRow">
-                        <span className="dashboardExecutiveSummaryStatusLabel">Workload Assessment</span>
-                        <div className="dashboardExecutiveSummaryStatus" id="dashboardExecutiveSummaryStatus" role="status" aria-live="polite">Loading today&apos;s plan...</div>
-                      </div>
-                      <div className="dashboardExecutiveSummaryContent" id="dashboardExecutiveSummaryContent" hidden>
-                        <p className="dashboardExecutiveSummaryPlanHealth" id="dashboardExecutiveSummaryPlanHealth" />
-                      </div>
-                      <div className="dashboardExecutiveSummaryFallback" id="dashboardExecutiveSummaryFallback" hidden>
-                        Today&apos;s executive plan is unavailable. Your tasks and performance data are still available.
-                      </div>
-                    </section>
                     <div className="dashboardActivityOverviewHead">
                       <aside className="dashboardActivitySummaryStack" aria-label="Today and weekly summaries">
                         <section className="dashboardActivitySummaryMini" aria-label="Today's logged time">

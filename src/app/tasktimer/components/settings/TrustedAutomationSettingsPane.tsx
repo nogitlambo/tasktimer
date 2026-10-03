@@ -326,7 +326,7 @@ export function TrustedAutomationSettingsPane({ active, exiting = false }: { act
           <div className="toggleRow settingsTrustedAutomationToggleRow">
             <div className="settingsPreferenceControlCopy">
               <span className="settingsPreferenceControlLabel">Enable Executive Function</span>
-              <span className="settingsPreferenceControlHelp">Turns Executive Summary, Daily Executive Brief, Next Best Action, Adaptive Capacity, Schedule Repair, Recovery Mode, Brain Dump executive actions, task clarification, and Trusted Automation on or off.</span>
+              <span className="settingsPreferenceControlHelp">Turns Daily Executive Brief, Next Best Action, Adaptive Capacity, Schedule Repair, Recovery Mode, Brain Dump executive actions, task clarification, and Trusted Automation on or off.</span>
             </div>
             <button
               className={`switch${executiveFunctionEnabled ? " on" : ""}`}

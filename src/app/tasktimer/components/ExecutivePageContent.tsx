@@ -441,7 +441,7 @@ export default function ExecutivePageContent({ active }: Props) {
     <section
       className={`appPage${active ? " appPageOn" : ""}${isExecutivePlanLocked ? " isExecutivePlanLocked" : ""}`}
       id="appPageExecutive"
-      aria-label="Executive page"
+      aria-label="Executive Function page"
     >
       <div className="executiveUpgradePanel">
         <div
@@ -469,7 +469,7 @@ export default function ExecutivePageContent({ active }: Props) {
                   title={
                     isExecutivePageRefreshRateLimited
                       ? "Available one minute after the last refresh"
-                      : "Refresh the entire Executive page"
+                      : "Refresh the entire Executive Function page"
                   }
                 >
                   Refresh

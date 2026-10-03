@@ -131,7 +131,6 @@ import { createDashboardDailyExecutiveBrief } from "./client/dashboard-daily-exe
 import { createDashboardDailyCapacity } from "./client/dashboard-daily-capacity";
 import { createDashboardScheduleRepair } from "./client/dashboard-schedule-repair";
 import { createDashboardRecovery } from "./client/dashboard-recovery";
-import { createDashboardExecutiveSummary } from "./client/dashboard-executive-summary";
 import { createExecutiveSurface } from "./client/executive-surface";
 import { createExecutiveRequestCoordinator } from "./client/executive-request-coordinator";
 import { createExecutivePanelRefreshScheduler } from "./client/executive-panel-refresh-scheduler";
@@ -331,7 +330,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let dashboardDailyCapacityApi: ReturnType<typeof createDashboardDailyCapacity> | null = null;
   let dashboardScheduleRepairApi: ReturnType<typeof createDashboardScheduleRepair> | null = null;
   let dashboardRecoveryApi: ReturnType<typeof createDashboardRecovery> | null = null;
-  let dashboardExecutiveSummaryApi: ReturnType<typeof createDashboardExecutiveSummary> | null = null;
   let executiveSurfaceApi: ReturnType<typeof createExecutiveSurface> | null = null;
   let executivePanelRefreshScheduler: ReturnType<typeof createExecutivePanelRefreshScheduler> | null = null;
   let plannedStartActivationScheduler: ReturnType<typeof createPlannedStartActivationScheduler> | null = null;
@@ -357,7 +355,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     dashboardDailyCapacityApi?.destroy();
     dashboardScheduleRepairApi?.destroy();
     dashboardRecoveryApi?.destroy();
-    dashboardExecutiveSummaryApi?.destroy();
     executiveSurfaceApi?.destroy();
     executivePanelRefreshScheduler?.destroy();
     plannedStartActivationScheduler?.destroy();
@@ -902,14 +899,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getTasks: () => taskCollectionBindings.getTasks(),
     jumpToTaskById: (taskId) => runtimeActions.jumpToTaskById(taskId),
   });
-  dashboardExecutiveSummaryApi = createDashboardExecutiveSummary({
-    documentRef: document,
-    windowRef: window,
-    getCurrentAppPage: () => appRuntimeState.get("currentAppPage"),
-    canUseExecutiveFunction,
-    getExecutiveFunctionUnavailableMessage,
-    requestCoordinator: executiveRequestCoordinator,
-  });
   executiveSurfaceApi = createExecutiveSurface({
     documentRef: document,
     windowRef: window,
@@ -978,7 +967,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     render();
     if (appRuntimeState.get("currentAppPage") === "dashboard") {
       renderBindings.renderDashboardWidgets();
-      void dashboardExecutiveSummaryApi?.refresh();
       void dashboardNextBestActionApi?.refresh();
       void dashboardDailyExecutiveBriefApi?.refresh();
       void dashboardDailyCapacityApi?.refresh();
@@ -2004,7 +1992,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     dashboardDailyCapacityApi?.register();
     dashboardScheduleRepairApi?.register();
     dashboardRecoveryApi?.register();
-    dashboardExecutiveSummaryApi?.register();
     executiveSurfaceApi?.register();
     executivePanelRefreshScheduler?.syncForCurrentPage();
     plannedStartActivationScheduler?.sync();

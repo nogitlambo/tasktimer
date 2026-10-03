@@ -1698,21 +1698,18 @@ describe("dashboard completed card", () => {
       )?.[0] || "";
     const mobileSharedPanelRule =
       referenceCss.match(
-        /@media \(max-width: 640px\)\{\n\s+body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel \.dashboardActivityOverviewCard > \.dashboardExecutiveSummary,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n  \}/
+        /@media \(max-width: 640px\)\{\n\s+body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardActivityOverviewCard,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n  \}/
       )?.[0] || "";
 
-    expect(sharedPanelRule).toContain(".dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardExecutiveSummary,");
     expect(sharedPanelRule).toContain(".dashboardSupportGrid > .dashboardTasksCompletedCard,");
     expect(sharedPanelRule).toContain(".dashboardSupportGrid > .dashboardHeatCard{");
     expect(sharedPanelRule).toContain("border-radius:18px !important;");
     expect(referenceCss).toContain("--dashboard-reference-panel-bg-top:#0d0f13;");
     expect(referenceCss).toContain("--dashboard-reference-panel-bg-bottom:#0d0f13;");
     expect(sharedPanelRule).toContain("background:linear-gradient(180deg, var(--dashboard-reference-panel-bg-top), var(--dashboard-reference-panel-bg-bottom)) !important;");
-    expect(sharedPanelTopLineRule).toContain(".dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardExecutiveSummary::before,");
     expect(sharedPanelTopLineRule).toContain(".dashboardSupportGrid > .dashboardHeatCard::before{");
     expect(sharedPanelTopLineRule).toContain("background:linear-gradient(90deg, transparent, var(--dashboard-reference-border-strong), transparent) !important;");
     expect(referenceCss).toContain("background:linear-gradient(180deg, #0d0f13 0%, #0d0f13 100%) !important;");
-    expect(mobileSharedPanelRule).toContain(".dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardExecutiveSummary,");
     expect(mobileSharedPanelRule).toContain(".dashboardSupportGrid > .dashboardTasksCompletedCard,");
     expect(mobileSharedPanelRule).toContain(".dashboardSupportGrid > .dashboardHeatCard{");
     expect(mobileSharedPanelRule).toContain("border-radius:16px !important;");
